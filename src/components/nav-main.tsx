@@ -10,8 +10,11 @@ import {
   BarChart3, 
   Bot, 
   Settings,
-  Store
+  Store,
+  LogIn,
+  ShieldCheck
 } from "lucide-react"
+import { useUser } from "@/firebase"
 
 import {
   Sidebar,
@@ -36,6 +39,7 @@ const menuItems = [
 
 export function NavMain() {
   const pathname = usePathname()
+  const { user } = useUser()
 
   return (
     <Sidebar collapsible="icon">
@@ -71,6 +75,14 @@ export function NavMain() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Cloud Sync" className={`px-4 ${user ? 'text-green-600' : 'text-orange-500'}`}>
+              <Link href="/auth">
+                {user ? <ShieldCheck className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+                <span className="font-body">{user ? 'Cloud Active' : 'Offline Mode'}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip="Settings" className="px-4">
               <Settings className="w-5 h-5" />
