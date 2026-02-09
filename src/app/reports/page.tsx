@@ -16,9 +16,11 @@ import {
   CreditCard,
   Inbox,
   Loader2,
-  Printer
+  Printer,
+  Check,
+  Settings2
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -37,9 +39,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { useBusinessData } from "@/hooks/use-business-data"
 import { useUser, useFirestore } from "@/firebase"
 import { collection, getDocs } from "firebase/firestore"
+import { cn } from "@/lib/utils"
 
 export default function MasterLedgerPage() {
   const { user } = useUser()
@@ -50,6 +63,19 @@ export default function MasterLedgerPage() {
   const [filterType, setFilterType] = useState("all")
   const [allBakiRecords, setAllBakiRecords] = useState<any[]>([])
   const [isBakiLoading, setIsBakiLoading] = useState(false)
+
+  // Print Settings State
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false)
+  const [printColumns, setPrintColumns] = useState({
+    date: true,
+    type: true,
+    item: true,
+    entity: true,
+    total: true,
+    paid: true,
+    unpaid: true,
+    status: true
+  })
 
   // Fetch ALL Baki Records across all customers for the report
   useEffect(() => {
@@ -191,7 +217,11 @@ export default function MasterLedgerPage() {
   }
 
   const handlePrint = () => {
-    window.print()
+    setIsPrintDialogOpen(false)
+    // Small delay to let dialog close and styles settle
+    setTimeout(() => {
+      window.print()
+    }, 300)
   }
 
   if (dataLoading) {
@@ -213,7 +243,11 @@ export default function MasterLedgerPage() {
           <p className="text-sm text-muted-foreground print:hidden">Comprehensive A-Z business transaction report.</p>
         </div>
         <div className="flex gap-2 w-full md:w-auto print:hidden">
-          <Button variant="outline" className="gap-2 border-primary text-primary" onClick={handlePrint}>
+          <Button 
+            variant="outline" 
+            className="gap-2 border-primary text-primary" 
+            onClick={() => setIsPrintDialogOpen(true)}
+          >
             <Printer className="w-4 h-4" /> Print Ledger
           </Button>
           <Button variant="outline" className="gap-2 border-accent text-accent" onClick={handleDownloadCSV}>
@@ -221,6 +255,93 @@ export default function MasterLedgerPage() {
           </Button>
         </div>
       </div>
+
+      {/* Print Configuration Dialog */}
+      <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="w-5 h-5 text-accent" /> Print Configuration
+            </DialogTitle>
+            <DialogDescription>
+              Select the columns you want to include in your printed report.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="col-date" 
+                  checked={printColumns.date} 
+                  onCheckedChange={(val) => setPrintColumns(prev => ({...prev, date: val}))} 
+                />
+                <Label htmlFor="col-date">Date</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="col-type" 
+                  checked={printColumns.type} 
+                  onCheckedChange={(val) => setPrintColumns(prev => ({...prev, type: val}))} 
+                />
+                <Label htmlFor="col-type">Transaction Type</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="col-item" 
+                  checked={printColumns.item} 
+                  onCheckedChange={(val) => setPrintColumns(prev => ({...prev, item: val}))} 
+                />
+                <Label htmlFor="col-item">Item Name</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="col-entity" 
+                  checked={printColumns.entity} 
+                  onCheckedChange={(val) => setPrintColumns(prev => ({...prev, entity: val}))} 
+                />
+                <Label htmlFor="col-entity">Customer/Supplier</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="col-total" 
+                  checked={printColumns.total} 
+                  onCheckedChange={(val) => setPrintColumns(prev => ({...prev, total: val}))} 
+                />
+                <Label htmlFor="col-total">Total Value</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="col-paid" 
+                  checked={printColumns.paid} 
+                  onCheckedChange={(val) => setPrintColumns(prev => ({...prev, paid: val}))} 
+                />
+                <Label htmlFor="col-paid">Paid Amount</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="col-unpaid" 
+                  checked={printColumns.unpaid} 
+                  onCheckedChange={(val) => setPrintColumns(prev => ({...prev, unpaid: val}))} 
+                />
+                <Label htmlFor="col-unpaid">Unpaid/Due</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="col-status" 
+                  checked={printColumns.status} 
+                  onCheckedChange={(val) => setPrintColumns(prev => ({...prev, status: val}))} 
+                />
+                <Label htmlFor="col-status">Status</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full bg-accent hover:bg-accent/90 gap-2" onClick={handlePrint}>
+              <Printer className="w-4 h-4" /> Start Printing Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-green-50 border-green-100 shadow-none">
@@ -289,26 +410,26 @@ export default function MasterLedgerPage() {
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead className="text-[10px] uppercase font-bold pl-6">Date</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold">Type</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold">Item / Description</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold">Entity</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold">Total Val</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold">Paid</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold">Unpaid</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold text-right pr-6">Status</TableHead>
+                  <TableHead className={cn("text-[10px] uppercase font-bold pl-6", !printColumns.date && "print:hidden")}>Date</TableHead>
+                  <TableHead className={cn("text-[10px] uppercase font-bold", !printColumns.type && "print:hidden")}>Type</TableHead>
+                  <TableHead className={cn("text-[10px] uppercase font-bold", !printColumns.item && "print:hidden")}>Item / Description</TableHead>
+                  <TableHead className={cn("text-[10px] uppercase font-bold", !printColumns.entity && "print:hidden")}>Entity</TableHead>
+                  <TableHead className={cn("text-[10px] uppercase font-bold", !printColumns.total && "print:hidden")}>Total Val</TableHead>
+                  <TableHead className={cn("text-[10px] uppercase font-bold", !printColumns.paid && "print:hidden")}>Paid</TableHead>
+                  <TableHead className={cn("text-[10px] uppercase font-bold", !printColumns.unpaid && "print:hidden")}>Unpaid</TableHead>
+                  <TableHead className={cn("text-[10px] uppercase font-bold text-right pr-6", !printColumns.status && "print:hidden")}>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLedger.map((entry, idx) => (
                   <TableRow key={entry.id + idx} className="hover:bg-accent/5">
-                    <TableCell className="pl-6 text-xs font-medium whitespace-nowrap">
+                    <TableCell className={cn("pl-6 text-xs font-medium whitespace-nowrap", !printColumns.date && "print:hidden")}>
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3 text-muted-foreground" />
+                        <Calendar className="w-3 h-3 text-muted-foreground print:hidden" />
                         {entry.date.toLocaleDateString()}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className={cn(!printColumns.type && "print:hidden")}>
                       <Badge variant="outline" className={`text-[9px] font-bold h-5 uppercase tracking-tighter ${
                         entry.type.includes('Sale') ? 'bg-green-50 border-green-200 text-green-700' :
                         entry.type.includes('Baki') ? 'bg-orange-50 border-orange-200 text-orange-700' :
@@ -317,21 +438,21 @@ export default function MasterLedgerPage() {
                         {entry.type}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs font-bold text-primary truncate max-w-[150px]">
+                    <TableCell className={cn("text-xs font-bold text-primary truncate max-w-[150px]", !printColumns.item && "print:hidden")}>
                       {entry.item}
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className={cn("text-xs", !printColumns.entity && "print:hidden")}>
                       <div className="flex items-center gap-2">
-                        <Users className="w-3 h-3 text-muted-foreground" />
+                        <Users className="w-3 h-3 text-muted-foreground print:hidden" />
                         {entry.customer}
                       </div>
                     </TableCell>
-                    <TableCell className="text-xs font-black">{currency}{entry.amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-xs font-bold text-green-600">{currency}{entry.paid.toLocaleString()}</TableCell>
-                    <TableCell className={`text-xs font-bold ${entry.unpaid > 0 ? 'text-destructive' : 'text-muted-foreground opacity-30'}`}>
+                    <TableCell className={cn("text-xs font-black", !printColumns.total && "print:hidden")}>{currency}{entry.amount.toLocaleString()}</TableCell>
+                    <TableCell className={cn("text-xs font-bold text-green-600", !printColumns.paid && "print:hidden")}>{currency}{entry.paid.toLocaleString()}</TableCell>
+                    <TableCell className={cn("text-xs font-bold", entry.unpaid > 0 ? 'text-destructive' : 'text-muted-foreground opacity-30', !printColumns.unpaid && "print:hidden")}>
                       {currency}{entry.unpaid.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right pr-6">
+                    <TableCell className={cn("text-right pr-6", !printColumns.status && "print:hidden")}>
                       <span className={`text-[10px] font-black uppercase ${entry.color}`}>
                         {entry.status}
                       </span>
@@ -353,12 +474,13 @@ export default function MasterLedgerPage() {
         @media print {
           .print\\:hidden { display: none !important; }
           body { background: white !important; }
-          .sidebar-wrapper, header, footer { display: none !important; }
+          .sidebar-wrapper, header, footer, .sidebar-inset > header { display: none !important; }
           main { padding: 0 !important; margin: 0 !important; width: 100% !important; }
           .rounded-lg { border-radius: 0 !important; }
           .shadow-lg, .shadow-xl { box-shadow: none !important; }
           table { width: 100% !important; border-collapse: collapse !important; }
           th, td { border: 1px solid #eee !important; padding: 8px !important; }
+          .badge-outline { border: 1px solid #ccc !important; }
         }
       `}</style>
     </div>
