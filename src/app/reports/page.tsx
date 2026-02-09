@@ -15,7 +15,8 @@ import {
   Users,
   CreditCard,
   Inbox,
-  Loader2
+  Loader2,
+  Printer
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -38,7 +39,7 @@ import {
 } from "@/components/ui/select"
 import { useBusinessData } from "@/hooks/use-business-data"
 import { useUser, useFirestore } from "@/firebase"
-import { collectionGroup, getDocs, query, where } from "firebase/firestore"
+import { collection, getDocs } from "firebase/firestore"
 
 export default function MasterLedgerPage() {
   const { user } = useUser()
@@ -54,7 +55,6 @@ export default function MasterLedgerPage() {
   useEffect(() => {
     async function fetchAllBaki() {
       if (!user?.uid || !db) {
-        // Handle local mode aggregation
         const localBaki = customers.flatMap(c => 
           (c.bakiRecords || []).map((r: any) => ({
             ...r,
@@ -68,9 +68,6 @@ export default function MasterLedgerPage() {
 
       setIsBakiLoading(true)
       try {
-        // Note: For large datasets, this should be optimized, but for MVP it works
-        // This requires a Firestore index if using collectionGroup with filters, 
-        // but simple list usually works if rules allow.
         const records: any[] = []
         for (const customer of customers) {
           const snap = await getDocs(collection(db, 'users', user.uid, 'customers', customer.id, 'bakiRecords'))
@@ -137,7 +134,7 @@ export default function MasterLedgerPage() {
       if (p.purchasePrice > 0) {
         entries.push({
           id: p.id + '-inv',
-          date: new Date(), // Placeholder as we don't track purchase date yet
+          date: new Date(), 
           type: 'Inventory',
           item: `Stock: ${p.name}`,
           amount: p.purchasePrice * p.stock,
@@ -168,6 +165,35 @@ export default function MasterLedgerPage() {
     }
   }, [sales, customers, products])
 
+  // Download logic
+  const handleDownloadCSV = () => {
+    const headers = ["Date", "Type", "Item", "Entity", "Total", "Paid", "Unpaid", "Status"]
+    const rows = filteredLedger.map(e => [
+      e.date.toLocaleDateString(),
+      e.type,
+      e.item,
+      e.customer,
+      e.amount,
+      e.paid,
+      e.unpaid,
+      e.status
+    ])
+
+    const csvContent = [headers, ...rows].map(r => r.join(",")).join("\n")
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", `master_ledger_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handlePrint = () => {
+    window.print()
+  }
+
   if (dataLoading) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -179,16 +205,21 @@ export default function MasterLedgerPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:mb-8">
         <div>
           <h2 className="text-2xl font-bold font-headline text-primary flex items-center gap-2">
             <FileSpreadsheet className="w-6 h-6 text-accent" /> Master Ledger
           </h2>
-          <p className="text-sm text-muted-foreground">Comprehensive A-Z business transaction report.</p>
+          <p className="text-sm text-muted-foreground print:hidden">Comprehensive A-Z business transaction report.</p>
         </div>
-        <Button variant="outline" className="gap-2 border-accent text-accent">
-          <Download className="w-4 h-4" /> Export Spreadsheet
-        </Button>
+        <div className="flex gap-2 w-full md:w-auto print:hidden">
+          <Button variant="outline" className="gap-2 border-primary text-primary" onClick={handlePrint}>
+            <Printer className="w-4 h-4" /> Print Ledger
+          </Button>
+          <Button variant="outline" className="gap-2 border-accent text-accent" onClick={handleDownloadCSV}>
+            <Download className="w-4 h-4" /> Export CSV
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -221,8 +252,8 @@ export default function MasterLedgerPage() {
         </Card>
       </div>
 
-      <Card className="border-accent/10 shadow-lg overflow-hidden">
-        <CardHeader className="p-4 border-b bg-muted/20 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <Card className="border-accent/10 shadow-lg overflow-hidden print:border-none print:shadow-none">
+        <CardHeader className="p-4 border-b bg-muted/20 flex flex-col md:flex-row gap-4 items-center justify-between print:hidden">
           <div className="relative w-full md:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
@@ -313,10 +344,23 @@ export default function MasterLedgerPage() {
         </CardContent>
       </Card>
       
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground italic bg-muted/30 p-4 rounded-lg">
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground italic bg-muted/30 p-4 rounded-lg print:bg-white print:border-t">
          <p>* This report combines live data from Inventory, Sales, and Customer Baki Records.</p>
          <p>Total Ledger Entries: {filteredLedger.length}</p>
       </div>
+
+      <style jsx global>{`
+        @media print {
+          .print\\:hidden { display: none !important; }
+          body { background: white !important; }
+          .sidebar-wrapper, header, footer { display: none !important; }
+          main { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+          .rounded-lg { border-radius: 0 !important; }
+          .shadow-lg, .shadow-xl { box-shadow: none !important; }
+          table { width: 100% !important; border-collapse: collapse !important; }
+          th, td { border: 1px solid #eee !important; padding: 8px !important; }
+        }
+      `}</style>
     </div>
   )
 }
