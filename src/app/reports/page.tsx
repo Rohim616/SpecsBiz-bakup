@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -219,10 +220,12 @@ export default function MasterLedgerPage() {
   const handlePrint = () => {
     setIsPrintDialogOpen(false);
     
+    // Unfocus active elements to prevent potential issues
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
 
+    // Delay print to allow dialog to close completely
     setTimeout(() => {
       if (typeof window !== 'undefined') {
         window.print();
@@ -250,7 +253,7 @@ export default function MasterLedgerPage() {
             <img 
               src={logoUrl} 
               alt="SpecsBiz Logo" 
-              className="h-20 w-20 object-contain rounded-xl shadow-sm"
+              className="h-24 w-24 object-contain"
             />
           )}
           <h1 className="text-5xl font-black text-primary font-headline">SpecsBiz</h1>
@@ -509,6 +512,7 @@ export default function MasterLedgerPage() {
           .text-destructive { color: #cc0000 !important; }
           .text-green-600 { color: #008800 !important; }
           h1, h2, h3, p { color: black !important; }
+          img { max-height: 100px !important; width: auto !important; }
         }
       `}</style>
     </div>
