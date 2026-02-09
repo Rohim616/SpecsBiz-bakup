@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Product": {
@@ -88,7 +89,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Customer",
       "type": "object",
-      "description": "Represents a customer.",
+      "description": "Represents a customer with credit/baki management.",
       "properties": {
         "id": {
           "type": "string",
@@ -115,6 +116,10 @@
           "type": "string",
           "description": "Address of the customer."
         },
+        "totalDue": {
+          "type": "number",
+          "description": "Total amount of credit/baki the customer currently has."
+        },
         "segment": {
           "type": "string",
           "description": "Customer segment for categorization."
@@ -123,7 +128,6 @@
       "required": [
         "id",
         "firstName",
-        "lastName",
         "email"
       ]
     },
@@ -213,7 +217,7 @@
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user.  It will be 'xrratul4763@gmail.com' for the special secret account."
+              "description": "The unique identifier for the user."
             }
           ]
         }
@@ -298,7 +302,6 @@
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to support SpecsBiz's requirements for online/offline sync, user-specific data access, and a special secret account. To ensure Authorization Independence and facilitate robust security rules, we denormalize user roles and access rights where necessary. Specifically, the solution saves all data under a single user document to allow offline access and syncing when online for a small number of users. A designated secret user has read and write access to the data. Non-logged-in users will store data locally on their device and cannot use online features.\n\n*   **/users/{userId}/**: Contains all user-specific data (Products, Sales, Customers, Reports) to simplify data access and syncing for online users. It improves query performance and streamlines security rules.\n*   **Authorization Independence:** All data is stored under the logged-in user document. This eliminates the need for complex `get()` calls in security rules, simplifying authorization and enabling atomic operations.\n*   **QAPs:** Segregation is used, as all the data is stored inside the user's document. This allows straightforward rules to be written for data access."
+    ]
   }
 }
