@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect, useRef } from "react"
-import { Bell, AlertTriangle, Package, Users, Receipt } from "lucide-react"
+import { Bell, AlertTriangle, Package, Users, Receipt, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   Popover, 
@@ -15,20 +15,30 @@ import { cn } from "@/lib/utils"
 
 /**
  * @fileOverview A real-time notification bell component that derives alerts from business data.
- * Updated with larger size and 'mark as read' functionality.
+ * Features: Stock alerts, debt alerts, daily summaries, and individual alert dismissal.
  */
 export function NotificationBell() {
   const { products, customers, sales, language, currency } = useBusinessData()
   const [mounted, setMounted] = useState(false)
-  const [hasUnseen, setHasUnread] = useState(false)
+  const [hasUnseen, setHasUnseen] = useState(false)
+  const [dismissedIds, setDismissedIds] = useState<string[]>([])
   const prevAlertsCount = useRef(0)
 
-  // Hydration safety
+  // Hydration safety and loading dismissed state from storage
   useEffect(() => {
     setMounted(true)
+    const saved = localStorage.getItem('specsbiz_dismissed_alerts')
+    if (saved) {
+      try {
+        setDismissedIds(JSON.parse(saved))
+      } catch (e) {
+        console.error("Failed to parse dismissed alerts", e)
+      }
+    }
   }, [])
   
-  const alerts = useMemo(() => {
+  // Calculate raw alerts from business data
+  const rawAlerts = useMemo(() => {
     const list: any[] = []
     
     // 1. Low Stock Alerts
@@ -78,7 +88,7 @@ export function NotificationBell() {
     if (todaySales.length > 0) {
       const totalRev = todaySales.reduce((acc, s) => acc + (s.total || 0), 0)
       list.unshift({
-        id: 'daily-summary',
+        id: `daily-summary-${today.replace(/\s+/g, '-')}`,
         title: language === 'en' ? "Today's Progress" : 'আজকের রিপোর্ট',
         description: language === 'en'
           ? `Total revenue today: ${currency}${totalRev.toLocaleString()}`
@@ -91,22 +101,40 @@ export function NotificationBell() {
     return list
   }, [products, customers, sales, language, currency])
 
+  // Filter alerts based on dismissed status
+  const activeAlerts = useMemo(() => {
+    return rawAlerts.filter(a => !dismissedIds.includes(a.id))
+  }, [rawAlerts, dismissedIds])
+
   // Detect new alerts to show red dot
   useEffect(() => {
-    if (alerts.length > prevAlertsCount.current) {
-      setHasUnread(true)
+    if (activeAlerts.length > prevAlertsCount.current) {
+      setHasUnseen(true)
     }
-    prevAlertsCount.current = alerts.length
-  }, [alerts.length])
+    prevAlertsCount.current = activeAlerts.length
+  }, [activeAlerts.length])
 
   if (!mounted) return <Button variant="ghost" size="icon" className="h-12 w-12"><Bell className="h-6 w-6 opacity-20" /></Button>
 
-  const unreadCount = alerts.length
+  const unreadCount = activeAlerts.length
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
-      setHasUnread(false) // Hide red dot when opened
+      setHasUnseen(false) // Hide red dot when opened
     }
+  }
+
+  const dismissAlert = (id: string) => {
+    const updated = [...dismissedIds, id]
+    setDismissedIds(updated)
+    localStorage.setItem('specsbiz_dismissed_alerts', JSON.stringify(updated))
+  }
+
+  const clearAllAlerts = () => {
+    const allIds = rawAlerts.map(a => a.id)
+    const updated = Array.from(new Set([...dismissedIds, ...allIds]))
+    setDismissedIds(updated)
+    localStorage.setItem('specsbiz_dismissed_alerts', JSON.stringify(updated))
   }
 
   return (
@@ -114,14 +142,14 @@ export function NotificationBell() {
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative h-12 w-12 rounded-full hover:bg-accent/10 transition-colors shrink-0">
           <Bell className={cn("h-6 w-6 text-primary", hasUnseen && unreadCount > 0 && "animate-tada")} />
-          {hasUnseen && unreadCount > 0 && (
+          {unreadCount > 0 && (
             <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white ring-2 ring-white shadow-md animate-in zoom-in duration-300">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[320px] p-0 shadow-2xl border-accent/20 overflow-hidden" align="end" sideOffset={10}>
+      <PopoverContent className="w-[340px] p-0 shadow-2xl border-accent/20 overflow-hidden" align="end" sideOffset={10}>
         <div className="flex items-center justify-between border-b p-4 bg-accent/5">
           <div>
             <h3 className="font-black text-sm text-primary uppercase tracking-tight">
@@ -130,12 +158,12 @@ export function NotificationBell() {
             <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase opacity-60">Live Monitoring</p>
           </div>
           <Badge className="bg-accent text-white border-none text-[10px] h-5">
-            {unreadCount} {language === 'en' ? 'Alerts' : 'টি মেসেজ'}
+            {unreadCount} {language === 'en' ? 'Alerts' : 'টি এলার্ট'}
           </Badge>
         </div>
         
         <ScrollArea className="h-[380px]">
-          {alerts.length === 0 ? (
+          {activeAlerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-muted-foreground opacity-30 text-center">
               <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
                 <Bell className="h-8 w-8" />
@@ -145,8 +173,8 @@ export function NotificationBell() {
             </div>
           ) : (
             <div className="divide-y divide-accent/5">
-              {alerts.map((alert) => (
-                <div key={alert.id} className="flex gap-4 p-4 hover:bg-muted/30 transition-all group cursor-pointer relative overflow-hidden">
+              {activeAlerts.map((alert) => (
+                <div key={alert.id} className="flex gap-4 p-4 hover:bg-muted/30 transition-all group relative overflow-hidden">
                   <div className={cn(
                     "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110",
                     alert.type === 'danger' ? "bg-red-50 text-red-600 border border-red-100" :
@@ -157,12 +185,19 @@ export function NotificationBell() {
                     <alert.icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex justify-between items-start mb-0.5">
+                    <div className="flex justify-between items-start mb-0.5 pr-6">
                       <p className="text-xs font-black text-primary truncate leading-none pt-1">{alert.title}</p>
-                      <span className="text-[8px] font-bold text-muted-foreground/60 uppercase tracking-tighter">Live</span>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2 mt-1">{alert.description}</p>
                   </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 absolute top-3 right-3 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+                    onClick={() => dismissAlert(alert.id)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
                   {alert.type === 'danger' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />}
                 </div>
               ))}
@@ -171,8 +206,12 @@ export function NotificationBell() {
         </ScrollArea>
         
         <div className="border-t p-3 bg-muted/20 text-center">
-           <button className="text-[10px] font-black text-accent uppercase tracking-widest hover:underline transition-all">
-             {language === 'en' ? 'All Seen' : 'সব দেখা হয়েছে'}
+           <button 
+             onClick={clearAllAlerts}
+             className="text-[10px] font-black text-accent uppercase tracking-widest hover:underline transition-all disabled:opacity-30"
+             disabled={activeAlerts.length === 0}
+           >
+             {language === 'en' ? 'Clear All Notifications' : 'সব নোটিফিকেশন মুছুন'}
            </button>
         </div>
       </PopoverContent>
