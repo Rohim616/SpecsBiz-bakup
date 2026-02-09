@@ -6,13 +6,10 @@ import {
   Bot, 
   Send, 
   Sparkles, 
-  Settings, 
   History, 
   Store,
   MessageSquare,
   TrendingUp,
-  Package,
-  Users,
   AlertCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -66,39 +63,39 @@ export default function AIAssistantPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 h-[calc(100vh-120px)] animate-in zoom-in-95 duration-500">
+    <div className="flex flex-col gap-4 h-[calc(100vh-140px)] animate-in zoom-in-95 duration-500 w-full max-w-full">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shrink-0">
-        <div>
-          <h2 className="text-xl md:text-2xl font-bold font-headline text-primary flex items-center gap-2">
-            <Bot className="w-5 h-5 md:w-6 md:h-6 text-accent" /> AI Business Assistant
+        <div className="min-w-0">
+          <h2 className="text-xl md:text-2xl font-bold font-headline text-primary flex items-center gap-2 truncate">
+            <Bot className="w-5 h-5 md:w-6 md:h-6 text-accent shrink-0" /> AI Business Assistant
           </h2>
-          <p className="text-xs text-muted-foreground">Your intelligent companion for business insights.</p>
+          <p className="text-[10px] md:text-xs text-muted-foreground truncate">Your intelligent companion for business insights.</p>
         </div>
-        <Badge variant="outline" className="text-accent border-accent px-3 py-1 flex justify-center">
+        <Badge variant="outline" className="text-accent border-accent px-3 py-1 flex justify-center shrink-0">
           <Sparkles className="w-3 h-3 mr-1" /> Powered by Gemini
         </Badge>
       </div>
 
-      <div className="flex-1 grid lg:grid-cols-4 gap-6 min-h-0">
-        <Card className="lg:col-span-3 flex flex-col min-h-0 shadow-lg border-accent/20">
-          <CardHeader className="border-b bg-accent/5 p-4 py-3 shrink-0">
+      <div className="flex-1 grid lg:grid-cols-4 gap-6 min-h-0 w-full">
+        <Card className="lg:col-span-3 flex flex-col min-h-0 shadow-lg border-accent/20 w-full overflow-hidden">
+          <CardHeader className="border-b bg-accent/5 p-3 md:p-4 py-3 shrink-0">
             <div className="flex items-center gap-3">
-              <Avatar className="h-8 w-8 border-2 border-accent">
+              <Avatar className="h-8 w-8 border-2 border-accent shrink-0">
                 <AvatarFallback className="bg-accent text-white"><Bot className="w-4 h-4" /></AvatarFallback>
               </Avatar>
-              <div>
-                <CardTitle className="text-sm">SpecsBiz Chat</CardTitle>
-                <CardDescription className="text-[10px]">Active and ready to assist</CardDescription>
+              <div className="min-w-0">
+                <CardTitle className="text-sm truncate">SpecsBiz Chat</CardTitle>
+                <CardDescription className="text-[10px] truncate">Active and ready to assist</CardDescription>
               </div>
             </div>
           </CardHeader>
           
-          <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
-            <ScrollArea className="h-full p-4">
-              <div className="space-y-4">
+          <CardContent className="flex-1 min-h-0 p-0 overflow-hidden relative">
+            <ScrollArea className="h-full w-full">
+              <div className="p-4 space-y-4">
                 {messages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] p-3 rounded-2xl ${
+                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}>
+                    <div className={`max-w-[85%] md:max-w-[75%] p-3 rounded-2xl break-words whitespace-pre-wrap ${
                       msg.role === 'user' 
                         ? 'bg-accent text-white rounded-tr-none shadow-md' 
                         : 'bg-muted text-foreground rounded-tl-none border'
@@ -111,8 +108,8 @@ export default function AIAssistantPage() {
             </ScrollArea>
           </CardContent>
 
-          <div className="shrink-0 border-t bg-white/50">
-            <div className="px-4 py-2 bg-muted/30">
+          <div className="shrink-0 border-t bg-white/50 w-full">
+            <div className="px-3 md:px-4 py-2 bg-muted/30 w-full">
               <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2 flex items-center gap-1">
                 <MessageSquare className="w-3 h-3" /> Suggestions
               </p>
@@ -123,7 +120,7 @@ export default function AIAssistantPage() {
                       key={i} 
                       variant="outline" 
                       size="sm"
-                      className="text-[10px] h-7 rounded-full border-accent/20 hover:border-accent hover:bg-accent/5"
+                      className="text-[10px] h-7 rounded-full border-accent/20 hover:border-accent hover:bg-accent/5 shrink-0"
                       onClick={() => handleSend(action)}
                     >
                       {action}
@@ -134,11 +131,11 @@ export default function AIAssistantPage() {
               </ScrollArea>
             </div>
             
-            <CardFooter className="p-3 md:p-4">
+            <CardFooter className="p-3 md:p-4 w-full">
               <div className="flex w-full gap-2">
                 <Input 
                   placeholder="Ask your business assistant..." 
-                  className="flex-1 text-sm h-10 shadow-inner"
+                  className="flex-1 text-sm h-10 shadow-inner min-w-0"
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
@@ -151,7 +148,6 @@ export default function AIAssistantPage() {
           </div>
         </Card>
 
-        {/* Sidebar only visible on Desktop, but content is now available on mobile via suggestions list */}
         <div className="hidden lg:flex flex-col gap-6 overflow-y-auto pr-1">
           <Card>
             <CardHeader className="p-4">
