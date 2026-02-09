@@ -373,15 +373,15 @@ export default function CustomersPage() {
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start mb-2">
                             <div className="space-y-1 min-w-0 flex-1">
-                              <p className="font-bold text-primary flex items-center gap-2">
+                              <div className="font-bold text-primary flex items-center gap-2">
                                 <Package className={`w-3.5 h-3.5 ${record.status === 'paid' ? 'text-green-600' : 'text-accent'}`} />
                                 {record.productName}
                                 {record.status === 'paid' && <Badge className="bg-green-600 ml-2 text-[9px] h-4">Paid</Badge>}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground flex items-center gap-2">
+                              </div>
+                              <div className="text-[10px] text-muted-foreground flex items-center gap-2">
                                 <Calendar className="w-3 h-3" /> 
                                 Taken: {new Date(record.takenDate).toLocaleDateString()}
-                              </p>
+                              </div>
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-lg font-black text-primary">{currency}{record.amount.toLocaleString()}</p>
