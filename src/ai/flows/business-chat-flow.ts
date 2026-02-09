@@ -1,5 +1,3 @@
-'use server';
-
 /**
  * @fileOverview General-purpose business chat AI agent for SpecsBiz (SpecsAI).
  * This flow analyzes real-time inventory, sales, and customer data to provide insights.

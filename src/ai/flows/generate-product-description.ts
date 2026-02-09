@@ -1,5 +1,3 @@
-'use server';
-
 /**
  * @fileOverview A product description generator AI agent.
  *

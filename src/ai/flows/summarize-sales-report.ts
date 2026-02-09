@@ -1,4 +1,3 @@
-'use server';
 /**
  * @fileOverview A sales report summarization AI agent.
  *
