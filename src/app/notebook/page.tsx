@@ -21,6 +21,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Type,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,6 +50,17 @@ const NOTE_COLORS = [
   { name: "Teal", class: "bg-teal-50 border-teal-200" },
 ]
 
+const TEXT_COLORS = [
+  { name: "Default", value: "#191970" },
+  { name: "Black", value: "#000000" },
+  { name: "Red", value: "#e11d48" },
+  { name: "Blue", value: "#2563eb" },
+  { name: "Green", value: "#16a34a" },
+  { name: "Purple", value: "#9333ea" },
+  { name: "Orange", value: "#ea580c" },
+  { name: "Teal", value: "#0d9488" },
+]
+
 export default function NotebookPage() {
   const { user } = useUser()
   const db = useFirestore()
@@ -59,6 +71,7 @@ export default function NotebookPage() {
   const [search, setSearch] = useState("")
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
   const [localNotes, setLocalNotes] = useState<any[]>([])
+  const [activeTextColor, setActiveTextColor] = useState("#191970")
   
   // Toolbar Status State
   const [formats, setFormats] = useState({
@@ -301,7 +314,34 @@ export default function NotebookPage() {
                   >
                     <Underline className="w-4 h-4" />
                   </Button>
+                  
                   <div className="h-4 w-px bg-muted mx-1" />
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 relative">
+                        <Type className="w-4 h-4" />
+                        <div className="absolute bottom-1 w-3 h-0.5" style={{ backgroundColor: activeTextColor }} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="grid grid-cols-4 gap-2 p-3 w-40">
+                      {TEXT_COLORS.map(c => (
+                        <Button 
+                          key={c.name} 
+                          title={c.name}
+                          className={cn("h-7 w-7 rounded-full border-2 p-0 transition-transform hover:scale-110", activeTextColor === c.value ? "border-accent" : "border-transparent")} 
+                          style={{ backgroundColor: c.value }}
+                          onClick={() => {
+                            setActiveTextColor(c.value);
+                            execCommand('foreColor', c.value);
+                          }}
+                        />
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <div className="h-4 w-px bg-muted mx-1" />
+
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -402,6 +442,7 @@ export default function NotebookPage() {
                   onSelect={updateToolbarState}
                   onKeyUp={updateToolbarState}
                   onMouseUp={updateToolbarState}
+                  style={{ color: activeTextColor }}
                 />
               </div>
             </ScrollArea>
