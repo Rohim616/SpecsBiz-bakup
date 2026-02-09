@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Users,
   Package,
-  ShoppingCart
+  ShoppingCart,
+  Printer
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -65,6 +66,7 @@ export default function SettingsPage() {
   const t = translations[language];
   
   const [isResetOpen, setIsResetOpen] = useState(false);
+  const [isExportOptionsOpen, setIsExportOptionsOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportDate, setExportDate] = useState("");
@@ -105,11 +107,18 @@ export default function SettingsPage() {
     }
   };
 
-  const handleMasterPrint = () => {
-    toast({ title: "Generating Master Report", description: "Preparing PDF layout..." });
+  const handleExecuteExport = (type: 'print' | 'pdf') => {
+    setIsExportOptionsOpen(false);
+    toast({ 
+      title: type === 'print' ? "Opening Printer" : "Preparing PDF", 
+      description: type === 'print' ? "Connecting to your device..." : "Please select 'Save as PDF' in the next window." 
+    });
+    
     setTimeout(() => {
-      window.print();
-    }, 1000);
+      if (typeof window !== 'undefined') {
+        window.print();
+      }
+    }, 800);
   };
 
   const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl;
@@ -278,12 +287,54 @@ export default function SettingsPage() {
             </div>
             <Button 
               className="w-full bg-accent hover:bg-accent/90 h-14 text-lg font-bold gap-2 shadow-xl shadow-accent/20"
-              onClick={handleMasterPrint}
+              onClick={() => setIsExportOptionsOpen(true)}
             >
               <Download className="w-5 h-5" /> Download Master Audit PDF
             </Button>
           </CardContent>
         </Card>
+
+        {/* Export Options Dialog */}
+        <Dialog open={isExportOptionsOpen} onOpenChange={setIsExportOptionsOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-accent" /> Choose Export Method
+              </DialogTitle>
+              <DialogDescription>
+                Select how you would like to handle the master report.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-6">
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col gap-1 items-center justify-center border-accent/20 hover:border-accent hover:bg-accent/5"
+                onClick={() => handleExecuteExport('pdf')}
+              >
+                <div className="flex items-center gap-2 font-bold text-lg text-primary">
+                  <Download className="w-5 h-5 text-accent" /> Save as PDF File
+                </div>
+                <span className="text-[10px] text-muted-foreground">Download report to your device storage.</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col gap-1 items-center justify-center border-primary/20 hover:border-primary hover:bg-primary/5"
+                onClick={() => handleExecuteExport('print')}
+              >
+                <div className="flex items-center gap-2 font-bold text-lg text-primary">
+                  <Printer className="w-5 h-5 text-primary" /> Direct Print
+                </div>
+                <span className="text-[10px] text-muted-foreground">Send report directly to your connected printer.</span>
+              </Button>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+              <p className="text-[10px] text-blue-700 leading-relaxed italic">
+                <strong>Tip:</strong> If you choose 'Save as PDF', make sure to change the <strong>'Destination'</strong> to <strong>'Save as PDF'</strong> in the browser's window.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Card>
           <CardHeader>
