@@ -290,6 +290,19 @@ export default function InventoryPage() {
                 <Label className="sm:text-right text-xs">Category</Label>
                 <Input className="sm:col-span-3 h-9" value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} />
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                <Label className="sm:text-right text-xs">Unit Type</Label>
+                <Select value={editingProduct.unit} onValueChange={(val) => setEditingProduct({...editingProduct, unit: val})}>
+                  <SelectTrigger className="sm:col-span-3 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {units.map(u => (
+                      <SelectItem key={u} value={u}>{u.toUpperCase()}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Buy Price</Label>
