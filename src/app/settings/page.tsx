@@ -107,18 +107,64 @@ export default function SettingsPage() {
     }
   };
 
-  const handleExecuteExport = (type: 'print' | 'pdf') => {
+  const handleDownloadCSV = () => {
     setIsExportOptionsOpen(false);
-    toast({ 
-      title: type === 'print' ? "Opening Printer" : "Preparing PDF", 
-      description: type === 'print' ? "Connecting to your device..." : "Please select 'Save as PDF' in the next window." 
-    });
-    
+    toast({ title: "Generating Document", description: "Your data file is being prepared..." });
+
+    try {
+      // Create CSV Content
+      let csvContent = "SpecsBiz Master Data Report\n";
+      csvContent += `Generated on: ${exportDate}\n\n`;
+
+      // 1. Inventory
+      csvContent += "--- INVENTORY DATA ---\n";
+      csvContent += "Product Name,Category,Buy Price,Sell Price,Stock,Unit\n";
+      products.forEach(p => {
+        csvContent += `"${p.name}","${p.category || ''}",${p.purchasePrice},${p.sellingPrice},${p.stock},"${p.unit}"\n`;
+      });
+      csvContent += "\n";
+
+      // 2. Sales
+      csvContent += "--- SALES HISTORY ---\n";
+      csvContent += "Date,Items/Details,Total Amount,Profit,Status\n";
+      sales.forEach(s => {
+        const details = s.isBakiPayment 
+          ? `Payment: ${s.bakiProductName}` 
+          : (s.items?.map((i: any) => i.name).join('; ') || 'Sale Record');
+        csvContent += `"${new Date(s.saleDate).toLocaleDateString()}","${details}",${s.total},${s.profit || 0},"${s.isBakiPayment ? 'Baki Payment' : 'Complete'}"\n`;
+      });
+      csvContent += "\n";
+
+      // 3. Customers
+      csvContent += "--- CUSTOMERS & BAKI ---\n";
+      csvContent += "Name,Phone,Address,Total Due\n";
+      customers.forEach(c => {
+        csvContent += `"${c.firstName} ${c.lastName || ''}","${c.phone || ''}","${c.address || ''}",${c.totalDue || 0}\n`;
+      });
+
+      // Download Trigger
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `specsbiz_master_backup_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({ title: "Download Started", description: "Document has been saved to your device." });
+    } catch (error) {
+      toast({ title: "Export Failed", variant: "destructive" });
+    }
+  };
+
+  const handlePrint = () => {
+    setIsExportOptionsOpen(false);
     setTimeout(() => {
       if (typeof window !== 'undefined') {
         window.print();
       }
-    }, 800);
+    }, 500);
   };
 
   const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl;
@@ -265,14 +311,14 @@ export default function SettingsPage() {
               </div>
               <div>
                 <CardTitle className="text-lg">Full Data Export (A to Z)</CardTitle>
-                <CardDescription>Generate a complete business audit PDF report.</CardDescription>
+                <CardDescription>Generate a complete business audit report.</CardDescription>
               </div>
             </div>
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Live Data Sync</Badge>
           </div>
           <CardContent className="p-6 space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              আপনার ব্যবসার ইনভেন্টরি, সেলস এবং কাস্টমারদের যাবতীয় ডাটা একটি প্রফেশনাল পিডিএফ ফরম্যাটে ডাউনলোড করুন। এটি আপনার অডিট এবং ব্যাকআপের জন্য সাহায্য করবে।
+              আপনার ব্যবসার ইনভেন্টরি, সেলস এবং কাস্টমারদের যাবতীয় ডাটা একটি প্রফেশনাল ডকুমেন্টে ডাউনলোড করুন। এটি আপনার ব্যাকআপ এবং অডিটের জন্য সাহায্য করবে।
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-2">
                <div className="flex items-center gap-2 text-xs font-bold bg-muted/30 p-2 rounded-lg">
@@ -289,7 +335,7 @@ export default function SettingsPage() {
               className="w-full bg-accent hover:bg-accent/90 h-14 text-lg font-bold gap-2 shadow-xl shadow-accent/20"
               onClick={() => setIsExportOptionsOpen(true)}
             >
-              <Download className="w-5 h-5" /> Download Master Audit PDF
+              <Download className="w-5 h-5" /> Export Business Data
             </Button>
           </CardContent>
         </Card>
@@ -309,28 +355,28 @@ export default function SettingsPage() {
               <Button 
                 variant="outline" 
                 className="h-20 flex flex-col gap-1 items-center justify-center border-accent/20 hover:border-accent hover:bg-accent/5"
-                onClick={() => handleExecuteExport('pdf')}
+                onClick={handleDownloadCSV}
               >
                 <div className="flex items-center gap-2 font-bold text-lg text-primary">
-                  <Download className="w-5 h-5 text-accent" /> Save as PDF File
+                  <Download className="w-5 h-5 text-accent" /> Download Data File
                 </div>
-                <span className="text-[10px] text-muted-foreground">Download report to your device storage.</span>
+                <span className="text-[10px] text-muted-foreground">Directly save data as a .csv spreadsheet.</span>
               </Button>
               
               <Button 
                 variant="outline" 
                 className="h-20 flex flex-col gap-1 items-center justify-center border-primary/20 hover:border-primary hover:bg-primary/5"
-                onClick={() => handleExecuteExport('print')}
+                onClick={handlePrint}
               >
                 <div className="flex items-center gap-2 font-bold text-lg text-primary">
-                  <Printer className="w-5 h-5 text-primary" /> Direct Print
+                  <Printer className="w-5 h-5 text-primary" /> Print Layout Report
                 </div>
                 <span className="text-[10px] text-muted-foreground">Send report directly to your connected printer.</span>
               </Button>
             </div>
             <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
               <p className="text-[10px] text-blue-700 leading-relaxed italic">
-                <strong>Tip:</strong> If you choose 'Save as PDF', make sure to change the <strong>'Destination'</strong> to <strong>'Save as PDF'</strong> in the browser's window.
+                <strong>Tip:</strong> 'Data File' is best for bookkeeping in Excel, while 'Print Layout' is best for physical audit papers.
               </p>
             </div>
           </DialogContent>
