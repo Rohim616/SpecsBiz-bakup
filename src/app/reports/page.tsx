@@ -64,6 +64,12 @@ export default function MasterLedgerPage() {
   const [filterType, setFilterType] = useState("all")
   const [allBakiRecords, setAllBakiRecords] = useState<any[]>([])
   const [isBakiLoading, setIsBakiLoading] = useState(false)
+  const [generatedDate, setGeneratedDate] = useState("")
+
+  // Hydration fix for print date
+  useEffect(() => {
+    setGeneratedDate(new Date().toLocaleString())
+  }, [])
 
   // Print Settings State
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false)
@@ -265,7 +271,7 @@ export default function MasterLedgerPage() {
           <h1 className="text-3xl font-black text-primary font-headline">SpecsBiz</h1>
         </div>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Master Ledger Official Report</p>
-        <div className="text-[9px] mt-1 opacity-50 font-medium">Generated on: {new Date().toLocaleString()}</div>
+        <div className="text-[9px] mt-1 opacity-50 font-medium">Generated on: {generatedDate || "Loading..."}</div>
       </div>
 
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { 
   Package, 
   Plus, 
@@ -63,6 +64,12 @@ export default function InventoryPage() {
   const [filterCategory, setFilterCategory] = useState("all")
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
+  const [reportDate, setReportDate] = useState("")
+
+  // Hydration fix for date
+  useEffect(() => {
+    setReportDate(new Date().toLocaleString())
+  }, [])
 
   const units = ["pcs", "kg", "gm", "ltr", "meter", "box", "dozen"]
 
@@ -178,7 +185,7 @@ export default function InventoryPage() {
         </div>
         <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Inventory Status Report</p>
         <div className="text-[10px] mt-2 opacity-60 font-medium flex items-center gap-2 justify-center">
-          <Calendar className="w-3 h-3" /> Report Date: {new Date().toLocaleString()}
+          <Calendar className="w-3 h-3" /> Report Date: {reportDate || "Loading..."}
         </div>
         {filterCategory !== 'all' && (
           <div className="mt-2">
