@@ -151,18 +151,35 @@ export default function SettingsPage() {
             <p className="text-sm">Your secret access key is currently active. Change your password in the Cloud Sync portal if you need to revoke access.</p>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Small Secret Reset Button */}
-      <div className="mt-12 pt-8 border-t flex justify-center">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-[10px] text-muted-foreground hover:text-destructive opacity-30 hover:opacity-100 transition-opacity"
-          onClick={() => setIsResetOpen(true)}
-        >
-          <Trash2 className="w-3 h-3 mr-1" /> Secret Wipe
-        </Button>
+        {/* Danger Zone Section */}
+        <Card className="border-red-500/50 bg-red-50/50 mt-8 shadow-inner">
+          <CardHeader>
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              <CardTitle>Danger Zone</CardTitle>
+            </div>
+            <CardDescription className="text-red-600/70">
+              Critical actions that will permanently affect your business data.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-red-200/50 rounded-lg bg-white/50">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-red-700">Wipe All Local & Cloud Data</p>
+              <p className="text-xs text-muted-foreground">
+                Everything including Inventory, Sales, and Customers will be deleted.
+              </p>
+            </div>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="h-9 px-4 font-bold shrink-0"
+              onClick={() => setIsResetOpen(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-1" /> Reset Full System
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
