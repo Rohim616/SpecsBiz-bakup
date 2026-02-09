@@ -143,7 +143,7 @@ export default function AIAssistantPage() {
                 <AvatarFallback className="bg-accent text-white"><Bot className="w-4 h-4" /></AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <CardTitle className="text-sm truncate">SpecsBiz Smart Brain</CardTitle>
+                <CardTitle className="text-sm truncate">SpecsAI</CardTitle>
                 <CardDescription className="text-[10px] truncate flex items-center gap-1">
                   {isLoading ? (
                     <span className="flex items-center gap-1"><Loader2 className="w-2 h-2 animate-spin" /> Analyzing your business data...</span>
