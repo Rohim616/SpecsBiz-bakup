@@ -13,7 +13,8 @@ import {
   Settings,
   LogIn,
   ShieldCheck,
-  FileSpreadsheet
+  FileSpreadsheet,
+  PieChart
 } from "lucide-react"
 import { useUser } from "@/firebase"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
@@ -36,6 +37,7 @@ const menuItems = [
   { title: "Sales", icon: ShoppingCart, href: "/sales" },
   { title: "Customers", icon: Users, href: "/customers" },
   { title: "Master Ledger", icon: FileSpreadsheet, href: "/reports" },
+  { title: "BI Analytics", icon: PieChart, href: "/business-intelligence" },
   { title: "Analytics", icon: BarChart3, href: "/analytics" },
   { title: "AI Assistant", icon: Bot, href: "/ai-assistant" },
 ]
