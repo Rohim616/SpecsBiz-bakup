@@ -1,9 +1,5 @@
 /**
  * @fileOverview A sales report summarization AI agent.
- *
- * - summarizeSalesReport - A function that handles the sales report summarization process.
- * - SummarizeSalesReportInput - The input type for the summarizeSalesReport function.
- * - SummarizeSalesReportOutput - The return type for the summarizeSalesReport function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -31,7 +27,7 @@ const prompt = ai.definePrompt({
   output: {schema: SummarizeSalesReportOutputSchema},
   prompt: `You are an AI assistant that specializes in summarizing sales reports.
 
-  Please summarize the following sales report and provide key takeaways and trends:
+  Please summarize the following sales report and provide key takeaways:
 
   Sales Report:
   {{reportText}}`,

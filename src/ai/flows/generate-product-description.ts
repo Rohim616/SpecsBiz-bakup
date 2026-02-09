@@ -1,9 +1,5 @@
 /**
  * @fileOverview A product description generator AI agent.
- *
- * - generateProductDescription - A function that handles the product description generation process.
- * - GenerateProductDescriptionInput - The input type for the generateProductDescription function.
- * - GenerateProductDescriptionOutput - The return type for the generateProductDescription function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -38,7 +34,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateProductDescriptionOutputSchema},
   prompt: `You are an expert copywriter specializing in creating product descriptions.
 
-  Based on the product details provided, create a compelling and informative product description that will entice customers to purchase the product.
+  Based on the product details provided, create a compelling and informative product description.
 
   Product Name: {{{productName}}}
   Product Category: {{{productCategory}}}

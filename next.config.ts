@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   webpack: (config, { isServer }) => {
-    // This is the critical fix for 'async_hooks' and other Node.js module errors in the browser
+    // Critical fix for 'async_hooks', 'fs', and other Node.js module errors in the browser/client-side build
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -49,7 +49,6 @@ const nextConfig: NextConfig = {
         path: false,
         os: false,
         crypto: false,
-        async_hooks: false,
         net: false,
         tls: false,
         dns: false,
@@ -59,6 +58,15 @@ const nextConfig: NextConfig = {
         perf_hooks: false,
         process: false,
         util: false,
+        stream: false,
+        zlib: false,
+        http: false,
+        https: false,
+        url: false,
+        vm: false,
+        querystring: false,
+        timers: false,
+        buffer: false,
       };
     }
     return config;
