@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview General-purpose business chat AI agent for SpecsBiz (SpecsAI).
  * This flow analyzes real-time inventory, sales, and customer data to provide insights.
@@ -75,10 +76,15 @@ const businessChatFlow = ai.defineFlow(
     outputSchema: BusinessChatOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    if (!output) {
-      return { reply: "Sorry ভাই, কিছু একটা সমস্যা হয়েছে। আবার একটু বলবেন কি?" };
+    try {
+      const {output} = await prompt(input);
+      if (!output) {
+        return { reply: "Sorry ভাই, কিছু একটা সমস্যা হয়েছে। আবার একটু বলবেন কি?" };
+      }
+      return output;
+    } catch (e) {
+      console.error("AI Flow Error:", e);
+      return { reply: "AI সার্ভিসটি এই মুহূর্তে ফোনে বিল্ড করা অ্যাপে সীমাবদ্ধ হতে পারে। ইন্টারনেট কানেকশন চেক করুন।" };
     }
-    return output;
   }
 );

@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -39,8 +40,8 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  webpack: (config, { isServer }) => {
-    // Critical fix for 'async_hooks', 'fs', and other Node.js module errors in the browser/client-side build
+  webpack: (config, { isServer, webpack }) => {
+    // Critical fix for 'async_hooks', 'fs', and Node.js modules in static/client builds
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -67,8 +68,23 @@ const nextConfig: NextConfig = {
         querystring: false,
         timers: false,
         buffer: false,
-        process: false,
       };
+
+      // Specifically handle opentelemetry and genkit node-only dependencies
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /@opentelemetry\/context-async-hooks/,
+          (resource: any) => {
+            resource.request = 'object'; // Replace with a safe no-op
+          }
+        )
+      );
+      
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^async_hooks$|^fs$|^path$|^os$|^crypto$|^net$|^tls$|^dns$|^child_process$|^http2$|^undici$|^perf_hooks$|^process$|^util$|^stream$|^zlib$|^http$|^https$|^url$|^vm$|^querystring$|^timers$|^buffer$/
+        })
+      );
     }
     return config;
   },
