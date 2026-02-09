@@ -67,6 +67,7 @@ const nextConfig: NextConfig = {
         querystring: false,
         timers: false,
         buffer: false,
+        process: false,
       };
     }
     return config;
