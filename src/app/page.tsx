@@ -35,10 +35,12 @@ import {
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useBusinessData } from "@/hooks/use-business-data"
+import { translations } from "@/lib/translations"
 
 export default function DashboardPage() {
   const { toast } = useToast()
-  const { products, sales, customers, actions, currency } = useBusinessData()
+  const { products, sales, customers, actions, currency, language } = useBusinessData()
+  const t = translations[language]
   
   const [isSaleDialogOpen, setIsSaleDialogOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -47,19 +49,19 @@ export default function DashboardPage() {
   const totalRevenue = sales.reduce((acc, s) => acc + (s.total || 0), 0)
 
   const stats = [
-    { label: "Revenue", value: `${currency}${totalRevenue.toFixed(2)}`, trend: "up", icon: DollarSign, color: "text-green-600" },
-    { label: "Products", value: products.length.toString(), trend: "up", icon: Package, color: "text-blue-600" },
-    { label: "Customers", value: customers.length.toString(), trend: "up", icon: Users, color: "text-purple-600" },
-    { label: "Sales", value: sales.length.toString(), trend: "up", icon: TrendingUp, color: "text-teal-600" },
+    { label: t.revenue, value: `${currency}${totalRevenue.toFixed(2)}`, trend: "up", icon: DollarSign, color: "text-green-600" },
+    { label: t.products, value: products.length.toString(), trend: "up", icon: Package, color: "text-blue-600" },
+    { label: t.customers, value: customers.length.toString(), trend: "up", icon: Users, color: "text-purple-600" },
+    { label: t.sales, value: sales.length.toString(), trend: "up", icon: TrendingUp, color: "text-teal-600" },
   ]
 
   const addToCart = (product: any) => {
     const existing = cart.find(c => c.id === product.id)
     if (existing) {
-      toast({ title: "Already in cart", description: "Adjust quantity there." })
+      toast({ title: language === 'en' ? "Already in cart" : "ইতিমধ্যেই কার্টে আছে" })
     } else {
       setCart([...cart, { ...product, quantity: 1 }])
-      toast({ title: "Added" })
+      toast({ title: language === 'en' ? "Added" : "যোগ করা হয়েছে" })
     }
   }
 
@@ -82,34 +84,34 @@ export default function DashboardPage() {
       profit: totalProfit,
       items: cart,
     })
-    toast({ title: "Sale Successful", description: `Grand Total: ${currency}${grandTotal.toFixed(2)}` })
+    toast({ title: language === 'en' ? "Sale Successful" : "বিক্রয় সম্পন্ন হয়েছে", description: `${t.finalTotal}: ${currency}${grandTotal.toFixed(2)}` })
     setCart([])
     setIsSaleDialogOpen(false)
   }
 
   const handleDeleteSale = (saleId: string) => {
     actions.deleteSale(saleId)
-    toast({ title: "Sale Deleted", description: "Stock has been restored." })
+    toast({ title: language === 'en' ? "Sale Deleted" : "বিক্রয় ডিলিট করা হয়েছে" })
   }
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary font-headline">Business Overview</h1>
-          <p className="text-xs md:text-sm text-muted-foreground">Manage your daily operations with cloud sync.</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary font-headline">{t.businessOverview}</h1>
+          <p className="text-xs md:text-sm text-muted-foreground">{t.manageDailyOps}</p>
         </div>
         
         <Dialog open={isSaleDialogOpen} onOpenChange={setIsSaleDialogOpen}>
           <DialogTrigger asChild>
             <Button size="lg" className="bg-accent hover:bg-accent/90 shadow-lg gap-2 text-base md:text-lg h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto">
-              <ShoppingCart className="w-5 h-5 md:w-6 md:h-6" /> Create New Sale
+              <ShoppingCart className="w-5 h-5 md:w-6 md:h-6" /> {t.createNewSale}
             </Button>
           </DialogTrigger>
           <DialogContent className="w-[95vw] sm:max-w-[800px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
             <DialogHeader className="p-4 md:p-6 border-b bg-accent/5 shrink-0">
               <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
-                <Receipt className="w-5 h-5 text-accent" /> New Sale Transaction
+                <Receipt className="w-5 h-5 text-accent" /> {language === 'en' ? "New Sale Transaction" : "নতুন বিক্রয় লেনদেন"}
               </DialogTitle>
               <DialogDescription className="text-xs">Select products and adjust quantities.</DialogDescription>
             </DialogHeader>
@@ -119,7 +121,7 @@ export default function DashboardPage() {
                 <div className="p-3 md:p-4 border-b bg-white shrink-0">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input placeholder="Search..." className="pl-9 h-9" value={search} onChange={e => setSearch(e.target.value)} />
+                    <Input placeholder={t.search} className="pl-9 h-9" value={search} onChange={e => setSearch(e.target.value)} />
                   </div>
                 </div>
                 <ScrollArea className="flex-1 p-3 md:p-4">
@@ -130,7 +132,7 @@ export default function DashboardPage() {
                         <div key={item.id} className="p-2 md:p-3 border rounded-xl bg-white flex justify-between items-center hover:border-accent cursor-pointer shadow-sm group" onClick={() => addToCart(item)}>
                           <div className="min-w-0 flex-1 mr-2">
                             <p className="text-xs md:text-sm font-bold text-primary truncate">{item.name}</p>
-                            <Badge variant="outline" className="text-[9px] md:text-[10px] bg-blue-50 mt-1 whitespace-nowrap">Stock: {item.stock} {item.unit}</Badge>
+                            <Badge variant="outline" className="text-[9px] md:text-[10px] bg-blue-50 mt-1 whitespace-nowrap">{t.stock}: {item.stock} {item.unit}</Badge>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="font-bold text-accent text-xs md:text-sm">{currency}{item.sellingPrice}</span>
@@ -146,7 +148,7 @@ export default function DashboardPage() {
 
               <div className="flex flex-col min-h-[300px] md:min-h-0 bg-white overflow-hidden">
                 <div className="p-3 md:p-4 border-b bg-muted/5 shrink-0">
-                  <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted-foreground">Cart Items</h3>
+                  <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted-foreground">{t.billSummary}</h3>
                 </div>
                 <ScrollArea className="flex-1 p-3 md:p-4">
                   {cart.length === 0 ? (
@@ -184,16 +186,16 @@ export default function DashboardPage() {
                 <div className="p-4 md:p-6 border-t bg-muted/10 space-y-3 shrink-0">
                   <div className="grid grid-cols-2 gap-2 md:gap-3">
                     <div className="bg-green-600 text-white p-2 md:p-3 rounded-xl shadow-inner">
-                      <p className="text-[8px] md:text-[10px] font-bold uppercase opacity-80">Total Lav</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase opacity-80">{t.totalLav}</p>
                       <p className="text-base md:text-xl font-black">{currency}{totalProfit.toFixed(2)}</p>
                     </div>
                     <div className="bg-primary text-white p-2 md:p-3 rounded-xl shadow-inner text-right">
-                      <p className="text-[8px] md:text-[10px] font-bold uppercase opacity-80">Total</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase opacity-80">{t.finalTotal}</p>
                       <p className="text-base md:text-xl font-black">{currency}{grandTotal.toFixed(2)}</p>
                     </div>
                   </div>
                   <Button className="w-full h-10 md:h-14 text-sm md:text-lg bg-accent hover:bg-accent/90 font-bold shadow-xl" disabled={cart.length === 0} onClick={handleCheckout}>
-                    <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 mr-2" /> Complete Bill
+                    <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 mr-2" /> {t.completeSale}
                   </Button>
                 </div>
               </div>
@@ -213,7 +215,7 @@ export default function DashboardPage() {
               <div className="text-sm md:text-2xl font-bold">{stat.value}</div>
               <p className="text-[8px] md:text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
                 <ArrowUpRight className="h-2 w-2 md:h-3 md:w-3 text-green-600" />
-                <span className="text-green-600">Stable</span>
+                <span className="text-green-600">{t.stable}</span>
               </p>
             </CardContent>
           </Card>
@@ -223,14 +225,14 @@ export default function DashboardPage() {
       <div className="grid gap-6">
         <Card>
           <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
-            <CardTitle className="text-sm md:text-base flex items-center gap-2"><Clock className="w-4 h-4 md:w-5 md:h-5 text-accent" /> Recent Activity</CardTitle>
+            <CardTitle className="text-sm md:text-base flex items-center gap-2"><Clock className="w-4 h-4 md:w-5 md:h-5 text-accent" /> {t.recentActivity}</CardTitle>
             <CardDescription className="text-xs">Your latest transactions and payments.</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             {sales.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
                 <Inbox className="w-6 h-6 md:w-8 md:h-8 opacity-20" />
-                <p className="text-xs italic">No transactions yet.</p>
+                <p className="text-xs italic">{t.noTransactions}</p>
               </div>
             ) : (
               <div className="divide-y">
@@ -246,7 +248,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs md:text-sm font-bold truncate">
-                          {sale.isBakiPayment ? `Baki Payment: ${sale.bakiProductName}` : `Sale #${sale.id?.slice(-4)}`}
+                          {sale.isBakiPayment ? `Baki Payment: ${sale.bakiProductName}` : `${t.saleId}${sale.id?.slice(-4)}`}
                         </p>
                         <div className="flex items-center gap-2">
                           <p className="text-[9px] md:text-[10px] text-muted-foreground truncate">{new Date(sale.saleDate).toLocaleDateString()}</p>

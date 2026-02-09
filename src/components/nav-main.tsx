@@ -17,6 +17,8 @@ import {
   PieChart
 } from "lucide-react"
 import { useUser } from "@/firebase"
+import { useBusinessData } from "@/hooks/use-business-data"
+import { translations } from "@/lib/translations"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
 
 import {
@@ -31,21 +33,23 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar"
 
-const menuItems = [
-  { title: "Dashboard", icon: LayoutDashboard, href: "/" },
-  { title: "Inventory", icon: Package, href: "/inventory" },
-  { title: "Sales", icon: ShoppingCart, href: "/sales" },
-  { title: "Customers", icon: Users, href: "/customers" },
-  { title: "Master Ledger", icon: FileSpreadsheet, href: "/reports" },
-  { title: "BI Analytics", icon: PieChart, href: "/business-intelligence" },
-  { title: "Analytics", icon: BarChart3, href: "/analytics" },
-  { title: "AI Assistant", icon: Bot, href: "/ai-assistant" },
-]
-
 export function NavMain() {
   const pathname = usePathname()
   const { user } = useUser()
+  const { language } = useBusinessData()
+  const t = translations[language]
   const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl
+
+  const menuItems = [
+    { title: t.dashboard, icon: LayoutDashboard, href: "/" },
+    { title: t.inventory, icon: Package, href: "/inventory" },
+    { title: t.sales, icon: ShoppingCart, href: "/sales" },
+    { title: t.customers, icon: Users, href: "/customers" },
+    { title: t.masterLedger, icon: FileSpreadsheet, href: "/reports" },
+    { title: t.biAnalytics, icon: PieChart, href: "/business-intelligence" },
+    { title: t.analytics, icon: BarChart3, href: "/analytics" },
+    { title: t.aiAssistant, icon: Bot, href: "/ai-assistant" },
+  ]
 
   return (
     <Sidebar collapsible="icon">
@@ -63,7 +67,7 @@ export function NavMain() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="px-4 py-2 group-data-[collapsible=icon]:hidden">Management</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-4 py-2 group-data-[collapsible=icon]:hidden">{t.management}</SidebarGroupLabel>
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.title}>
@@ -86,18 +90,18 @@ export function NavMain() {
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Cloud Sync" className={`px-4 h-11 ${user ? 'text-green-500 font-bold' : 'text-orange-500 font-bold'}`}>
+            <SidebarMenuButton asChild tooltip={t.cloudSync} className={`px-4 h-11 ${user ? 'text-green-500 font-bold' : 'text-orange-500 font-bold'}`}>
               <Link href="/auth">
                 {user ? <ShieldCheck className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
-                <span className="font-body">{user ? 'Cloud Active' : 'Offline Mode'}</span>
+                <span className="font-body">{user ? t.cloudSync : t.offlineMode}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === '/settings'} tooltip="Settings" className="px-4 h-11">
+            <SidebarMenuButton asChild isActive={pathname === '/settings'} tooltip={t.settings} className="px-4 h-11">
               <Link href="/settings">
                 <Settings className="w-5 h-5" />
-                <span className="font-body">Settings</span>
+                <span className="font-body">{t.settings}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

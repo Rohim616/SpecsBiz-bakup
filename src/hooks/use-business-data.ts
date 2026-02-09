@@ -23,6 +23,7 @@ const LOCAL_KEYS = {
   SALES: 'specsbiz_local_sales',
   CUSTOMERS: 'specsbiz_local_customers',
   CURRENCY: 'specsbiz_settings_currency',
+  LANGUAGE: 'specsbiz_settings_language',
 };
 
 export function useBusinessData() {
@@ -34,6 +35,7 @@ export function useBusinessData() {
   const [localSales, setLocalSales] = useState<any[]>([]);
   const [localCustomers, setLocalCustomers] = useState<any[]>([]);
   const [currency, setCurrencyState] = useState('৳');
+  const [language, setLanguageState] = useState<'en' | 'bn'>('bn');
 
   // Load from Local Storage on mount
   useEffect(() => {
@@ -43,11 +45,13 @@ export function useBusinessData() {
         const s = localStorage.getItem(LOCAL_KEYS.SALES);
         const c = localStorage.getItem(LOCAL_KEYS.CUSTOMERS);
         const curr = localStorage.getItem(LOCAL_KEYS.CURRENCY);
+        const lang = localStorage.getItem(LOCAL_KEYS.LANGUAGE) as 'en' | 'bn';
         
         if (p) setLocalProducts(JSON.parse(p));
         if (s) setLocalSales(JSON.parse(s));
         if (c) setLocalCustomers(JSON.parse(c));
         if (curr) setCurrencyState(curr);
+        if (lang) setLanguageState(lang);
       } catch (e) {
         console.error("Error loading local data", e);
       }
@@ -314,6 +318,11 @@ export function useBusinessData() {
     localStorage.setItem(LOCAL_KEYS.CURRENCY, val);
   }, []);
 
+  const setLanguage = useCallback((lang: 'en' | 'bn') => {
+    setLanguageState(lang);
+    localStorage.setItem(LOCAL_KEYS.LANGUAGE, lang);
+  }, []);
+
   const deleteSale = useCallback((saleId: string) => {
     const saleToDelete = sales.find(s => s.id === saleId);
     if (!saleToDelete) return;
@@ -386,6 +395,7 @@ export function useBusinessData() {
     customers,
     isLoading,
     currency,
+    language,
     actions: {
       addProduct,
       updateProduct,
@@ -399,6 +409,7 @@ export function useBusinessData() {
       payBakiRecord,
       deleteBakiRecord,
       setCurrency,
+      setLanguage,
       resetAllData
     }
   };
