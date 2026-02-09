@@ -37,7 +37,10 @@ export default function RootLayout({
                 <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-white/50 backdrop-blur-sm sticky top-0 z-10 w-full">
                   <SidebarTrigger className="-ml-1" />
                   <div className="flex-1 min-w-0">
-                    <h1 className="text-lg md:text-xl font-headline font-semibold text-primary truncate">SpecsBiz | Smart Business Manager</h1>
+                    <h1 className="text-lg md:text-xl font-headline font-semibold text-primary truncate">
+                      <span className="hidden sm:inline">SpecsBiz | Smart Business Manager</span>
+                      <span className="sm:hidden">SpecsBiz | SBM</span>
+                    </h1>
                   </div>
                 </header>
                 <main className="flex-1 p-3 md:p-6 pb-20 md:pb-6 w-full max-w-full overflow-x-hidden">
