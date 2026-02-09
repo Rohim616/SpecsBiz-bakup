@@ -31,7 +31,7 @@ export default function SalesPage() {
   const addToCart = (item: any) => {
     const existing = cart.find(c => c.id === item.id)
     if (existing) {
-      toast({ title: "Already in cart", description: "Adjust quantity in the checkout panel." })
+      toast({ title: "Already in cart", description: "Adjust quantity or price in the summary panel." })
     } else {
       setCart([...cart, { ...item, quantity: 1 }])
       toast({ title: "Added", description: `${item.name} added to bill.` })
@@ -41,6 +41,11 @@ export default function SalesPage() {
   const updateQuantity = (id: string, value: string) => {
     const numValue = parseFloat(value) || 0
     setCart(cart.map(c => c.id === id ? { ...c, quantity: numValue } : c))
+  }
+
+  const updateUnitPrice = (id: string, value: string) => {
+    const numValue = parseFloat(value) || 0
+    setCart(cart.map(c => c.id === id ? { ...c, sellingPrice: numValue } : c))
   }
 
   const removeFromCart = (id: string) => {
@@ -105,7 +110,7 @@ export default function SalesPage() {
                            Stock: {item.stock} {item.unit}
                          </Badge>
                          <Badge variant="outline" className="text-[10px] py-0 px-1 font-normal bg-green-50/50 text-green-700 whitespace-nowrap">
-                           Lav: {currency}{(item.sellingPrice - (item.purchasePrice || 0)).toFixed(2)}
+                           Default Profit: {currency}{(item.sellingPrice - (item.purchasePrice || 0)).toFixed(2)}
                          </Badge>
                       </div>
                     </div>
@@ -202,7 +207,7 @@ export default function SalesPage() {
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
-                       <div>
+                       <div className="space-y-1">
                           <Label className="text-[9px] text-muted-foreground font-bold uppercase">Qty ({item.unit})</Label>
                           <Input 
                             type="number" 
@@ -212,12 +217,23 @@ export default function SalesPage() {
                             onChange={(e) => updateQuantity(item.id, e.target.value)}
                           />
                        </div>
-                       <div className="text-right">
-                          <Label className="text-[9px] text-muted-foreground font-bold uppercase">Total</Label>
-                          <p className="font-black text-primary text-base md:text-lg">{currency}{(item.sellingPrice * item.quantity).toFixed(2)}</p>
+                       <div className="space-y-1">
+                          <Label className="text-[9px] text-muted-foreground font-bold uppercase">Unit Price ({currency})</Label>
+                          <Input 
+                            type="number" 
+                            step="0.01" 
+                            className="h-9 font-bold border-accent/30 text-accent"
+                            value={item.sellingPrice}
+                            onChange={(e) => updateUnitPrice(item.id, e.target.value)}
+                          />
                        </div>
                     </div>
                     
+                    <div className="flex justify-between items-center px-3 py-2 bg-muted/30 rounded-lg">
+                       <div className="text-[10px] text-muted-foreground font-bold uppercase">Item Total</div>
+                       <p className="font-black text-primary text-base">{currency}{(item.sellingPrice * item.quantity).toFixed(2)}</p>
+                    </div>
+
                     {item.quantity > item.stock && (
                       <div className="flex items-center gap-2 p-2 bg-red-50 rounded text-red-600 text-[9px] font-bold border border-red-100">
                         <AlertTriangle className="w-3.5 h-3.5" /> 

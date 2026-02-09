@@ -70,6 +70,11 @@ export default function DashboardPage() {
     setCart(cart.map(c => c.id === id ? { ...c, quantity: num } : c))
   }
 
+  const updateUnitPrice = (id: string, value: string) => {
+    const num = parseFloat(value) || 0
+    setCart(cart.map(c => c.id === id ? { ...c, sellingPrice: num } : c))
+  }
+
   const removeFromCart = (id: string) => {
     setCart(cart.filter(c => c.id !== id))
   }
@@ -113,7 +118,7 @@ export default function DashboardPage() {
               <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
                 <Receipt className="w-5 h-5 text-accent" /> {language === 'en' ? "New Sale Transaction" : "নতুন বিক্রয় লেনদেন"}
               </DialogTitle>
-              <DialogDescription className="text-xs">Select products and adjust quantities.</DialogDescription>
+              <DialogDescription className="text-xs">Select products and adjust quantities or prices.</DialogDescription>
             </DialogHeader>
 
             <div className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-0">
@@ -163,20 +168,27 @@ export default function DashboardPage() {
                           <div className="flex justify-between items-start">
                             <div className="min-w-0 flex-1 mr-2">
                               <p className="text-xs font-bold text-primary truncate">{item.name}</p>
-                              <p className="text-[9px] text-muted-foreground">{currency}{item.sellingPrice} / {item.unit}</p>
+                              <p className="text-[9px] text-muted-foreground">{t.stock}: {item.stock} {item.unit}</p>
                             </div>
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500 shrink-0" onClick={() => removeFromCart(item.id)}>
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
-                          <div className="flex items-end justify-between gap-3">
-                            <div className="max-w-[80px]">
-                              <Label className="text-[9px] font-bold uppercase opacity-60">Qty</Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-[9px] font-bold uppercase opacity-60">Qty ({item.unit})</Label>
                               <Input type="number" step="0.01" className="h-8 text-xs px-2" value={item.quantity} onChange={(e) => updateQuantity(item.id, e.target.value)} />
                             </div>
-                            <div className="text-right">
-                              <p className="text-base md:text-lg font-black text-primary">{currency}{(item.sellingPrice * item.quantity).toFixed(2)}</p>
+                            <div className="space-y-1">
+                              <Label className="text-[9px] font-bold uppercase opacity-60">Unit Price ({currency})</Label>
+                              <Input type="number" step="0.01" className="h-8 text-xs px-2 font-bold text-accent" value={item.sellingPrice} onChange={(e) => updateUnitPrice(item.id, e.target.value)} />
                             </div>
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                             <div className="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded">
+                               Lav: {currency}{((item.sellingPrice - (item.purchasePrice || 0)) * item.quantity).toFixed(2)}
+                             </div>
+                             <p className="text-sm font-black text-primary">{currency}{(item.sellingPrice * item.quantity).toFixed(2)}</p>
                           </div>
                         </div>
                       ))}
