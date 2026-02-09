@@ -1,50 +1,40 @@
+
 # SpecsBiz | Smart Business Manager
 
-This is a professional business management application built with Next.js, Firebase, and Tailwind CSS.
+এটি একটি প্রফেশনাল বিজনেস ম্যানেজমেন্ট ওয়েব অ্যাপ্লিকেশন। নিচে এটি ফ্রিতে পাবলিশ করার নিয়ম দেওয়া হলো।
 
-## 🚀 How to build APK (Android)
-1. Download this project and extract it on your computer.
-2. Install **Node.js** (LTS version) from nodejs.org.
-3. Open your terminal/command prompt in the project folder and run:
-   ```bash
-   npm install
-   ```
-4. Build the static project files:
-   ```bash
-   npm run build
-   ```
-5. Add the Android platform (if not already added):
-   ```bash
-   npx cap add android
-   ```
-6. Sync the code to Android:
-   ```bash
-   npx cap sync
-   ```
-7. Open the project in **Android Studio**:
-   ```bash
-   npx cap open android
-   ```
-8. Inside Android Studio, go to **Build > Build Bundle(s) / APK(s) > Build APK(s)**. Your APK will be ready!
+## 🌐 কিভাবে অনলাইনে ফ্রিতে পাবলিশ করবেন (Deployment)
 
-## 💻 How to build EXE (Windows)
-1. Ensure you have run `npm install`.
-2. Build the project to generate static files:
-   ```bash
-   npm run build
-   ```
-3. Generate the Windows installer:
-   ```bash
-   npm run electron:build
-   ```
-4. Your `.exe` installer will be found in the `dist` folder.
+আপনার অ্যাপটি আজীবন ফ্রিতে চালানোর জন্য নিচের ধাপগুলো অনুসরণ করুন:
 
-## ⚠️ Important Configuration for Firebase
-Before using the APK/EXE, you **MUST** do this to avoid "Unauthorized Domain" errors:
-1. Go to your [Firebase Console](https://console.firebase.google.com/).
-2. Navigate to **Authentication > Settings > Authorized Domains**.
-3. Click **Add Domain** and type `localhost`.
-4. Save it. Now your app can securely talk to the database from any device.
+### ধাপ ১: GitHub-এ কোড আপলোড করুন
+১. প্রথমে একটি [GitHub Account](https://github.com/) খুলুন।
+২. আপনার পিসিতে এই প্রোজেক্টের ফোল্ডারে গিয়ে কমান্ড দিন:
+   ```bash
+   git init
+   git add .
+   git commit -m "First commit"
+   ```
+৩. GitHub-এ একটি নতুন Repository তৈরি করুন এবং সেখানে কোডটি Push করে দিন।
+
+### ধাপ ২: Vercel-এ হোস্ট করুন (সুপার ফাস্ট এবং ফ্রি)
+১. [Vercel.com](https://vercel.com/)-এ গিয়ে আপনার GitHub অ্যাকাউন্ট দিয়ে লগইন করুন।
+২. **Add New Project**-এ ক্লিক করে আপনার প্রোজেক্টটি সিলেক্ট করুন।
+৩. **Environment Variables** সেকশনে আপনার `.env` ফাইলের সব তথ্য (যেমন: `FIREBASE_CONFIG`, `GEMINI_API_KEY`) যোগ করুন।
+৪. **Deploy** বাটনে ক্লিক করুন। ২ মিনিটের মধ্যে আপনার অ্যাপটি লাইভ হয়ে যাবে এবং আপনি একটি ফ্রি `.vercel.app` লিঙ্ক পাবেন।
+
+### ধাপ ৩: Firebase কনফিগারেশন (ভুলবেন না!)
+আপনার অ্যাপটি লাইভ হওয়ার পর ডেটাবেস কাজ করার জন্য:
+১. আপনার **Firebase Console**-এ যান।
+২. **Authentication > Settings > Authorized Domains**-এ গিয়ে আপনার নতুন সাইটের লিঙ্কটি (যেমন: `specsbiz.vercel.app`) যোগ করুন।
 
 ---
-Developed by SpecsXR.
+
+## 🛠 প্রযুক্তি (Tech Stack)
+- **Framework:** Next.js 15
+- **Database:** Firebase Firestore
+- **Auth:** Firebase Authentication
+- **AI:** Google Genkit (Gemini 2.5 Flash)
+- **UI:** Tailwind CSS + ShadCN
+
+Developed by **SpecsXR**.
