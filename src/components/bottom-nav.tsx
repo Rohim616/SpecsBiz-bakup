@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { 
@@ -19,6 +20,14 @@ export function BottomNav() {
   const pathname = usePathname()
   const { toggleSidebar } = useSidebar()
   const { language } = useBusinessData()
+  const [mounted, setMounted] = useState(false)
+
+  // Defer rendering until after hydration to prevent HTML mismatch errors
+  // caused by dynamic path checking or locale-specific translations.
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const t = translations[language]
 
   const navItems = [
@@ -34,6 +43,9 @@ export function BottomNav() {
     if (href === "/") return pathname === "/" || pathname === ""
     return pathname === href || pathname === `${href}/` || pathname.startsWith(`${href}/`)
   }
+
+  // Return nothing during SSR to avoid hydration mismatch
+  if (!mounted) return null
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-white border-t border-border flex items-center justify-around px-2 md:hidden safe-area-bottom shadow-[0_-2px_15px_rgba(0,0,0,0.1)] print:hidden">
