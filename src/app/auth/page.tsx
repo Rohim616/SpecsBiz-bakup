@@ -23,8 +23,8 @@ export default function AuthPage() {
   const router = useRouter();
   const auth = getAuth();
 
-  const [email, setEmail] = useState('xrratul4763@gmail.com');
-  const [password, setPassword] = useState('11111111');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -39,11 +39,11 @@ export default function AuthPage() {
       console.log("Auth Error Code:", error.code);
       
       // If user doesn't exist or credentials failed, try to register 
-      // (This handles the first-time setup for your secret account)
+      // (This handles the first-time setup for your account)
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
         try {
           await createUserWithEmailAndPassword(auth, email, password);
-          toast({ title: "Account Initialized", description: "The secret account has been created and logged in." });
+          toast({ title: "Account Initialized", description: "Your account has been created and logged in." });
           router.push('/');
         } catch (regErr: any) {
           // If it still fails, it means the password provided might be wrong for an existing account
@@ -117,7 +117,7 @@ export default function AuthPage() {
               <Input 
                 id="email" 
                 type="email" 
-                placeholder="xrratul4763@gmail.com" 
+                placeholder="your-email@example.com" 
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
