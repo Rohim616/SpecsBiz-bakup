@@ -217,11 +217,16 @@ export default function MasterLedgerPage() {
   }
 
   const handlePrint = () => {
+    // 1. Close the dialog first
     setIsPrintDialogOpen(false)
-    // Small delay to let dialog close and styles settle
+    
+    // 2. Wait for the dialog and overlay to be completely removed from the DOM
+    // This is critical to ensure pointer-events are restored and the print dialog triggers
     setTimeout(() => {
-      window.print()
-    }, 300)
+      if (typeof window !== 'undefined') {
+        window.print()
+      }
+    }, 500) // Increased timeout for reliability
   }
 
   if (dataLoading) {
@@ -235,7 +240,7 @@ export default function MasterLedgerPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:mb-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold font-headline text-primary flex items-center gap-2">
             <FileSpreadsheet className="w-6 h-6 text-accent" /> Master Ledger
@@ -473,14 +478,17 @@ export default function MasterLedgerPage() {
       <style jsx global>{`
         @media print {
           .print\\:hidden { display: none !important; }
-          body { background: white !important; }
-          .sidebar-wrapper, header, footer, .sidebar-inset > header { display: none !important; }
-          main { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+          body { background: white !important; padding: 0 !important; margin: 0 !important; }
+          .sidebar-wrapper, header, footer, .sidebar-inset > header, .print\\:hidden { display: none !important; }
+          main { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
           .rounded-lg { border-radius: 0 !important; }
-          .shadow-lg, .shadow-xl { box-shadow: none !important; }
-          table { width: 100% !important; border-collapse: collapse !important; }
-          th, td { border: 1px solid #eee !important; padding: 8px !important; }
+          .shadow-lg, .shadow-xl, .shadow-sm { box-shadow: none !important; }
+          table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #ddd !important; }
+          th, td { border: 1px solid #ddd !important; padding: 8px !important; color: black !important; }
           .badge-outline { border: 1px solid #ccc !important; }
+          .bg-muted\\/20, .bg-muted\\/50 { background-color: #f9f9f9 !important; }
+          .text-destructive { color: #cc0000 !important; }
+          .text-green-600 { color: #008800 !important; }
         }
       `}</style>
     </div>
