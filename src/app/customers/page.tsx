@@ -20,13 +20,16 @@ import {
   Eye,
   History,
   CheckCircle2,
-  X
+  X,
+  CreditCard,
+  Receipt
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
 import { 
   Table, 
   TableBody, 
@@ -69,8 +72,6 @@ export default function CustomersPage() {
   const db = useFirestore()
   const { customers, actions, isLoading, currency, products } = useBusinessData()
   
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [aiAnalysis, setAiAnalysis] = useState<{ segments: string[], reasoning: string } | null>(null)
   const [search, setSearch] = useState("")
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
@@ -84,6 +85,10 @@ export default function CustomersPage() {
     amount: "",
     promiseDate: new Date().toISOString().split('T')[0]
   })
+
+  // Partial Payment State
+  const [paymentDialogRecord, setPaymentDialogRecord] = useState<any>(null)
+  const [paymentAmount, setPaymentAmount] = useState("")
 
   // Fetch Baki Records for selected customer
   const bakiRecordsQuery = useMemoFirebase(() => {
@@ -150,6 +155,18 @@ export default function CustomersPage() {
     });
     setIsRecordAddOpen(false);
     toast({ title: "Baki Recorded" });
+  }
+
+  const handleMakePayment = () => {
+    if (!detailsCustomer || !paymentDialogRecord || !paymentAmount) return;
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) return;
+
+    actions.payBakiRecord(detailsCustomer.id, paymentDialogRecord.id, amount, paymentDialogRecord);
+    
+    setPaymentAmount("");
+    setPaymentDialogRecord(null);
+    toast({ title: "Payment Recorded", description: `${currency}${amount} received.` });
   }
 
   const totalMarketBaki = customers.reduce((acc, c) => acc + (c.totalDue || 0), 0)
@@ -346,51 +363,125 @@ export default function CustomersPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {currentBakiRecords.map((record: any) => (
-                    <Card key={record.id} className="border-none shadow-sm bg-muted/30 hover:bg-muted/50 transition-colors group">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="space-y-1 min-w-0 flex-1">
-                            <p className="font-bold text-primary flex items-center gap-2">
-                              <Package className="w-3.5 h-3.5 text-accent" />
-                              {record.productName}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground flex items-center gap-2">
-                              <ArrowUpRight className="w-3 h-3" /> 
-                              Taken: {new Date(record.takenDate).toLocaleDateString()}
-                            </p>
+                  {currentBakiRecords.map((record: any) => {
+                    const paidAmount = record.paidAmount || 0;
+                    const remainingAmount = record.amount - paidAmount;
+                    const progress = (paidAmount / record.amount) * 100;
+                    
+                    return (
+                      <Card key={record.id} className={`border-none shadow-sm transition-colors group ${record.status === 'paid' ? 'bg-green-50 opacity-70' : 'bg-muted/30 hover:bg-muted/50'}`}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <p className="font-bold text-primary flex items-center gap-2">
+                                <Package className={`w-3.5 h-3.5 ${record.status === 'paid' ? 'text-green-600' : 'text-accent'}`} />
+                                {record.productName}
+                                {record.status === 'paid' && <Badge className="bg-green-600 ml-2 text-[9px] h-4">Paid</Badge>}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground flex items-center gap-2">
+                                <Calendar className="w-3 h-3" /> 
+                                Taken: {new Date(record.takenDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-lg font-black text-primary">{currency}{record.amount.toLocaleString()}</p>
+                              <p className="text-[9px] font-medium uppercase text-muted-foreground">Qty: {record.quantity}</p>
+                            </div>
                           </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-lg font-black text-destructive">{currency}{record.amount.toLocaleString()}</p>
-                            <p className="text-[9px] font-medium uppercase text-muted-foreground">Qty: {record.quantity}</p>
+                          
+                          {record.status !== 'paid' && (
+                            <div className="space-y-2 mb-4">
+                              <div className="flex justify-between text-[10px] font-bold uppercase">
+                                <span className="text-green-600">Paid: {currency}{paidAmount.toLocaleString()}</span>
+                                <span className="text-destructive">Due: {currency}{remainingAmount.toLocaleString()}</span>
+                              </div>
+                              <Progress value={progress} className="h-1.5 bg-muted" />
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between pt-3 border-t border-dashed border-muted-foreground/20">
+                            <div className="flex items-center gap-1.5">
+                              <ArrowUpRight className="w-3 h-3 text-blue-500" />
+                              <span className="text-[10px] font-bold uppercase text-blue-600">
+                                Promise: {new Date(record.promiseDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                            
+                            {record.status !== 'paid' && (
+                              <div className="flex gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 text-xs border-accent text-accent hover:bg-accent/5"
+                                  onClick={() => setPaymentDialogRecord(record)}
+                                >
+                                  <CreditCard className="w-3.5 h-3.5 mr-1" /> Pay Part
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 text-xs text-destructive hover:bg-destructive/5"
+                                  onClick={() => actions.payBakiRecord(detailsCustomer.id, record.id, remainingAmount, record)}
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Mark Paid
+                                </Button>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between pt-3 border-t border-dashed border-muted-foreground/20">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3 h-3 text-blue-500" />
-                            <span className="text-[10px] font-bold uppercase text-blue-600">
-                              Promise: {new Date(record.promiseDate).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-7 text-xs text-destructive hover:bg-destructive/5 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => actions.deleteBakiRecord(detailsCustomer.id, record.id, record.amount)}
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Mark as Paid
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      {/* Partial Payment Dialog */}
+      <Dialog open={!!paymentDialogRecord} onOpenChange={(open) => !open && setPaymentDialogRecord(null)}>
+        <DialogContent className="w-[95vw] max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Receive Payment</DialogTitle>
+            <DialogDescription>
+              Record a payment for: {paymentDialogRecord?.productName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+              <div className="flex justify-between text-xs">
+                <span>Total Bill:</span>
+                <span className="font-bold">{currency}{paymentDialogRecord?.amount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Already Paid:</span>
+                <span className="font-bold text-green-600">{currency}{(paymentDialogRecord?.paidAmount || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm pt-2 border-t border-dashed font-black">
+                <span>Remaining:</span>
+                <span className="text-destructive">{currency}{(paymentDialogRecord?.amount - (paymentDialogRecord?.paidAmount || 0)).toLocaleString()}</span>
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <Label className="text-xs">Amount Received ({currency})</Label>
+              <Input 
+                type="number" 
+                placeholder="0.00" 
+                className="h-12 text-lg font-bold"
+                value={paymentAmount}
+                onChange={e => setPaymentAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full bg-accent h-12 text-lg shadow-xl" onClick={handleMakePayment}>
+              Record Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* New Baki Record Dialog */}
       <Dialog open={isRecordAddOpen} onOpenChange={setIsRecordAddOpen}>

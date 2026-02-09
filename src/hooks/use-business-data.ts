@@ -195,7 +195,7 @@ export function useBusinessData() {
 
   const addBakiRecord = useCallback((customerId: string, record: any) => {
     const recordId = Date.now().toString();
-    const data = { ...record, id: recordId, takenDate: new Date().toISOString(), status: 'pending' };
+    const data = { ...record, id: recordId, takenDate: new Date().toISOString(), paidAmount: 0, status: 'pending' };
     
     if (user?.uid && db) {
       addDocumentNonBlocking(collection(db, 'users', user.uid, 'customers', customerId, 'bakiRecords'), data);
@@ -224,13 +224,56 @@ export function useBusinessData() {
     }
   }, [user?.uid, db, customers, localCustomers]);
 
-  const deleteBakiRecord = useCallback((customerId: string, recordId: string, amount: number) => {
+  const payBakiRecord = useCallback((customerId: string, recordId: string, amountToPay: number, currentRecord: any) => {
+    const newPaidAmount = (currentRecord.paidAmount || 0) + amountToPay;
+    const isFullyPaid = newPaidAmount >= currentRecord.amount;
+    
+    if (user?.uid && db) {
+      const recordRef = doc(db, 'users', user.uid, 'customers', customerId, 'bakiRecords', recordId);
+      updateDocumentNonBlocking(recordRef, {
+        paidAmount: newPaidAmount,
+        status: isFullyPaid ? 'paid' : 'pending'
+      });
+      
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
+          totalDue: Math.max(0, (customer.totalDue || 0) - amountToPay)
+        });
+      }
+    } else {
+      const updatedCustomers = localCustomers.map(c => {
+        if (c.id === customerId) {
+          const records = (c.bakiRecords || []).map((r: any) => {
+            if (r.id === recordId) {
+              return { 
+                ...r, 
+                paidAmount: newPaidAmount, 
+                status: isFullyPaid ? 'paid' : 'pending' 
+              };
+            }
+            return r;
+          });
+          return { 
+            ...c, 
+            totalDue: Math.max(0, (c.totalDue || 0) - amountToPay),
+            bakiRecords: records
+          };
+        }
+        return c;
+      });
+      setLocalCustomers(updatedCustomers);
+      localStorage.setItem(LOCAL_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
+    }
+  }, [user?.uid, db, customers, localCustomers]);
+
+  const deleteBakiRecord = useCallback((customerId: string, recordId: string, remainingAmount: number) => {
     if (user?.uid && db) {
       deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId, 'bakiRecords', recordId));
       const customer = customers.find(c => c.id === customerId);
       if (customer) {
         updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
-          totalDue: Math.max(0, (customer.totalDue || 0) - amount)
+          totalDue: Math.max(0, (customer.totalDue || 0) - remainingAmount)
         });
       }
     } else {
@@ -239,7 +282,7 @@ export function useBusinessData() {
           const records = (c.bakiRecords || []).filter((r: any) => r.id !== recordId);
           return { 
             ...c, 
-            totalDue: Math.max(0, (c.totalDue || 0) - amount),
+            totalDue: Math.max(0, (c.totalDue || 0) - remainingAmount),
             bakiRecords: records
           };
         }
@@ -270,6 +313,7 @@ export function useBusinessData() {
       updateCustomer,
       deleteCustomer,
       addBakiRecord,
+      payBakiRecord,
       deleteBakiRecord,
       setCurrency
     }
