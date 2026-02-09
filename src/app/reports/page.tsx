@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -53,6 +52,7 @@ import { useBusinessData } from "@/hooks/use-business-data"
 import { useUser, useFirestore } from "@/firebase"
 import { collection, getDocs } from "firebase/firestore"
 import { cn } from "@/lib/utils"
+import { PlaceHolderImages } from "@/lib/placeholder-images"
 
 export default function MasterLedgerPage() {
   const { user } = useUser()
@@ -217,15 +217,12 @@ export default function MasterLedgerPage() {
   }
 
   const handlePrint = () => {
-    // 1. Close the dialog first
     setIsPrintDialogOpen(false);
     
-    // 2. Clear focus to ensure the browser doesn't block the print call
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
 
-    // 3. Wait for the dialog animation to complete and the DOM to be clean
     setTimeout(() => {
       if (typeof window !== 'undefined') {
         window.print();
@@ -242,8 +239,26 @@ export default function MasterLedgerPage() {
     )
   }
 
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl;
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+      {/* Print Only Header with Logo and App Name */}
+      <div className="hidden print:flex flex-col items-center justify-center mb-8 border-b pb-6 w-full text-center">
+        <div className="flex items-center gap-4 mb-2">
+          {logoUrl && (
+            <img 
+              src={logoUrl} 
+              alt="SpecsBiz Logo" 
+              className="h-20 w-20 object-contain rounded-xl shadow-sm"
+            />
+          )}
+          <h1 className="text-5xl font-black text-primary font-headline">SpecsBiz</h1>
+        </div>
+        <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Master Ledger Official Report</p>
+        <div className="text-[10px] mt-2 opacity-50 font-medium">Generated on: {new Date().toLocaleString()}</div>
+      </div>
+
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold font-headline text-primary flex items-center gap-2">
@@ -493,6 +508,7 @@ export default function MasterLedgerPage() {
           .bg-muted\\/20, .bg-muted\\/50 { background-color: #f9f9f9 !important; }
           .text-destructive { color: #cc0000 !important; }
           .text-green-600 { color: #008800 !important; }
+          h1, h2, h3, p { color: black !important; }
         }
       `}</style>
     </div>
