@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { BusinessProvider } from '@/hooks/use-business-data';
 import { SplashScreen } from '@/components/splash-screen';
+import { NotificationBell } from '@/components/notification-bell';
 
 export const metadata: Metadata = {
   title: 'SpecsBiz | Smart Business Manager',
@@ -42,6 +43,7 @@ export default function RootLayout({
                       <span className="sm:hidden">SpecsBiz | SBM</span>
                     </h1>
                   </div>
+                  <NotificationBell />
                 </header>
                 <main className="flex-1 p-3 md:p-6 pb-20 md:pb-6 w-full max-w-full overflow-x-hidden">
                   {children}
