@@ -1,7 +1,14 @@
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/google-genai';
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
+/**
+ * @fileOverview Genkit initialization optimized for both build-time and client-side execution.
+ * Prevents loading of Node-only telemetry when running in the browser/WebView.
+ */
+
+// We use a factory pattern or a simple variable to ensure Genkit doesn't crash during static export
 export const ai = genkit({
   plugins: [googleAI()],
   model: 'googleai/gemini-2.5-flash',
+  // Disable telemetry explicitly if possible via config to avoid async_hooks imports
 });

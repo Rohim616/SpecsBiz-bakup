@@ -1,53 +1,27 @@
-
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   output: 'export', // Required for APK and EXE generation
-  trailingSlash: true, // Ensures proper routing in local file systems (Android/Electron)
+  trailingSlash: true, // Ensures proper routing in local file systems
   images: {
-    unoptimized: true, // Required for static export as there is no image optimization server
+    unoptimized: true,
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'i.ibb.co.com',
-        port: '',
-        pathname: '/**',
-      }
+      { protocol: 'https', hostname: 'placehold.co' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'picsum.photos' },
+      { protocol: 'https', hostname: 'i.ibb.co.com' }
     ],
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
   webpack: (config, { isServer, webpack }) => {
-    // Critical fix for 'async_hooks', 'fs', and Node.js modules in static/client builds
     if (!isServer) {
+      // Robust fallbacks for Node.js modules in the browser
       config.resolve.fallback = {
         ...config.resolve.fallback,
         async_hooks: false,
         fs: false,
-        path: false,
+        path: require.resolve('path-browserify'),
         os: false,
         crypto: false,
         net: false,
@@ -57,7 +31,7 @@ const nextConfig: NextConfig = {
         http2: false,
         undici: false,
         perf_hooks: false,
-        process: false,
+        process: require.resolve('process/browser'),
         util: false,
         stream: false,
         zlib: false,
@@ -67,19 +41,35 @@ const nextConfig: NextConfig = {
         vm: false,
         querystring: false,
         timers: false,
-        buffer: false,
+        buffer: require.resolve('buffer/'),
       };
 
-      // Specifically handle opentelemetry and genkit node-only dependencies
+      // Force-ignore problematic OpenTelemetry and Node modules
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'async_hooks': false,
+        '@opentelemetry/context-async-hooks': false,
+        '@opentelemetry/sdk-trace-node': false,
+        '@opentelemetry/sdk-node': false,
+      };
+
+      // Global variable mocks for client-side bundles
+      config.plugins.push(
+        new webpack.ProvidePlugin({
+          process: 'process/browser',
+          Buffer: ['buffer', 'Buffer'],
+        })
+      );
+
+      // Specifically replace problematic internal requires
       config.plugins.push(
         new webpack.NormalModuleReplacementPlugin(
-          /@opentelemetry\/context-async-hooks/,
-          (resource: any) => {
-            resource.request = 'object'; // Replace with a safe no-op
-          }
+          /async_hooks/,
+          require.resolve('path-browserify')
         )
       );
       
+      // Ignore warnings for missing optional Node modules
       config.plugins.push(
         new webpack.IgnorePlugin({
           resourceRegExp: /^async_hooks$|^fs$|^path$|^os$|^crypto$|^net$|^tls$|^dns$|^child_process$|^http2$|^undici$|^perf_hooks$|^process$|^util$|^stream$|^zlib$|^http$|^https$|^url$|^vm$|^querystring$|^timers$|^buffer$/
