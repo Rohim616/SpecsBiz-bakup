@@ -18,7 +18,12 @@ import {
   Clock,
   Save,
   ChevronLeft,
-  Bot
+  Bot,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Highlighter
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -40,11 +45,12 @@ import { cn } from "@/lib/utils"
 
 const NOTE_COLORS = [
   { name: "White", class: "bg-white border-muted" },
-  { name: "Yellow", class: "bg-yellow-50 border-yellow-200" },
+  { name: "Yellow", class: "bg-amber-50 border-amber-200" },
   { name: "Blue", class: "bg-blue-50 border-blue-200" },
-  { name: "Green", class: "bg-green-50 border-green-200" },
-  { name: "Red", class: "bg-red-50 border-red-200" },
+  { name: "Green", class: "bg-emerald-50 border-emerald-200" },
+  { name: "Red", class: "bg-rose-50 border-rose-200" },
   { name: "Purple", class: "bg-purple-50 border-purple-200" },
+  { name: "Teal", class: "bg-teal-50 border-teal-200" },
 ]
 
 export default function NotebookPage() {
@@ -95,7 +101,7 @@ export default function NotebookPage() {
     const id = Date.now().toString();
     const newNote = {
       id,
-      title: "Untitled Note",
+      title: "",
       content: "",
       color: "White",
       isPinned: false,
@@ -135,36 +141,36 @@ export default function NotebookPage() {
   }, [notes, search]);
 
   return (
-    <div className="flex h-[calc(100vh-140px)] gap-6 animate-in zoom-in-95 duration-500 overflow-hidden">
+    <div className="flex h-[calc(100vh-140px)] gap-6 animate-in zoom-in-95 duration-500 overflow-hidden relative">
       {/* Sidebar List */}
       <div className={cn(
-        "flex flex-col gap-4 w-full md:w-80 shrink-0",
+        "flex flex-col gap-4 w-full md:w-80 shrink-0 h-full",
         selectedNoteId && "hidden md:flex"
       )}>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 shrink-0">
           <h2 className="text-xl font-bold font-headline text-primary flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-accent" /> {t.notebook}
+            <BookOpen className="w-6 h-6 text-accent" /> {t.notebook}
           </h2>
           <Button size="icon" className="bg-accent hover:bg-accent/90 rounded-full h-10 w-10 shadow-lg" onClick={handleCreateNote}>
             <Plus className="w-5 h-5" />
           </Button>
         </div>
 
-        <div className="relative">
+        <div className="relative shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
             placeholder={t.search} 
-            className="pl-9 h-11 bg-white/50 backdrop-blur-sm" 
+            className="pl-9 h-11 bg-white/50 backdrop-blur-sm shadow-sm" 
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
 
         <ScrollArea className="flex-1 -mx-1 pr-1">
-          <div className="space-y-3 pb-4">
+          <div className="space-y-3 pb-6 px-1">
             {filteredNotes.length === 0 ? (
-              <div className="text-center py-20 text-muted-foreground italic">
-                <BookOpen className="w-10 h-10 mx-auto opacity-10 mb-2" />
+              <div className="text-center py-24 text-muted-foreground italic flex flex-col items-center gap-3">
+                <BookOpen className="w-12 h-12 opacity-10" />
                 <p className="text-xs">{t.noNotes}</p>
               </div>
             ) : (
@@ -174,25 +180,30 @@ export default function NotebookPage() {
                   <Card 
                     key={note.id} 
                     className={cn(
-                      "cursor-pointer transition-all hover:shadow-md border-l-4",
+                      "cursor-pointer transition-all hover:scale-[1.02] border-l-4 shadow-sm",
                       colorClass,
                       selectedNoteId === note.id ? "ring-2 ring-accent border-l-accent" : "border-l-transparent"
                     )}
                     onClick={() => setSelectedNoteId(note.id)}
                   >
-                    <CardHeader className="p-3 pb-1">
+                    <CardHeader className="p-4 pb-1">
                       <div className="flex items-center justify-between gap-2">
-                        <CardTitle className="text-sm font-bold truncate flex-1">{note.title || "Untitled"}</CardTitle>
-                        {note.isPinned && <Pin className="w-3 h-3 text-accent fill-accent" />}
+                        <CardTitle className="text-sm font-bold truncate flex-1 text-primary">
+                          {note.title || (language === 'en' ? "Untitled Note" : "শিরোনামহীন নোট")}
+                        </CardTitle>
+                        {note.isPinned && <Pin className="w-3 h-3 text-accent fill-accent shrink-0" />}
                       </div>
                     </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                    <CardContent className="p-4 pt-0">
+                      <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed h-8">
                         {note.content || t.notesPlaceholder}
                       </p>
-                      <div className="flex items-center gap-1 mt-2 text-[8px] text-muted-foreground opacity-70">
-                        <Clock className="w-2.5 h-2.5" />
-                        {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : "Just now"}
+                      <div className="flex items-center justify-between mt-3 text-[9px] text-muted-foreground font-medium opacity-70">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : "Just now"}
+                        </div>
+                        <Badge variant="ghost" className="h-4 px-1 text-[8px] uppercase">{note.color}</Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -205,42 +216,51 @@ export default function NotebookPage() {
 
       {/* Editor Area */}
       <div className={cn(
-        "flex-1 flex flex-col min-w-0 bg-white rounded-2xl shadow-xl border border-accent/10 overflow-hidden",
-        !selectedNoteId && "hidden md:flex items-center justify-center bg-accent/5 italic text-muted-foreground"
+        "flex-1 flex flex-col min-w-0 bg-white rounded-3xl shadow-2xl border border-accent/10 overflow-hidden h-full",
+        !selectedNoteId && "hidden md:flex items-center justify-center bg-accent/5"
       )}>
         {!selectedNoteId ? (
-          <div className="flex flex-col items-center gap-4">
-            <div className="h-20 w-20 rounded-full bg-accent/10 flex items-center justify-center text-accent">
-               <BookOpen className="w-10 h-10" />
+          <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-700">
+            <div className="h-28 w-28 rounded-full bg-accent/10 flex items-center justify-center text-accent shadow-inner">
+               <BookOpen className="w-14 h-14" />
             </div>
-            <p className="text-sm">Select a note to view its content</p>
+            <div className="text-center space-y-1">
+              <h3 className="text-lg font-bold text-primary">SpecsBiz Smart Editor</h3>
+              <p className="text-sm text-muted-foreground italic">Select or create a note to begin customizing.</p>
+            </div>
           </div>
         ) : (
-          <>
+          <div className={cn(
+            "flex flex-col h-full transition-colors duration-500",
+            NOTE_COLORS.find(c => c.name === activeNote?.color)?.class
+          )}>
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-b bg-accent/5 backdrop-blur-md">
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden" onClick={() => setSelectedNoteId(null)}>
-                  <ChevronLeft className="w-4 h-4" />
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b bg-white/40 backdrop-blur-md sticky top-0 z-20">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden" onClick={() => setSelectedNoteId(null)}>
+                  <ChevronLeft className="w-5 h-5" />
                 </Button>
-                <div className="h-4 w-px bg-muted mx-1 hidden md:block" />
                 
-                <div className="flex bg-white rounded-lg border p-0.5 shadow-sm">
-                  <Button variant="ghost" size="icon" className="h-7 w-7"><Bold className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7"><Italic className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7"><List className="w-3.5 h-3.5" /></Button>
+                <div className="flex items-center bg-white/80 rounded-xl border shadow-sm p-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/10 hover:text-accent"><Bold className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/10 hover:text-accent"><Italic className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/10 hover:text-accent"><Underline className="w-4 h-4" /></Button>
+                  <div className="h-4 w-px bg-muted mx-1" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/10 hover:text-accent"><List className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/10 hover:text-accent"><AlignLeft className="w-4 h-4" /></Button>
                 </div>
 
-                <div className="flex bg-white rounded-lg border p-0.5 shadow-sm ml-2">
+                <div className="flex items-center bg-white/80 rounded-xl border shadow-sm p-1 gap-1">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7"><Palette className="w-3.5 h-3.5 text-accent" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-accent"><Palette className="w-4 h-4" /></Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="grid grid-cols-3 gap-1 p-2">
+                    <DropdownMenuContent className="grid grid-cols-4 gap-2 p-3 w-40">
                       {NOTE_COLORS.map(c => (
                         <Button 
                           key={c.name} 
-                          className={cn("h-6 w-6 rounded-full border p-0", c.class)} 
+                          title={c.name}
+                          className={cn("h-7 w-7 rounded-full border-2 p-0 transition-transform hover:scale-110", c.class, activeNote?.color === c.name ? "border-accent" : "border-transparent")} 
                           onClick={() => handleSaveNote({ color: c.name })}
                         />
                       ))}
@@ -249,54 +269,73 @@ export default function NotebookPage() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-7 w-7", activeNote?.isPinned && "text-accent fill-accent")}
+                    className={cn("h-8 w-8 transition-colors", activeNote?.isPinned ? "bg-accent/20 text-accent" : "text-muted-foreground")}
                     onClick={() => handleSaveNote({ isPinned: !activeNote?.isPinned })}
                   >
-                    <Pin className="w-3.5 h-3.5" />
+                    <Pin className={cn("w-4 h-4", activeNote?.isPinned && "fill-accent")} />
                   </Button>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-8 text-[10px] gap-2 border-accent text-accent">
-                   <Bot className="w-3 h-3" /> Magic Write
+                <Button variant="outline" className="hidden sm:flex h-9 text-xs gap-2 border-accent text-accent bg-white/50 hover:bg-accent hover:text-white transition-all shadow-sm">
+                   <Bot className="w-4 h-4" /> {t.aiNoteAssistant}
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 bg-white/80 border shadow-sm"><MoreVertical className="w-4 h-4" /></Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem className="text-destructive gap-2 text-xs" onClick={() => handleDeleteNote(activeNote.id)}>
-                      <Trash2 className="w-3.5 h-3.5" /> Delete Note
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuItem className="text-destructive gap-2 text-xs font-bold" onClick={() => handleDeleteNote(activeNote.id)}>
+                      <Trash2 className="w-4 h-4" /> {t.delete}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </div>
 
-            {/* Note Fields */}
-            <div className={cn(
-              "flex-1 flex flex-col p-6 md:p-10 space-y-4 transition-colors duration-500",
-              NOTE_COLORS.find(c => c.name === activeNote?.color)?.class
-            )}>
-              <Input 
-                className="text-2xl md:text-3xl font-black font-headline border-none bg-transparent focus-visible:ring-0 p-0 h-auto placeholder:opacity-20" 
-                placeholder={t.noteTitle}
-                value={activeNote?.title || ""}
-                onChange={e => handleSaveNote({ title: e.target.value })}
-              />
-              <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 pb-2 border-b">
-                 <span className="flex items-center gap-1"><Save className="w-3 h-3" /> Auto Saved</span>
-                 <span>Modified: {activeNote?.updatedAt ? new Date(activeNote.updatedAt).toLocaleString() : "..."}</span>
+            {/* Note Editor Area */}
+            <ScrollArea className="flex-1">
+              <div className="max-w-4xl mx-auto p-8 md:p-12 space-y-6">
+                <div className="space-y-4">
+                  <Input 
+                    className="text-3xl md:text-5xl font-black font-headline border-none bg-transparent focus-visible:ring-0 p-0 h-auto placeholder:opacity-10 text-primary" 
+                    placeholder={language === 'en' ? "Note Title" : "নোটের শিরোনাম"}
+                    value={activeNote?.title || ""}
+                    onChange={e => handleSaveNote({ title: e.target.value })}
+                  />
+                  
+                  <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground font-bold uppercase tracking-widest opacity-60 pb-4 border-b border-black/5">
+                    <span className="flex items-center gap-1.5 bg-white/40 px-2 py-1 rounded-md">
+                      <Save className="w-3.5 h-3.5 text-accent" /> {language === 'en' ? "Live Cloud Sync" : "ক্লাউড সিঙ্ক চালু"}
+                    </span>
+                    <span className="flex items-center gap-1.5 bg-white/40 px-2 py-1 rounded-md">
+                      <Clock className="w-3.5 h-3.5" /> 
+                      {language === 'en' ? "Last Modified:" : "শেষ পরিবর্তন:"} {activeNote?.updatedAt ? new Date(activeNote.updatedAt).toLocaleString() : "..."}
+                    </span>
+                  </div>
+                </div>
+
+                <Textarea 
+                  className="w-full text-base md:text-xl leading-loose border-none bg-transparent focus-visible:ring-0 p-0 resize-none placeholder:opacity-20 min-h-[60vh] font-body"
+                  placeholder={t.notesPlaceholder}
+                  value={activeNote?.content || ""}
+                  onChange={e => handleSaveNote({ content: e.target.value })}
+                />
               </div>
-              <Textarea 
-                className="flex-1 text-sm md:text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 p-0 resize-none placeholder:opacity-20"
-                placeholder={t.notesPlaceholder}
-                value={activeNote?.content || ""}
-                onChange={e => handleSaveNote({ content: e.target.value })}
-              />
+            </ScrollArea>
+            
+            {/* Quick Stats Footer */}
+            <div className="px-6 py-3 border-t bg-white/20 backdrop-blur-sm flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
+               <div className="flex items-center gap-3">
+                 <span>{activeNote?.content?.length || 0} characters</span>
+                 <span>{activeNote?.content?.split(/\s+/).filter(Boolean).length || 0} words</span>
+               </div>
+               <div className="flex items-center gap-1">
+                 <Bot className="w-3 h-3 text-accent" /> SpecsBiz Smart Notes
+               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
