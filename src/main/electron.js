@@ -12,10 +12,9 @@ function createWindow() {
     title: "SpecsBiz | Smart Business Manager"
   });
 
-  // This loads the static exported files from Next.js
+  // Load the static index.html file with its trailing slash folder structure
   const indexPath = path.join(__dirname, '../../out/index.html');
   win.loadFile(indexPath).catch(() => {
-    // Fallback if the file isn't found (helpful during dev setup)
     console.log("Static files not found. Make sure to run 'npm run build' first.");
   });
 }
