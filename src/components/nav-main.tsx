@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -84,9 +85,11 @@ export function NavMain() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Settings" className="px-4">
-              <Settings className="w-5 h-5" />
-              <span className="font-body">Settings</span>
+            <SidebarMenuButton asChild isActive={pathname === '/settings'} tooltip="Settings" className="px-4">
+              <Link href="/settings">
+                <Settings className="w-5 h-5" />
+                <span className="font-body">Settings</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

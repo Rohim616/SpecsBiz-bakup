@@ -39,7 +39,7 @@ import { useBusinessData } from "@/hooks/use-business-data"
 
 export default function DashboardPage() {
   const { toast } = useToast()
-  const { products, sales, customers, actions } = useBusinessData()
+  const { products, sales, customers, actions, currency } = useBusinessData()
   
   const [isSaleDialogOpen, setIsSaleDialogOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -48,7 +48,7 @@ export default function DashboardPage() {
   const totalRevenue = sales.reduce((acc, s) => acc + (s.total || 0), 0)
 
   const stats = [
-    { label: "Revenue", value: `$${totalRevenue.toFixed(2)}`, trend: "up", icon: DollarSign, color: "text-green-600" },
+    { label: "Revenue", value: `${currency}${totalRevenue.toFixed(2)}`, trend: "up", icon: DollarSign, color: "text-green-600" },
     { label: "Products", value: products.length.toString(), trend: "up", icon: Package, color: "text-blue-600" },
     { label: "Customers", value: customers.length.toString(), trend: "up", icon: Users, color: "text-purple-600" },
     { label: "Sales", value: sales.length.toString(), trend: "up", icon: TrendingUp, color: "text-teal-600" },
@@ -83,7 +83,7 @@ export default function DashboardPage() {
       profit: totalProfit,
       items: cart,
     })
-    toast({ title: "Sale Successful", description: `Grand Total: $${grandTotal.toFixed(2)}` })
+    toast({ title: "Sale Successful", description: `Grand Total: ${currency}${grandTotal.toFixed(2)}` })
     setCart([])
     setIsSaleDialogOpen(false)
   }
@@ -129,7 +129,7 @@ export default function DashboardPage() {
                             <Badge variant="outline" className="text-[9px] md:text-[10px] bg-blue-50 mt-1 whitespace-nowrap">Stock: {item.stock} {item.unit}</Badge>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="font-bold text-accent text-xs md:text-sm">${item.sellingPrice}</span>
+                            <span className="font-bold text-accent text-xs md:text-sm">{currency}{item.sellingPrice}</span>
                             <div className="p-1 rounded-full bg-accent/10 group-hover:bg-accent group-hover:text-white transition-colors">
                               <Plus className="w-3 h-3 md:w-4 md:h-4" />
                             </div>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                           <div className="flex justify-between items-start">
                             <div className="min-w-0 flex-1 mr-2">
                               <p className="text-xs font-bold text-primary truncate">{item.name}</p>
-                              <p className="text-[9px] text-muted-foreground">${item.sellingPrice} / {item.unit}</p>
+                              <p className="text-[9px] text-muted-foreground">{currency}{item.sellingPrice} / {item.unit}</p>
                             </div>
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500 shrink-0" onClick={() => removeFromCart(item.id)}>
                               <Trash2 className="w-3 h-3" />
@@ -169,7 +169,7 @@ export default function DashboardPage() {
                               <Input type="number" step="0.01" className="h-8 text-xs px-2" value={item.quantity} onChange={(e) => updateQuantity(item.id, e.target.value)} />
                             </div>
                             <div className="text-right">
-                              <p className="text-base md:text-lg font-black text-primary">${(item.sellingPrice * item.quantity).toFixed(2)}</p>
+                              <p className="text-base md:text-lg font-black text-primary">{currency}{(item.sellingPrice * item.quantity).toFixed(2)}</p>
                             </div>
                           </div>
                           {item.quantity > item.stock && (
@@ -186,11 +186,11 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 gap-2 md:gap-3">
                     <div className="bg-green-600 text-white p-2 md:p-3 rounded-xl shadow-inner">
                       <p className="text-[8px] md:text-[10px] font-bold uppercase opacity-80">Total Lav</p>
-                      <p className="text-base md:text-xl font-black">${totalProfit.toFixed(2)}</p>
+                      <p className="text-base md:text-xl font-black">{currency}{totalProfit.toFixed(2)}</p>
                     </div>
                     <div className="bg-primary text-white p-2 md:p-3 rounded-xl shadow-inner text-right">
                       <p className="text-[8px] md:text-[10px] font-bold uppercase opacity-80">Total</p>
-                      <p className="text-base md:text-xl font-black">${grandTotal.toFixed(2)}</p>
+                      <p className="text-base md:text-xl font-black">{currency}{grandTotal.toFixed(2)}</p>
                     </div>
                   </div>
                   <Button className="w-full h-10 md:h-14 text-sm md:text-lg bg-accent hover:bg-accent/90 font-bold shadow-xl" disabled={cart.length === 0 || cart.some(i => i.quantity > i.stock || i.quantity <= 0)} onClick={handleCheckout}>
@@ -245,8 +245,8 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-xs md:text-sm font-bold text-primary">${sale.total?.toFixed(2)}</p>
-                      <p className="text-[9px] md:text-[10px] text-green-600 font-medium">+${sale.profit?.toFixed(2)}</p>
+                      <p className="text-xs md:text-sm font-bold text-primary">{currency}{sale.total?.toFixed(2)}</p>
+                      <p className="text-[9px] md:text-[10px] text-green-600 font-medium">+{currency}{sale.profit?.toFixed(2)}</p>
                     </div>
                   </div>
                 ))}

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -26,12 +27,14 @@ export function useBusinessData() {
     PRODUCTS: 'specsbiz_local_products',
     SALES: 'specsbiz_local_sales',
     CUSTOMERS: 'specsbiz_local_customers',
+    CURRENCY: 'specsbiz_settings_currency',
   };
 
   // State for Local Data
   const [localProducts, setLocalProducts] = useState<any[]>([]);
   const [localSales, setLocalSales] = useState<any[]>([]);
   const [localCustomers, setLocalCustomers] = useState<any[]>([]);
+  const [currency, setCurrencyState] = useState('৳');
 
   // Load from Local Storage on mount
   useEffect(() => {
@@ -39,9 +42,12 @@ export function useBusinessData() {
       const p = localStorage.getItem(LOCAL_KEYS.PRODUCTS);
       const s = localStorage.getItem(LOCAL_KEYS.SALES);
       const c = localStorage.getItem(LOCAL_KEYS.CUSTOMERS);
+      const curr = localStorage.getItem(LOCAL_KEYS.CURRENCY);
+      
       if (p) setLocalProducts(JSON.parse(p));
       if (s) setLocalSales(JSON.parse(s));
       if (c) setLocalCustomers(JSON.parse(c));
+      if (curr) setCurrencyState(curr);
     }
   }, []);
 
@@ -143,16 +149,23 @@ export function useBusinessData() {
     }
   };
 
+  const setCurrency = (val: string) => {
+    setCurrencyState(val);
+    localStorage.setItem(LOCAL_KEYS.CURRENCY, val);
+  };
+
   return {
     products,
     sales,
     customers,
     isLoading,
+    currency,
     actions: {
       addProduct,
       deleteProduct,
       addSale,
-      addCustomer
+      addCustomer,
+      setCurrency
     }
   };
 }

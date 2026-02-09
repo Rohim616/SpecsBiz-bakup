@@ -28,7 +28,7 @@ import { useBusinessData } from "@/hooks/use-business-data"
 
 const chartConfig = {
   revenue: {
-    label: "Revenue ($)",
+    label: "Revenue",
     color: "hsl(var(--accent))",
   },
   sales: {
@@ -39,7 +39,7 @@ const chartConfig = {
 
 export default function AnalyticsPage() {
   const { toast } = useToast()
-  const { sales, products, isLoading } = useBusinessData()
+  const { sales, products, isLoading, currency } = useBusinessData()
   const [isSummarizing, setIsSummarizing] = useState(false)
   const [aiSummary, setAiSummary] = useState<string | null>(null)
 
@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
     setIsSummarizing(true)
     try {
       const totalRevenue = sales.reduce((acc, s) => acc + (s.total || 0), 0)
-      const reportText = `Business Performance Summary: Total Revenue is $${totalRevenue.toFixed(2)} across ${sales.length} transactions. Active inventory count is ${products.length} items.`
+      const reportText = `Business Performance Summary: Total Revenue is ${currency}${totalRevenue.toFixed(2)} across ${sales.length} transactions. Active inventory count is ${products.length} items.`
       const result = await summarizeSalesReport({ reportText })
       setAiSummary(result.summary)
       toast({ title: "Report Ready", description: "AI analyzed your live business data." })
@@ -149,7 +149,7 @@ export default function AnalyticsPage() {
                     <CardTitle>Revenue Trends</CardTitle>
                     <CardDescription>Monthly performance overview</CardDescription>
                   </div>
-                  <Badge className="bg-accent/10 text-accent border-accent/20">Live</Badge>
+                  <Badge className="bg-accent/10 text-accent border-accent/20">Monthly</Badge>
                 </div>
               </CardHeader>
               <CardContent>
@@ -257,12 +257,12 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="p-4 rounded-xl border bg-teal-50 space-y-2">
                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Profit Tracked</p>
-                    <p className="text-lg font-bold">${sales.reduce((acc, s) => acc + (s.profit || 0), 0).toFixed(2)}</p>
+                    <p className="text-lg font-bold">{currency}{sales.reduce((acc, s) => acc + (s.profit || 0), 0).toFixed(2)}</p>
                     <p className="text-xs text-teal-700 font-medium">Total estimated Lav (Profit).</p>
                   </div>
                   <div className="p-4 rounded-xl border bg-blue-50 space-y-2">
                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Revenue</p>
-                    <p className="text-lg font-bold">${sales.reduce((acc, s) => acc + (s.total || 0), 0).toFixed(2)}</p>
+                    <p className="text-lg font-bold">{currency}{sales.reduce((acc, s) => acc + (s.total || 0), 0).toFixed(2)}</p>
                     <p className="text-xs text-blue-600 font-medium">Gross revenue from sales.</p>
                   </div>
                 </div>

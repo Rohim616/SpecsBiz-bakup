@@ -51,7 +51,7 @@ import { useBusinessData } from "@/hooks/use-business-data"
 
 export default function InventoryPage() {
   const { toast } = useToast()
-  const { products, actions, isLoading } = useBusinessData()
+  const { products, actions, isLoading, currency } = useBusinessData()
   const [isGenerating, setIsGenerating] = useState(false)
   const [search, setSearch] = useState("")
   const [newProduct, setNewProduct] = useState({
@@ -152,11 +152,11 @@ export default function InventoryPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid grid-cols-1 gap-1.5">
-                  <Label className="text-xs">Buy Price</Label>
+                  <Label className="text-xs">Buy Price ({currency})</Label>
                   <Input type="number" step="0.01" className="h-9" value={newProduct.purchasePrice} onChange={e => setNewProduct({...newProduct, purchasePrice: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-1 gap-1.5">
-                  <Label className="text-xs">Sell Price</Label>
+                  <Label className="text-xs">Sell Price ({currency})</Label>
                   <Input type="number" step="0.01" className="h-9" value={newProduct.sellingPrice} onChange={e => setNewProduct({...newProduct, sellingPrice: e.target.value})} />
                 </div>
               </div>
@@ -224,8 +224,8 @@ export default function InventoryPage() {
                           <div className="text-[9px] text-accent uppercase font-bold">{p.unit}</div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-[10px] text-muted-foreground">${p.purchasePrice?.toFixed(2)}</TableCell>
-                      <TableCell className="font-bold text-primary text-[10px] md:text-xs">${p.sellingPrice?.toFixed(2)}</TableCell>
+                      <TableCell className="text-[10px] text-muted-foreground">{currency}{p.purchasePrice?.toFixed(2)}</TableCell>
+                      <TableCell className="font-bold text-primary text-[10px] md:text-xs">{currency}{p.sellingPrice?.toFixed(2)}</TableCell>
                       <TableCell className="text-[10px] md:text-xs">
                         <span className={p.stock < 5 ? "text-red-500 font-bold" : ""}>{p.stock}</span>
                       </TableCell>

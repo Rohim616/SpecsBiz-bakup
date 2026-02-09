@@ -24,7 +24,7 @@ import { useBusinessData } from "@/hooks/use-business-data"
 
 export default function SalesPage() {
   const { toast } = useToast()
-  const { products, sales, actions, isLoading } = useBusinessData()
+  const { products, sales, actions, isLoading, currency } = useBusinessData()
   const [cart, setCart] = useState<any[]>([])
   const [search, setSearch] = useState("")
 
@@ -60,7 +60,7 @@ export default function SalesPage() {
     })
     toast({
       title: "Sale Recorded",
-      description: `Grand Total: $${grandTotal.toFixed(2)} | Profit: $${totalProfit.toFixed(2)}`,
+      description: `Grand Total: ${currency}${grandTotal.toFixed(2)} | Profit: ${currency}${totalProfit.toFixed(2)}`,
     })
     setCart([])
   }
@@ -99,13 +99,13 @@ export default function SalesPage() {
                   <div key={item.id} className="p-4 border rounded-xl bg-card hover:border-accent transition-all flex justify-between items-center group shadow-sm" onClick={() => addToCart(item)}>
                     <div className="space-y-1 min-w-0 flex-1 mr-2">
                       <p className="font-bold text-primary truncate text-sm md:text-base">{item.name}</p>
-                      <p className="text-sm text-accent font-black">${item.sellingPrice?.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">per {item.unit}</span></p>
+                      <p className="text-sm text-accent font-black">{currency}{item.sellingPrice?.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">per {item.unit}</span></p>
                       <div className="flex items-center gap-2 flex-wrap">
                          <Badge variant="outline" className="text-[10px] py-0 px-1 font-normal bg-blue-50/50 whitespace-nowrap">
                            Stock: {item.stock} {item.unit}
                          </Badge>
                          <Badge variant="outline" className="text-[10px] py-0 px-1 font-normal bg-green-50/50 text-green-700 whitespace-nowrap">
-                           Lav: ${(item.sellingPrice - (item.purchasePrice || 0)).toFixed(2)}
+                           Lav: {currency}{(item.sellingPrice - (item.purchasePrice || 0)).toFixed(2)}
                          </Badge>
                       </div>
                     </div>
@@ -145,8 +145,8 @@ export default function SalesPage() {
                       <p className="text-[10px] text-muted-foreground">{new Date(sale.saleDate).toLocaleString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-bold text-primary">${sale.total?.toFixed(2)}</p>
-                      <p className="text-[10px] text-green-600 font-bold">+${sale.profit?.toFixed(2)} Lav</p>
+                      <p className="text-xs font-bold text-primary">{currency}{sale.total?.toFixed(2)}</p>
+                      <p className="text-[10px] text-green-600 font-bold">+{currency}{sale.profit?.toFixed(2)} Lav</p>
                     </div>
                   </div>
                 ))}
@@ -205,7 +205,7 @@ export default function SalesPage() {
                        </div>
                        <div className="text-right">
                           <Label className="text-[9px] text-muted-foreground font-bold uppercase">Total</Label>
-                          <p className="font-black text-primary text-base md:text-lg">${(item.sellingPrice * item.quantity).toFixed(2)}</p>
+                          <p className="font-black text-primary text-base md:text-lg">{currency}{(item.sellingPrice * item.quantity).toFixed(2)}</p>
                        </div>
                     </div>
                     
@@ -218,7 +218,7 @@ export default function SalesPage() {
                     
                     <div className="flex justify-between items-center p-2 bg-green-50/50 rounded-lg border border-green-100">
                       <span className="text-[10px] text-green-700 font-bold uppercase">Est. Lav</span>
-                      <span className="text-sm font-black text-green-600">+${((item.sellingPrice - (item.purchasePrice || 0)) * item.quantity).toFixed(2)}</span>
+                      <span className="text-sm font-black text-green-600">+{currency}{((item.sellingPrice - (item.purchasePrice || 0)) * item.quantity).toFixed(2)}</span>
                     </div>
                   </div>
                 ))
@@ -232,12 +232,12 @@ export default function SalesPage() {
                       <p className="text-[9px] font-bold uppercase opacity-80">Total Lav</p>
                       <div className="flex items-center gap-1">
                         <TrendingUp className="w-4 h-4" />
-                        <span className="text-xl font-black">${totalProfit.toFixed(2)}</span>
+                        <span className="text-xl font-black">{currency}{totalProfit.toFixed(2)}</span>
                       </div>
                    </div>
                    <div className="p-3 bg-primary text-white rounded-xl shadow-lg text-right">
                       <p className="text-[9px] font-bold uppercase opacity-80">Final Total</p>
-                      <p className="text-xl font-black">${grandTotal.toFixed(2)}</p>
+                      <p className="text-xl font-black">{currency}{grandTotal.toFixed(2)}</p>
                    </div>
                 </div>
 
