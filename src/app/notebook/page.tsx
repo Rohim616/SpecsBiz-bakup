@@ -10,8 +10,6 @@ import {
   Pin, 
   Sparkles, 
   MoreVertical,
-  Type,
-  List,
   Bold,
   Italic,
   Palette,
@@ -23,12 +21,10 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Highlighter
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { 
@@ -58,17 +54,20 @@ export default function NotebookPage() {
   const db = useFirestore()
   const { language } = useBusinessData()
   const t = translations[language]
+  const editorRef = useRef<HTMLDivElement>(null)
 
   const [search, setSearch] = useState("")
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
   const [localNotes, setLocalNotes] = useState<any[]>([])
   
-  // Toolbar State
-  const [activeFormats, setActiveFormats] = useState({
+  // Toolbar Status State
+  const [formats, setFormats] = useState({
     bold: false,
     italic: false,
     underline: false,
-    align: 'left'
+    alignLeft: true,
+    alignCenter: false,
+    alignRight: false,
   })
 
   // Real-time Firestore notes
@@ -77,19 +76,26 @@ export default function NotebookPage() {
     return query(collection(db, 'users', user.uid, 'notes'), orderBy('updatedAt', 'desc'));
   }, [user?.uid, db]);
 
-  const { data: fbNotes, isLoading } = useCollection(notesQuery);
+  const { data: fbNotes } = useCollection(notesQuery);
   const notes = user ? (fbNotes || []) : localNotes;
 
-  // Selected note detail
   const activeNote = useMemo(() => notes.find(n => n.id === selectedNoteId), [notes, selectedNoteId]);
 
-  // Load local notes if offline
   useEffect(() => {
     if (!user && typeof window !== 'undefined') {
       const saved = localStorage.getItem('specsbiz_local_notes');
       if (saved) setLocalNotes(JSON.parse(saved));
     }
   }, [user]);
+
+  // Sync editor content when active note changes
+  useEffect(() => {
+    if (editorRef.current && activeNote) {
+      if (editorRef.current.innerHTML !== activeNote.content) {
+        editorRef.current.innerHTML = activeNote.content || "";
+      }
+    }
+  }, [selectedNoteId]);
 
   const handleSaveNote = (updates: any) => {
     if (!selectedNoteId) return;
@@ -103,6 +109,29 @@ export default function NotebookPage() {
       setLocalNotes(updated);
       localStorage.setItem('specsbiz_local_notes', JSON.stringify(updated));
     }
+  }
+
+  const handleContentChange = () => {
+    if (editorRef.current) {
+      handleSaveNote({ content: editorRef.current.innerHTML });
+    }
+  }
+
+  const execCommand = (command: string, value: string | undefined = undefined) => {
+    document.execCommand(command, false, value);
+    updateToolbarState();
+    if (editorRef.current) editorRef.current.focus();
+  }
+
+  const updateToolbarState = () => {
+    setFormats({
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
+      alignLeft: document.queryCommandState('justifyLeft'),
+      alignCenter: document.queryCommandState('justifyCenter'),
+      alignRight: document.queryCommandState('justifyRight'),
+    });
   }
 
   const handleCreateNote = () => {
@@ -139,27 +168,16 @@ export default function NotebookPage() {
     if (selectedNoteId === id) setSelectedNoteId(null);
   }
 
-  const toggleFormat = (format: keyof typeof activeFormats) => {
-    if (format === 'align') return; // Handled separately
-    setActiveFormats(prev => ({ ...prev, [format]: !prev[format] }));
-  }
-
-  const setAlign = (align: string) => {
-    setActiveFormats(prev => ({ ...prev, align }));
-  }
-
   const filteredNotes = useMemo(() => {
     const filtered = notes.filter(n => 
-      n.title.toLowerCase().includes(search.toLowerCase()) || 
-      n.content.toLowerCase().includes(search.toLowerCase())
+      (n.title || "").toLowerCase().includes(search.toLowerCase()) || 
+      (n.content || "").toLowerCase().includes(search.toLowerCase())
     );
-    // Move pinned to top
     return [...filtered].sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
   }, [notes, search]);
 
   return (
     <div className="flex h-[calc(100vh-140px)] gap-6 animate-in zoom-in-95 duration-500 overflow-hidden relative">
-      {/* Sidebar List */}
       <div className={cn(
         "flex flex-col gap-4 w-full md:w-80 shrink-0 h-full",
         selectedNoteId && "hidden md:flex"
@@ -212,9 +230,10 @@ export default function NotebookPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                      <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed h-8">
-                        {note.content || t.notesPlaceholder}
-                      </p>
+                      <div 
+                        className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed h-8 overflow-hidden"
+                        dangerouslySetInnerHTML={{ __html: note.content || t.notesPlaceholder }}
+                      />
                       <div className="flex items-center justify-between mt-3 text-[9px] text-muted-foreground font-medium opacity-70">
                         <div className="flex items-center gap-1">
                           <Clock className="w-2.5 h-2.5" />
@@ -231,7 +250,6 @@ export default function NotebookPage() {
         </ScrollArea>
       </div>
 
-      {/* Editor Area */}
       <div className={cn(
         "flex-1 flex flex-col min-w-0 bg-white rounded-3xl shadow-2xl border border-accent/10 overflow-hidden h-full",
         !selectedNoteId && "hidden md:flex items-center justify-center bg-accent/5"
@@ -262,24 +280,24 @@ export default function NotebookPage() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-8 w-8 transition-colors", activeFormats.bold ? "bg-accent/20 text-accent font-bold" : "hover:bg-accent/10 hover:text-accent")}
-                    onClick={() => toggleFormat('bold')}
+                    className={cn("h-8 w-8 transition-colors", formats.bold ? "bg-accent/20 text-accent font-bold" : "hover:bg-accent/10 hover:text-accent")}
+                    onClick={() => execCommand('bold')}
                   >
                     <Bold className="w-4 h-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-8 w-8 transition-colors", activeFormats.italic ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
-                    onClick={() => toggleFormat('italic')}
+                    className={cn("h-8 w-8 transition-colors", formats.italic ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
+                    onClick={() => execCommand('italic')}
                   >
                     <Italic className="w-4 h-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-8 w-8 transition-colors", activeFormats.underline ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
-                    onClick={() => toggleFormat('underline')}
+                    className={cn("h-8 w-8 transition-colors", formats.underline ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
+                    onClick={() => execCommand('underline')}
                   >
                     <Underline className="w-4 h-4" />
                   </Button>
@@ -287,24 +305,24 @@ export default function NotebookPage() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-8 w-8 transition-colors", activeFormats.align === 'left' ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
-                    onClick={() => setAlign('left')}
+                    className={cn("h-8 w-8 transition-colors", formats.alignLeft ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
+                    onClick={() => execCommand('justifyLeft')}
                   >
                     <AlignLeft className="w-4 h-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-8 w-8 transition-colors", activeFormats.align === 'center' ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
-                    onClick={() => setAlign('center')}
+                    className={cn("h-8 w-8 transition-colors", formats.alignCenter ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
+                    onClick={() => execCommand('justifyCenter')}
                   >
                     <AlignCenter className="w-4 h-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-8 w-8 transition-colors", activeFormats.align === 'right' ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
-                    onClick={() => setAlign('right')}
+                    className={cn("h-8 w-8 transition-colors", formats.alignRight ? "bg-accent/20 text-accent" : "hover:bg-accent/10 hover:text-accent")}
+                    onClick={() => execCommand('justifyRight')}
                   >
                     <AlignRight className="w-4 h-4" />
                   </Button>
@@ -376,18 +394,14 @@ export default function NotebookPage() {
                   </div>
                 </div>
 
-                <Textarea 
-                  className={cn(
-                    "w-full text-base md:text-xl leading-loose border-none bg-transparent focus-visible:ring-0 p-0 resize-none placeholder:opacity-20 min-h-[60vh] font-body",
-                    activeFormats.bold && "font-bold",
-                    activeFormats.italic && "italic",
-                    activeFormats.underline && "underline",
-                    activeFormats.align === 'center' && "text-center",
-                    activeFormats.align === 'right' && "text-right"
-                  )}
-                  placeholder={t.notesPlaceholder}
-                  value={activeNote?.content || ""}
-                  onChange={e => handleSaveNote({ content: e.target.value })}
+                <div
+                  ref={editorRef}
+                  contentEditable
+                  className="w-full text-base md:text-xl leading-loose border-none bg-transparent outline-none p-0 min-h-[60vh] font-body"
+                  onInput={handleContentChange}
+                  onSelect={updateToolbarState}
+                  onKeyUp={updateToolbarState}
+                  onMouseUp={updateToolbarState}
                 />
               </div>
             </ScrollArea>
@@ -396,7 +410,6 @@ export default function NotebookPage() {
             <div className="px-6 py-3 border-t bg-white/20 backdrop-blur-sm flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
                <div className="flex items-center gap-3">
                  <span>{activeNote?.content?.length || 0} characters</span>
-                 <span>{activeNote?.content?.split(/\s+/).filter(Boolean).length || 0} words</span>
                </div>
                <div className="flex items-center gap-1">
                  <Bot className="w-3 h-3 text-accent" /> SpecsBiz Smart Notes
