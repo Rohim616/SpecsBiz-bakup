@@ -1,0 +1,6 @@
+{
+  "appId": "com.specsbiz.sbm",
+  "appName": "SpecsBiz",
+  "webDir": "out",
+  "bundledWebRuntime": false
+}
