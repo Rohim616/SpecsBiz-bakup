@@ -69,7 +69,10 @@ export default function InventoryPage() {
   // Sample units
   const units = ["pcs", "kg", "gm", "ltr", "meter", "box", "dozen"]
 
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<any[]>([
+    { id: 1, name: "Sample Fabric", category: "Fabric", stock: 25.5, purchasePrice: 50, sellingPrice: 120, unit: "meter", sku: "FAB-001" },
+    { id: 2, name: "Premium Rice", category: "Grains", stock: 100, purchasePrice: 40, sellingPrice: 65, unit: "kg", sku: "RIC-099" },
+  ])
 
   const handleAIDescription = async () => {
     if (!newProduct.name || !newProduct.category) {
