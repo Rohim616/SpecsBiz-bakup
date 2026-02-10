@@ -67,12 +67,10 @@ export default function AIAssistantPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   
-  // Deletion Dialog State
   const [isClearOpen, setIsClearOpen] = useState(false)
   const [deleteTargetId, setDeleteTargetId] = useState<string | "all">("all")
   const [password, setPassword] = useState("")
 
-  // Fetch all messages for current user
   const aiMessagesQuery = useMemoFirebase(() => {
     if (!user?.uid || !db) return null;
     return query(collection(db, 'users', user.uid, 'aiMessages'), orderBy('timestamp', 'asc'));
@@ -80,7 +78,6 @@ export default function AIAssistantPage() {
 
   const { data: allFbMessages } = useCollection(aiMessagesQuery);
 
-  // Initialize first session
   useEffect(() => {
     if (!activeSessionId) {
       const savedSid = localStorage.getItem('specsbiz_active_session');
@@ -94,7 +91,6 @@ export default function AIAssistantPage() {
     }
   }, []);
 
-  // Group messages into sessions
   const sessions = useMemo(() => {
     if (!allFbMessages) return [];
     const grouped: Record<string, any[]> = {};
@@ -118,7 +114,6 @@ export default function AIAssistantPage() {
       });
   }, [allFbMessages, language]);
 
-  // Current session messages
   const currentMessages = useMemo(() => {
     const list = (allFbMessages || []).filter(m => m.sessionId === activeSessionId);
     if (list.length === 0) {
@@ -126,7 +121,7 @@ export default function AIAssistantPage() {
         id: 'welcome', 
         role: "assistant" as const, 
         content: language === 'bn' 
-          ? "হ্যালো ভাই! আমি SpecsAI। আপনার ব্যবসার মগজ এখন আমার হাতে। আমি প্রতিটি মালের খবর আর কাস্টমারের বকেয়া জানি। ব্যবসার কি অবস্থা জানতে চান? শুরু করুন!" 
+          ? "হ্যালো ভাই! আমি SpecsAI। আপনার ব্যবসার মগজ এখন আমার হাতে। প্রতিটি মালের খবর আর কাস্টমারের বকেয়া আমি জানি। ব্যবসার কি অবস্থা জানতে চান? শুরু করুন!" 
           : "Hi Partner! I'm SpecsAI. I have full access to your business brain. I know every product and every customer debt. Ready to analyze your business or predict the future? Let's talk!" 
       }];
     }
@@ -141,7 +136,6 @@ export default function AIAssistantPage() {
     }
   }, [currentMessages, isLoading])
 
-  // Advanced Context calculations
   const businessMetrics = useMemo(() => {
     const totalInvestment = products.reduce((acc, p) => acc + ((p.purchasePrice || 0) * (p.stock || 0)), 0)
     const totalStockValue = products.reduce((acc, p) => acc + ((p.sellingPrice || 0) * (p.stock || 0)), 0)
@@ -184,20 +178,18 @@ export default function AIAssistantPage() {
     try {
       await saveMessage('user', messageText);
 
-      // Create a super-detailed inventory summary
+      // Highly detailed context for A to Z access
       const inventorySummary = products.length > 0 
-        ? products.map(p => `${p.name}: ${p.stock} ${p.unit} (Cost: ${currency}${p.purchasePrice}, Sale: ${currency}${p.sellingPrice}, Cat: ${p.category})`).join(' | ')
-        : "Inventory is completely empty."
+        ? products.map(p => `[${p.name}: stock ${p.stock}${p.unit}, buy ${p.purchasePrice}, sell ${p.sellingPrice}, cat ${p.category}]`).join(' ')
+        : "Inventory empty."
         
-      // Create detailed sales history (last 50)
       const salesSummary = sales.length > 0
-        ? sales.map(s => `Date: ${new Date(s.saleDate).toLocaleString()}, Total: ${currency}${s.total}, Profit: ${currency}${s.profit || 0}, Items: ${s.items?.map((i: any) => i.name + ' x' + i.quantity).join(';')}`).slice(0, 50).join(' || ')
-        : "No sales recorded yet."
+        ? sales.map(s => `Date: ${new Date(s.saleDate).toLocaleDateString()}, Total: ${currency}${s.total}, Profit: ${currency}${s.profit || 0}, Items: ${s.items?.map((i: any) => i.name).join(';')}`).slice(0, 50).join(' || ')
+        : "No sales."
         
-      // Create detailed customer/baki summary
       const customersSummary = customers.length > 0
-        ? customers.map(c => `${c.firstName} ${c.lastName}: Total Baki ${currency}${c.totalDue}, Phone: ${c.phone}`).join(' | ')
-        : "No customers recorded."
+        ? customers.map(c => `${c.firstName}: Baki ${currency}${c.totalDue}`).join(' | ')
+        : "No customers."
 
       const history = currentMessages
         .filter(m => m.id !== 'welcome')
@@ -214,7 +206,7 @@ export default function AIAssistantPage() {
           totalRevenue: businessMetrics.totalRevenue,
           totalInvestment: businessMetrics.totalInvestment,
           potentialProfit: businessMetrics.potentialProfit,
-          topSellingItems: businessMetrics.topItems || "None yet",
+          topSellingItems: businessMetrics.topItems || "None",
           currency,
           language,
           currentDate: new Date().toLocaleString()
@@ -224,11 +216,7 @@ export default function AIAssistantPage() {
       await saveMessage('assistant', result.reply);
     } catch (error) {
       console.error("Chat Error:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "Connection Lost", 
-        description: "maybe AI er limit shes !" 
-      })
+      toast({ variant: "destructive", title: "Connection Lost", description: "maybe AI er limit shes !" })
     } finally {
       setIsLoading(false)
     }
@@ -282,7 +270,7 @@ export default function AIAssistantPage() {
           <h2 className="text-xl md:text-2xl font-bold font-headline text-primary flex items-center gap-2 truncate">
             <BrainCircuit className="w-5 h-5 md:w-6 md:h-6 text-accent shrink-0 animate-pulse" /> SpecsAI Intelligence
           </h2>
-          <p className="text-[10px] md:text-xs text-muted-foreground truncate italic">Ultimate Business Brain Activated.</p>
+          <p className="text-[10px] md:text-xs text-muted-foreground truncate italic">Ultimate Business Partner Activated.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button 
@@ -322,7 +310,7 @@ export default function AIAssistantPage() {
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-green-600 font-bold uppercase tracking-widest">
-                        <MessageSquare className="w-2.5 h-2.5" /> Full Access Mode
+                        <MessageSquare className="w-2.5 h-2.5" /> Live Partner Mode
                       </span>
                     )}
                   </CardDescription>
@@ -359,7 +347,7 @@ export default function AIAssistantPage() {
                         <div className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:-0.15s]" />
                         <div className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce" />
                       </div>
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-accent/70">{language === 'bn' ? 'আপনার ব্যবসা নিয়ে ভাবছি...' : 'Thinking about your business...'}</span>
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-accent/70">{language === 'bn' ? 'ডাটা দেখছি...' : 'Checking data...'}</span>
                     </div>
                   </div>
                 )}
@@ -390,7 +378,7 @@ export default function AIAssistantPage() {
             <CardFooter className="p-3 md:p-4 w-full bg-white">
               <div className="flex w-full gap-2 items-center bg-muted/10 p-1 rounded-2xl border">
                 <Input 
-                  placeholder={language === 'bn' ? "ব্যবসা নিয়ে কিছু জিজ্ঞেস করুন..." : "Ask about your business..."}
+                  placeholder={language === 'bn' ? "ভাই, ব্যবসা নিয়ে আলোচনা করুন..." : "Discuss business, Partner..."}
                   className="flex-1 text-sm h-12 border-none bg-transparent focus-visible:ring-0 shadow-none"
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -409,7 +397,6 @@ export default function AIAssistantPage() {
           </div>
         </Card>
 
-        {/* Unified History Sidebar */}
         <div className="hidden lg:flex flex-col gap-6 overflow-hidden pr-1">
           <Card className="flex-1 border-accent/10 shadow-lg bg-primary text-white overflow-hidden flex flex-col">
             <CardHeader className="p-4 bg-white/5 border-b border-white/5 shrink-0">
@@ -420,7 +407,7 @@ export default function AIAssistantPage() {
             <CardContent className="p-0 flex-1 overflow-hidden">
               <ScrollArea className="h-full">
                 {sessions.length === 0 ? (
-                  <div className="p-8 text-center text-[10px] opacity-40 italic">No previous discussions.</div>
+                  <div className="p-8 text-center text-[10px] opacity-40 italic">No discussions yet.</div>
                 ) : (
                   <div className="divide-y divide-white/5">
                     {sessions.map((session) => (
@@ -473,23 +460,22 @@ export default function AIAssistantPage() {
               <p className="text-[11px] font-medium leading-relaxed italic">
                 {language === 'bn' 
                   ? "আমি আপনার ব্যবসার প্রতিটি খুঁটিনাটি মনে রাখছি। আপনি যা ভুলে যাবেন, আমি তা মনে করিয়ে দেব।" 
-                  : "I'm monitoring every detail of your business. I'll remind you of things you might miss."}
+                  : "I'm monitoring every detail. I'll remind you of things you might miss."}
               </p>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Auth-Delete Dialog */}
       <Dialog open={isClearOpen} onOpenChange={setIsClearOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Lock className="w-5 h-5" /> History Protection
+              <Lock className="w-5 h-5" /> Memory Protection
             </DialogTitle>
             <DialogDescription>
               {deleteTargetId === "all" 
-                ? (language === 'bn' ? "সব হিস্ট্রি মুছতে সিক্রেট পাসওয়ার্ড দিন।" : "Enter secret password to wipe ALL history.")
+                ? (language === 'bn' ? "সব মেমোরি মুছতে সিক্রেট পাসওয়ার্ড দিন।" : "Enter secret password to wipe ALL memory.")
                 : (language === 'bn' ? "এই আলোচনাটি মুছতে সিক্রেট পাসওয়ার্ড দিন।" : "Enter secret password to delete this session.")}
             </DialogDescription>
           </DialogHeader>
