@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -37,7 +36,7 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog"
-import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
+import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts"
 import { analyzeBusinessHealth, type AnalyzeBusinessHealthOutput } from "@/ai/flows/analyze-business-health"
 import { useToast } from "@/hooks/use-toast"
 import { useBusinessData } from "@/hooks/use-business-data"
@@ -199,7 +198,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20 max-w-full overflow-hidden">
-      {/* Header Matching Screenshot */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-bold font-headline text-primary flex items-center gap-2">
@@ -225,7 +224,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Metric Cards Matching Screenshot Colors */}
+      {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-primary text-white border-none shadow-lg overflow-hidden group">
           <CardHeader className="p-4 pb-0">
@@ -310,7 +309,7 @@ export default function AnalyticsPage() {
         </Card>
       )}
 
-      {/* Timeline Section with BarChart Matching Screenshot */}
+      {/* Timeline Section with BarChart */}
       <Card className="shadow-lg border-accent/10 overflow-hidden bg-white">
         <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5 p-4">
           <div className="space-y-1">
@@ -322,23 +321,46 @@ export default function AnalyticsPage() {
         <CardContent className="p-6">
           <div className="h-[350px] w-full">
             <ChartContainer config={chartConfig} className="h-full w-full">
-              <RechartsBarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barGap={8}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis fontSize={10} tickLine={false} axisLine={false} />
+              <RechartsBarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barGap={6}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.05} />
+                <XAxis 
+                  dataKey="name" 
+                  fontSize={10} 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <YAxis 
+                  fontSize={10} 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                />
                 <Tooltip 
-                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.2 }}
+                  cursor={{ fill: 'hsl(var(--accent))', opacity: 0.05 }}
                   content={<ChartTooltipContent />} 
                 />
-                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} barSize={20} />
-                <Bar dataKey="profit" fill="var(--color-profit)" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar 
+                  dataKey="revenue" 
+                  fill="var(--color-revenue)" 
+                  radius={[6, 6, 0, 0]} 
+                  barSize={18}
+                  activeBar={{ opacity: 0.8 }}
+                />
+                <Bar 
+                  dataKey="profit" 
+                  fill="var(--color-profit)" 
+                  radius={[6, 6, 0, 0]} 
+                  barSize={18}
+                  activeBar={{ opacity: 0.8 }}
+                />
               </RechartsBarChart>
             </ChartContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* Report Breakdown List Matching Screenshot */}
+      {/* Report Breakdown List */}
       <Card className="border-accent/10 shadow-sm overflow-hidden bg-white">
         <CardHeader className="p-4 border-b bg-muted/5 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="space-y-1">

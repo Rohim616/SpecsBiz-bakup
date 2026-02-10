@@ -43,7 +43,7 @@ export default function BusinessIntelligencePage() {
   const [isAuditing, setIsAuditing] = useState(false)
   const [auditResult, setAuditResult] = useState<AnalyzeBusinessHealthOutput | null>(null)
 
-  // Calculations based on the image requirements
+  // Calculations
   const metrics = useMemo(() => {
     const totalInvestment = products.reduce((acc, p) => acc + ((p.purchasePrice || 0) * (p.stock || 0)), 0)
     const totalStockValue = products.reduce((acc, p) => acc + ((p.sellingPrice || 0) * (p.stock || 0)), 0)
@@ -229,15 +229,16 @@ export default function BusinessIntelligencePage() {
               <ChartContainer config={chartConfig} className="h-full w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis fontSize={10} tickLine={false} axisLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.05} />
+                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar 
                       dataKey="revenue" 
                       fill="var(--color-revenue)" 
-                      radius={[4, 4, 0, 0]} 
-                      barSize={30}
+                      radius={[8, 8, 0, 0]} 
+                      barSize={35}
+                      activeBar={{ opacity: 0.8, strokeWidth: 2 }}
                     />
                   </BarChart>
                 </ResponsiveContainer>
