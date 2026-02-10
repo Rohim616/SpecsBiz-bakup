@@ -52,10 +52,10 @@ export default function AIAssistantPage() {
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  // Fetch full chat history for this user
+  // Subscribing to chat messages in real-time
   const aiMessagesQuery = useMemoFirebase(() => {
     if (!user?.uid || !db) return null;
-    return query(collection(db, 'users', user.uid, 'aiMessages'), orderBy('timestamp', 'asc'), limit(100));
+    return query(collection(db, 'users', user.uid, 'aiMessages'), orderBy('timestamp', 'asc'), limit(50));
   }, [user?.uid, db]);
 
   const { data: allFbMessages } = useCollection(aiMessagesQuery);
@@ -100,17 +100,17 @@ export default function AIAssistantPage() {
     try {
       await saveMessage('user', messageText);
 
-      // Deep data context construction
+      // Constructing DEEP CONTEXT for the AI
       const inventorySummary = products.length > 0 
-        ? products.map(p => `[${p.name}: stock ${p.stock}${p.unit}, buy ${p.purchasePrice}, sell ${p.sellingPrice}]`).join('\n')
+        ? products.map(p => `[Item: ${p.name}, Stock: ${p.stock}${p.unit}, Buy: ${p.purchasePrice}, Sell: ${p.sellingPrice}]`).join('\n')
         : "Inventory is empty."
         
       const salesSummary = sales.length > 0
-        ? sales.slice(0, 50).map(s => `Date: ${new Date(s.saleDate).toLocaleDateString()}, Total: ${s.total}, Profit: ${s.profit || 0}`).join('\n')
+        ? sales.slice(0, 30).map(s => `Date: ${new Date(s.saleDate).toLocaleDateString()}, Total: ${s.total}, Profit: ${s.profit || 0}`).join('\n')
         : "No sales records yet."
         
       const customersSummary = customers.length > 0
-        ? customers.map(c => `${c.firstName}: Baki ${currency}${c.totalDue}`).join('\n')
+        ? customers.map(c => `${c.firstName}: Total Baki ${currency}${c.totalDue}`).join('\n')
         : "No customers listed."
 
       const totalInvestment = products.reduce((acc, p) => acc + ((p.purchasePrice || 0) * (p.stock || 0)), 0)
@@ -121,7 +121,7 @@ export default function AIAssistantPage() {
       const history = currentMessages
         .filter(m => m.id !== 'welcome')
         .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }))
-        .slice(-15) // Keep last 15 messages for memory
+        .slice(-10) // Keeping memory of last 10 interactions
 
       const result = await businessChat({
         message: messageText,
@@ -141,9 +141,8 @@ export default function AIAssistantPage() {
 
       await saveMessage('assistant', result.reply);
     } catch (error) {
-      console.error("Chat Error:", error);
-      // User requested error message
-      await saveMessage('assistant', "eita AI er reply na....");
+      console.error("Chat Action Error:", error);
+      await saveMessage('assistant', "দুঃখিত ভাই, এআই-এর সাথে কানেকশনে সমস্যা হচ্ছে। দয়া করে আবার চেষ্টা করুন।");
     } finally {
       setIsLoading(false)
     }
@@ -175,7 +174,7 @@ export default function AIAssistantPage() {
           <div>
             <h2 className="text-xl md:text-2xl font-black font-headline text-primary">SpecsAI Master Brain</h2>
             <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold tracking-widest flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-green-600" /> Human Partner Mode Online
+              <ShieldCheck className="w-3 h-3 text-green-600" /> Live Partner Mode Online
             </p>
           </div>
         </div>
@@ -203,11 +202,11 @@ export default function AIAssistantPage() {
               <CardDescription className="text-[10px] font-bold text-accent uppercase tracking-tighter">
                 {isLoading ? (
                   <span className="flex items-center gap-1 animate-pulse">
-                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> {language === 'bn' ? 'ডাটা এনালাইজ করছি...' : 'Analyzing Data...'}
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> Analyzing Data...
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">
-                    <MessageSquare className="w-2.5 h-2.5" /> Ready to Discuss Business
+                    <MessageSquare className="w-2.5 h-2.5" /> Connected to Your Shop Data
                   </span>
                 )}
               </CardDescription>
@@ -248,7 +247,7 @@ export default function AIAssistantPage() {
                       <div className="w-2 h-2 bg-accent rounded-full animate-bounce [animation-delay:-0.15s]" />
                       <div className="w-2 h-2 bg-accent rounded-full animate-bounce" />
                     </div>
-                    <span className="text-[10px] uppercase font-black tracking-widest text-accent">{language === 'bn' ? 'ব্রেইন এনালাইজ করছে...' : 'SpecsAI Thinking...'}</span>
+                    <span className="text-[10px] uppercase font-black tracking-widest text-accent">{language === 'bn' ? 'মাস্টার ব্রেইন চিন্তা করছে...' : 'SpecsAI Thinking...'}</span>
                   </div>
                 </div>
               )}
