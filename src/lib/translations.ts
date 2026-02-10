@@ -93,6 +93,36 @@ export const translations = {
     unpaid: "Unpaid",
     status: "Status",
 
+    // Analytics
+    intelligenceReports: "Intelligence Reports",
+    salesTrackingDesc: "Detailed sales and profit tracking system.",
+    netProfit: "Net Profit",
+    avgTransaction: "Avg Transaction",
+    revenuePerOrder: "Revenue per order",
+    growthForecast: "Growth Forecast",
+    performanceTimeline: "Performance Timeline",
+    revVsProfit: "Revenue vs Profit trends",
+    reportBreakdown: "Report Breakdown",
+    allTransactionsPeriod: "All transactions recorded in this period.",
+    searchHistory: "Search history...",
+    aiHealthAudit: "AI Health Audit",
+    auditComplete: "Audit Complete",
+    auditFailed: "Audit Failed",
+
+    // BI
+    biInsights: "Deep insights into costs, margins, and potential profit.",
+    totalInvestment: "Total Investment",
+    potentialProfit: "Potential Profit",
+    totalStockValue: "Total Stock Value",
+    warehouseValueDesc: "Total estimated selling value of your warehouse.",
+    investmentDesc: "Total value based on purchase costs of all stock.",
+    marginDesc: "Expected margin if current inventory is cleared.",
+    revenueTrends: "Revenue Trends",
+    monthlyRevVolume: "Monthly revenue vs order volume",
+    categoryAnalysis: "Category Analysis",
+    profitPotentialCat: "Profit potential by category",
+    runAudit: "Run AI Health Audit",
+
     // AI Assistant
     aiStatus: "Connection Status",
     smartBrain: "Intelligence",
@@ -218,6 +248,36 @@ export const translations = {
     paid: "জমা",
     unpaid: "বকেয়া",
     status: "অবস্থা",
+
+    // Analytics
+    intelligenceReports: "ইন্টেলিজেন্স রিপোর্ট",
+    salesTrackingDesc: "বিক্রয় ও লাভের বিস্তারিত ট্র্যাকিং সিস্টেম।",
+    netProfit: "নিট লাভ",
+    avgTransaction: "গড় লেনদেন",
+    revenuePerOrder: "প্রতি অর্ডারে আয়",
+    growthForecast: "প্রবৃদ্ধির পূর্বাভাস",
+    performanceTimeline: "পারফরম্যান্স টাইমলাইন",
+    revVsProfit: "আয় বনাম লাভের প্রবণতা",
+    reportBreakdown: "রিপোর্ট ব্রেকডাউন",
+    allTransactionsPeriod: "এই সময়ের সব লেনদেন।",
+    searchHistory: "ইতিহাস খুঁজুন...",
+    aiHealthAudit: "AI হেলথ অডিট",
+    auditComplete: "অডিট সম্পন্ন",
+    auditFailed: "অডিট ব্যর্থ",
+
+    // BI
+    biInsights: "খরচ, মার্জিন এবং সম্ভাব্য লাভের গভীর বিশ্লেষণ।",
+    totalInvestment: "মোট বিনিয়োগ",
+    potentialProfit: "সম্ভাব্য লাভ",
+    totalStockValue: "স্টকের মোট মূল্য",
+    warehouseValueDesc: "আপনার গুদামের মোট সম্ভাব্য বিক্রয় মূল্য।",
+    investmentDesc: "মালের কেনা দামের ওপর ভিত্তি করে মোট বিনিয়োগ।",
+    marginDesc: "বর্তমান স্টক শেষ হলে সম্ভাব্য লাভ।",
+    revenueTrends: "আয় বৃদ্ধির ধারা",
+    monthlyRevVolume: "মাসিক আয় বনাম অর্ডারের সংখ্যা",
+    categoryAnalysis: "ক্যাটাগরি বিশ্লেষণ",
+    profitPotentialCat: "ক্যাটাগরি ভিত্তিক লাভের সম্ভাবনা",
+    runAudit: "AI হেলথ অডিট করুন",
 
     // AI Assistant
     aiStatus: "অ্যাসিস্ট্যান্ট স্ট্যাটাস",

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -5,16 +6,13 @@ import {
   BarChart3, 
   TrendingUp, 
   Sparkles, 
-  BarChart as BarChartIcon, 
   Clock,
   ShieldCheck,
-  DollarSign,
-  ShoppingCart,
-  Lock,
   Search,
   Activity,
   ArrowUpRight,
-  Trash2
+  Trash2,
+  Lock
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -36,12 +34,12 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog"
-import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts"
+import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
 import { analyzeBusinessHealth, type AnalyzeBusinessHealthOutput } from "@/ai/flows/analyze-business-health"
 import { useToast } from "@/hooks/use-toast"
 import { useBusinessData } from "@/hooks/use-business-data"
 import { translations } from "@/lib/translations"
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, subDays, eachDayOfInterval, eachMonthOfInterval, isSameDay, isSameMonth } from "date-fns"
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, eachDayOfInterval, eachMonthOfInterval, isSameDay, isSameMonth } from "date-fns"
 import { cn } from "@/lib/utils"
 
 const chartConfig = {
@@ -133,7 +131,7 @@ export default function AnalyticsPage() {
         const monthSales = filteredSales.filter(s => isSameMonth(new Date(s.saleDate), month))
         return {
           name: format(month, "MMM"),
-          revenue: monthSales.reduce((sum, s) => sum + (s.total || 0), 0),
+          revenue: monthSales.reduce((sum, s) => sum + (sum + (s.total || 0)), 0),
           profit: monthSales.reduce((sum, s) => sum + (s.profit || 0), 0)
         }
       })
@@ -151,7 +149,7 @@ export default function AnalyticsPage() {
 
   const handleRunAudit = async () => {
     if (products.length === 0) {
-      toast({ title: "No Inventory", variant: "destructive" })
+      toast({ title: t.noData, variant: "destructive" })
       return
     }
     setIsAuditing(true)
@@ -165,9 +163,9 @@ export default function AnalyticsPage() {
         potentialProfit: products.reduce((acc, p) => acc + (((p.sellingPrice || 0) - (p.purchasePrice || 0)) * (p.stock || 0)), 0)
       })
       setAuditResult(result)
-      toast({ title: "Audit Complete" })
+      toast({ title: t.auditComplete })
     } catch (error) {
-      toast({ title: "Audit Failed", variant: "destructive" })
+      toast({ title: t.auditFailed, variant: "destructive" })
     } finally {
       setIsAuditing(false)
     }
@@ -202,9 +200,9 @@ export default function AnalyticsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-bold font-headline text-primary flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-accent" /> Intelligence Reports
+            <BarChart3 className="w-6 h-6 text-accent" /> {t.intelligenceReports}
           </h2>
-          <p className="text-sm text-muted-foreground">Detailed sales and profit tracking system.</p>
+          <p className="text-sm text-muted-foreground">{t.salesTrackingDesc}</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 items-end">
@@ -219,7 +217,7 @@ export default function AnalyticsPage() {
           
           <Button className="bg-accent hover:bg-accent/90 gap-2 w-full sm:w-auto shadow-lg h-10" onClick={handleRunAudit} disabled={isAuditing || products.length === 0}>
             <Sparkles className="w-4 h-4" />
-            {isAuditing ? t.thinking : "AI Health Audit"}
+            {isAuditing ? t.thinking : t.aiHealthAudit}
           </Button>
         </div>
       </div>
@@ -228,19 +226,19 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-primary text-white border-none shadow-lg overflow-hidden group">
           <CardHeader className="p-4 pb-0">
-            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">REVENUE ({timeRange})</CardDescription>
+            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">{t.revenue} ({timeRange})</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2">
             <div className="text-2xl font-black truncate">{currency}{metrics.revenue.toLocaleString()}</div>
             <p className="text-[10px] text-white/60 mt-1 flex items-center gap-1">
-              <Activity className="w-3 h-3" /> Sales Volume: {metrics.count}
+              <Activity className="w-3 h-3" /> {t.sales}: {metrics.count}
             </p>
           </CardContent>
         </Card>
 
         <Card className="bg-accent text-white border-none shadow-lg overflow-hidden group">
           <CardHeader className="p-4 pb-0">
-            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">NET PROFIT ({timeRange})</CardDescription>
+            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">{t.netProfit} ({timeRange})</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2">
             <div className="text-2xl font-black truncate">{currency}{metrics.profit.toLocaleString()}</div>
@@ -252,20 +250,20 @@ export default function AnalyticsPage() {
 
         <Card className="bg-blue-600 text-white border-none shadow-lg overflow-hidden group">
           <CardHeader className="p-4 pb-0">
-            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">AVG TRANSACTION</CardDescription>
+            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">{t.avgTransaction}</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2">
             <div className="text-2xl font-black truncate">{currency}{metrics.avgTicket.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-            <p className="text-[10px] text-white/60 mt-1">Revenue per order</p>
+            <p className="text-[10px] text-white/60 mt-1">{t.revenuePerOrder}</p>
           </CardContent>
         </Card>
 
         <Card className="bg-muted/50 border-accent/10 shadow-sm overflow-hidden group">
           <CardHeader className="p-4 pb-0">
-            <CardDescription className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">GROWTH FORECAST</CardDescription>
+            <CardDescription className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">{t.growthForecast}</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2">
-            <div className="text-2xl font-black text-primary">Stable</div>
+            <div className="text-2xl font-black text-primary">{t.stable}</div>
             <p className="text-[10px] text-muted-foreground mt-1 italic">Based on {timeRange} trends</p>
           </CardContent>
         </Card>
@@ -313,8 +311,8 @@ export default function AnalyticsPage() {
       <Card className="shadow-lg border-accent/10 overflow-hidden bg-white">
         <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5 p-4">
           <div className="space-y-1">
-            <CardTitle className="text-base font-bold">Performance Timeline</CardTitle>
-            <CardDescription className="text-[10px]">Revenue vs Profit trends ({timeRange})</CardDescription>
+            <CardTitle className="text-base font-bold">{t.performanceTimeline}</CardTitle>
+            <CardDescription className="text-[10px]">{t.revVsProfit} ({timeRange})</CardDescription>
           </div>
           <Badge variant="outline" className="text-[9px] bg-white border-accent/20 text-accent font-bold">Live Data</Badge>
         </CardHeader>
@@ -377,14 +375,14 @@ export default function AnalyticsPage() {
         <CardHeader className="p-4 border-b bg-muted/5 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="space-y-1">
             <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-5 h-5 text-accent" /> {timeRange.toUpperCase()} Report Breakdown
+              <Clock className="w-5 h-5 text-accent" /> {t.reportBreakdown}
             </CardTitle>
-            <CardDescription className="text-[10px]">All transactions recorded in this period.</CardDescription>
+            <CardDescription className="text-[10px]">{t.allTransactionsPeriod}</CardDescription>
           </div>
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
-              placeholder="Search history..." 
+              placeholder={t.searchHistory} 
               className="pl-9 h-9 bg-white" 
               value={search} 
               onChange={e => setSearch(e.target.value)} 
@@ -394,7 +392,7 @@ export default function AnalyticsPage() {
         <CardContent className="p-0">
           {finalSalesList.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
-              <ShoppingCart className="w-12 h-12 opacity-10" />
+              <Activity className="w-12 h-12 opacity-10" />
               <p className="text-xs italic">{t.noTransactions}</p>
             </div>
           ) : (

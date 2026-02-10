@@ -1,17 +1,15 @@
+
 "use client"
 
 import { useMemo, useState } from "react"
 import { 
-  BarChart3, 
+  PieChart as PieChartIcon,
   TrendingUp, 
   Sparkles, 
-  BarChart as BarChartIcon, 
-  PieChart as PieChartIcon,
   Target,
   ShieldCheck,
   DollarSign,
-  Package,
-  Layers
+  Package
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -28,6 +26,7 @@ import { useBusinessData } from "@/hooks/use-business-data"
 import { analyzeBusinessHealth, type AnalyzeBusinessHealthOutput } from "@/ai/flows/analyze-business-health"
 import { useToast } from "@/hooks/use-toast"
 import { format, subMonths, eachMonthOfInterval, isSameMonth } from "date-fns"
+import { translations } from "@/lib/translations"
 import { cn } from "@/lib/utils"
 
 const chartConfig = {
@@ -39,7 +38,9 @@ const chartConfig = {
 
 export default function BusinessIntelligencePage() {
   const { toast } = useToast()
-  const { products, sales, currency, isLoading } = useBusinessData()
+  const { products, sales, currency, isLoading, language } = useBusinessData()
+  const t = translations[language]
+  
   const [isAuditing, setIsAuditing] = useState(false)
   const [auditResult, setAuditResult] = useState<AnalyzeBusinessHealthOutput | null>(null)
 
@@ -90,7 +91,7 @@ export default function BusinessIntelligencePage() {
 
   const handleRunAudit = async () => {
     if (products.length === 0) {
-      toast({ title: "No Inventory", description: "Add products to run an audit.", variant: "destructive" })
+      toast({ title: t.noData, description: t.manageStock, variant: "destructive" })
       return
     }
 
@@ -107,24 +108,24 @@ export default function BusinessIntelligencePage() {
       })
       
       setAuditResult(result)
-      toast({ title: "Audit Complete" })
+      toast({ title: t.auditComplete })
     } catch (error) {
-      toast({ title: "Audit Failed", variant: "destructive" })
+      toast({ title: t.auditFailed, variant: "destructive" })
     } finally {
       setIsAuditing(false)
     }
   }
 
-  if (isLoading) return <div className="p-10 text-center animate-pulse text-accent font-bold">Analysing Intelligence Data...</div>
+  if (isLoading) return <div className="p-10 text-center animate-pulse text-accent font-bold">{t.loading}</div>
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20 max-w-full overflow-hidden">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl md:text-3xl font-black font-headline text-primary flex items-center gap-2">
-            <PieChartIcon className="w-7 h-7 text-accent" /> Business Intelligence
+            <PieChartIcon className="w-7 h-7 text-accent" /> {t.biAnalytics}
           </h1>
-          <p className="text-sm text-muted-foreground">Deep insights into costs, margins, and potential profit.</p>
+          <p className="text-sm text-muted-foreground">{t.biInsights}</p>
         </div>
         <Button 
           className="bg-accent hover:bg-accent/90 gap-2 shadow-xl shrink-0"
@@ -132,7 +133,7 @@ export default function BusinessIntelligencePage() {
           disabled={isAuditing}
         >
           <Sparkles className="w-4 h-4" />
-          {isAuditing ? "Auditing..." : "Run AI Health Audit"}
+          {isAuditing ? t.thinking : t.runAudit}
         </Button>
       </div>
 
@@ -142,11 +143,11 @@ export default function BusinessIntelligencePage() {
             <DollarSign className="w-16 h-16" />
           </div>
           <CardHeader className="pb-2">
-            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">Total Investment</CardDescription>
+            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">{t.totalInvestment}</CardDescription>
             <CardTitle className="text-2xl md:text-3xl font-black truncate">{currency}{metrics.totalInvestment.toLocaleString()}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-[10px] text-white/60">Total value based on purchase costs of all stock.</p>
+            <p className="text-[10px] text-white/60">{t.investmentDesc}</p>
           </CardContent>
         </Card>
 
@@ -155,11 +156,11 @@ export default function BusinessIntelligencePage() {
             <TrendingUp className="w-16 h-16" />
           </div>
           <CardHeader className="pb-2">
-            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">Potential Profit</CardDescription>
+            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">{t.potentialProfit}</CardDescription>
             <CardTitle className="text-2xl md:text-3xl font-black truncate">{currency}{metrics.potentialProfit.toLocaleString()}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-[10px] text-white/60">Expected margin if current inventory is cleared.</p>
+            <p className="text-[10px] text-white/60">{t.marginDesc}</p>
           </CardContent>
         </Card>
 
@@ -168,11 +169,11 @@ export default function BusinessIntelligencePage() {
             <Package className="w-16 h-16" />
           </div>
           <CardHeader className="pb-2">
-            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">Total Stock Value</CardDescription>
+            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">{t.totalStockValue}</CardDescription>
             <CardTitle className="text-2xl md:text-3xl font-black truncate">{currency}{metrics.totalStockValue.toLocaleString()}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-[10px] text-white/60">Total estimated selling value of your warehouse.</p>
+            <p className="text-[10px] text-white/60">{t.warehouseValueDesc}</p>
           </CardContent>
         </Card>
       </div>
@@ -219,8 +220,8 @@ export default function BusinessIntelligencePage() {
         <Card className="shadow-lg border-accent/5 overflow-hidden h-full">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle className="text-lg">Revenue Trends</CardTitle>
-              <CardDescription className="text-xs">Monthly revenue vs order volume</CardDescription>
+              <CardTitle className="text-lg">{t.revenueTrends}</CardTitle>
+              <CardDescription className="text-xs">{t.monthlyRevVolume}</CardDescription>
             </div>
             <Badge variant="outline" className="text-[9px] text-accent border-accent/20 bg-accent/5">Live Sync</Badge>
           </CardHeader>
@@ -267,8 +268,8 @@ export default function BusinessIntelligencePage() {
 
         <Card className="shadow-lg border-accent/5 overflow-hidden h-full">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Category Analysis</CardTitle>
-            <CardDescription className="text-xs">Profit potential by category</CardDescription>
+            <CardTitle className="text-lg">{t.categoryAnalysis}</CardTitle>
+            <CardDescription className="text-xs">{t.profitPotentialCat}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 p-6 pt-4">
             {categoryAnalysis.map((cat, i) => (
@@ -288,7 +289,7 @@ export default function BusinessIntelligencePage() {
             ))}
             {categoryAnalysis.length === 0 && (
               <div className="py-20 text-center text-xs text-muted-foreground italic">
-                No category data available.
+                {t.noData}
               </div>
             )}
           </CardContent>
