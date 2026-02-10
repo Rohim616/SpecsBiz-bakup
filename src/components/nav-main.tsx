@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -32,11 +33,13 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 export function NavMain() {
   const pathname = usePathname()
   const { user } = useUser()
+  const { setOpenMobile } = useSidebar()
   const { language } = useBusinessData()
   const [mounted, setMounted] = useState(false)
   
@@ -66,6 +69,11 @@ export function NavMain() {
     return pathname === href || pathname === `${href}/` || pathname.startsWith(`${href}/`)
   }
 
+  // Handle click to close mobile menu
+  const handleItemClick = () => {
+    setOpenMobile(false)
+  }
+
   // If not mounted, we render a simplified version to match server output exactly
   if (!mounted) {
     return (
@@ -89,7 +97,7 @@ export function NavMain() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="h-20 flex items-center px-4 border-b border-sidebar-border">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3" onClick={handleItemClick}>
           <div className="bg-sidebar-primary/10 p-1 rounded-lg overflow-hidden shrink-0">
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="w-10 h-10 object-contain" />
@@ -114,6 +122,7 @@ export function NavMain() {
                   isActive={checkActive(item.href)}
                   tooltip={item.title}
                   className="px-4 h-11"
+                  onClick={handleItemClick}
                 >
                   <Link href={item.href}>
                     <item.icon className="w-5 h-5" />
@@ -128,7 +137,12 @@ export function NavMain() {
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip={t.cloudSync} className={`px-4 h-11 ${user ? 'text-green-500 font-bold' : 'text-orange-500 font-bold'}`}>
+            <SidebarMenuButton 
+              asChild 
+              tooltip={t.cloudSync} 
+              className={`px-4 h-11 ${user ? 'text-green-500 font-bold' : 'text-orange-500 font-bold'}`}
+              onClick={handleItemClick}
+            >
               <Link href="/auth">
                 {user ? <ShieldCheck className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
                 <span className="font-body">{user ? t.cloudSync : t.offlineMode}</span>
@@ -136,7 +150,13 @@ export function NavMain() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={checkActive('/settings')} tooltip={t.settings} className="px-4 h-11">
+            <SidebarMenuButton 
+              asChild 
+              isActive={checkActive('/settings')} 
+              tooltip={t.settings} 
+              className="px-4 h-11"
+              onClick={handleItemClick}
+            >
               <Link href="/settings">
                 <Settings className="w-5 h-5" />
                 <span className="font-body">{t.settings}</span>
