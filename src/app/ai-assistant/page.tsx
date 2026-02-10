@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useRef, useEffect, useMemo } from "react"
@@ -42,19 +41,19 @@ import { collection, query, orderBy, addDoc, serverTimestamp, getDocs, writeBatc
 import { cn } from "@/lib/utils"
 
 const QUICK_ACTIONS = [
+  "Analyze my overall business",
   "Who took credit today?",
   "Future profit prediction",
-  "Summarize my business health",
-  "Which items should I restock?",
-  "Suggest ways to increase profit"
+  "Suggest ways to increase profit",
+  "Which items are losing money?"
 ]
 
 const QUICK_ACTIONS_BN = [
+  "আমার ব্যবসার পুরো অবস্থা জানাও",
   "আজকে কে কে বাকিতে নিসে?",
   "ভবিষ্যৎ লাভের সম্ভাবনা কেমন?",
-  "আমার ব্যবসার বর্তমান অবস্থা জানাও",
-  "কোন কোন মাল কেনা দরকার?",
-  "লাভ বাড়ানোর বুদ্ধি দাও"
+  "লাভ বাড়ানোর বুদ্ধি দাও",
+  "কোন কোন মালে লস হচ্ছে?"
 ]
 
 export default function AIAssistantPage() {
@@ -79,11 +78,11 @@ export default function AIAssistantPage() {
     return query(collection(db, 'users', user.uid, 'aiMessages'), orderBy('timestamp', 'asc'));
   }, [user?.uid, db]);
 
-  const { data: allFbMessages, isLoading: isHistoryLoading } = useCollection(aiMessagesQuery);
+  const { data: allFbMessages } = useCollection(aiMessagesQuery);
 
-  // Initialize first session ONLY ONCE on mount
+  // Initialize first session
   useEffect(() => {
-    if (!activeSessionId && !isLoading) {
+    if (!activeSessionId) {
       const savedSid = localStorage.getItem('specsbiz_active_session');
       if (savedSid) {
         setActiveSessionId(savedSid);
@@ -127,8 +126,8 @@ export default function AIAssistantPage() {
         id: 'welcome', 
         role: "assistant" as const, 
         content: language === 'bn' 
-          ? "হ্যালো ভাই! আমি SpecsAI। আমি আপনার ব্যবসার সব হিসাব জানি। নতুন চ্যাট শুরু করতে পারেন অথবা আগেরগুলো ডান দিক থেকে দেখতে পারেন। আজ কি সাহায্য করতে পারি?" 
-          : "Hi there! I'm SpecsAI. I know your business inside out. You can start a new discussion or explore previous ones from the history. How can I help today?" 
+          ? "হ্যালো ভাই! আমি SpecsAI। আপনার ব্যবসার মগজ এখন আমার হাতে। আমি প্রতিটি মালের খবর আর কাস্টমারের বকেয়া জানি। ব্যবসার কি অবস্থা জানতে চান? শুরু করুন!" 
+          : "Hi Partner! I'm SpecsAI. I have full access to your business brain. I know every product and every customer debt. Ready to analyze your business or predict the future? Let's talk!" 
       }];
     }
     return list;
@@ -142,7 +141,7 @@ export default function AIAssistantPage() {
     }
   }, [currentMessages, isLoading])
 
-  // Context calculations
+  // Advanced Context calculations
   const businessMetrics = useMemo(() => {
     const totalInvestment = products.reduce((acc, p) => acc + ((p.purchasePrice || 0) * (p.stock || 0)), 0)
     const totalStockValue = products.reduce((acc, p) => acc + ((p.sellingPrice || 0) * (p.stock || 0)), 0)
@@ -157,7 +156,7 @@ export default function AIAssistantPage() {
     })
     const topItems = Object.entries(soldStats)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
+      .slice(0, 10)
       .map(([name, qty]) => `${name} (${qty} sold)`)
       .join(', ')
 
@@ -185,23 +184,25 @@ export default function AIAssistantPage() {
     try {
       await saveMessage('user', messageText);
 
+      // Create a super-detailed inventory summary
       const inventorySummary = products.length > 0 
-        ? products.map(p => `${p.name}: ${p.stock} ${p.unit} (Buy: ${currency}${p.purchasePrice}, Sell: ${currency}${p.sellingPrice})`).join(' | ')
-        : "Inventory is currently empty."
+        ? products.map(p => `${p.name}: ${p.stock} ${p.unit} (Cost: ${currency}${p.purchasePrice}, Sale: ${currency}${p.sellingPrice}, Cat: ${p.category})`).join(' | ')
+        : "Inventory is completely empty."
         
+      // Create detailed sales history (last 50)
       const salesSummary = sales.length > 0
-        ? sales.map(s => `Date: ${new Date(s.saleDate).toLocaleDateString()}, Total: ${currency}${s.total}, Items: ${s.items?.map((i: any) => i.name).join(';')}`).slice(0, 50).join(' || ')
-        : "No sales history yet."
+        ? sales.map(s => `Date: ${new Date(s.saleDate).toLocaleString()}, Total: ${currency}${s.total}, Profit: ${currency}${s.profit || 0}, Items: ${s.items?.map((i: any) => i.name + ' x' + i.quantity).join(';')}`).slice(0, 50).join(' || ')
+        : "No sales recorded yet."
         
+      // Create detailed customer/baki summary
       const customersSummary = customers.length > 0
-        ? customers.map(c => `${c.firstName} ${c.lastName}: Total Due ${currency}${c.totalDue}`).join(' | ')
+        ? customers.map(c => `${c.firstName} ${c.lastName}: Total Baki ${currency}${c.totalDue}, Phone: ${c.phone}`).join(' | ')
         : "No customers recorded."
 
-      // Get history for the current session to maintain context
       const history = currentMessages
         .filter(m => m.id !== 'welcome')
         .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }))
-        .slice(-10)
+        .slice(-15)
 
       const result = await businessChat({
         message: messageText,
@@ -225,8 +226,8 @@ export default function AIAssistantPage() {
       console.error("Chat Error:", error);
       toast({ 
         variant: "destructive", 
-        title: language === 'bn' ? "কানেকশন সমস্যা" : "AI Snag", 
-        description: language === 'bn' ? "আমি ডেটা এনালাইজ করতে পারছি না। দয়া করে আবার চেষ্টা করুন।" : "Memory error or connection lost. Please try again." 
+        title: "Connection Lost", 
+        description: "maybe AI er limit shes !" 
       })
     } finally {
       setIsLoading(false)
@@ -259,7 +260,7 @@ export default function AIAssistantPage() {
       setIsClearOpen(false);
       setPassword("");
       setDeleteTargetId("all");
-      toast({ title: language === 'en' ? "History Wiped" : "হিস্ট্রি মুছে ফেলা হয়েছে" });
+      toast({ title: language === 'en' ? "Wiped Successfully" : "ডিলিট সম্পন্ন হয়েছে" });
     } else {
       toast({ variant: "destructive", title: "Wrong Password" });
     }
@@ -281,7 +282,7 @@ export default function AIAssistantPage() {
           <h2 className="text-xl md:text-2xl font-bold font-headline text-primary flex items-center gap-2 truncate">
             <BrainCircuit className="w-5 h-5 md:w-6 md:h-6 text-accent shrink-0 animate-pulse" /> SpecsAI Intelligence
           </h2>
-          <p className="text-[10px] md:text-xs text-muted-foreground truncate italic">Real-time business memory activated.</p>
+          <p className="text-[10px] md:text-xs text-muted-foreground truncate italic">Ultimate Business Brain Activated.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button 
@@ -313,15 +314,15 @@ export default function AIAssistantPage() {
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                 </div>
                 <div className="min-w-0">
-                  <CardTitle className="text-sm md:text-base font-black text-primary">SpecsAI</CardTitle>
+                  <CardTitle className="text-sm md:text-base font-black text-primary">SpecsAI Partner</CardTitle>
                   <CardDescription className="text-[10px] truncate flex items-center gap-1">
                     {isLoading ? (
                       <span className="flex items-center gap-1 font-bold text-accent animate-pulse">
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> {language === 'bn' ? 'ডাটা এনালাইজ করছি...' : 'Thinking...'}
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> {language === 'bn' ? 'ডাটা বিশ্লেষণ করছি...' : 'Thinking...'}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-green-600 font-bold uppercase tracking-widest">
-                        <MessageSquare className="w-2.5 h-2.5" /> Live Analysis Mode
+                        <MessageSquare className="w-2.5 h-2.5" /> Full Access Mode
                       </span>
                     )}
                   </CardDescription>
@@ -358,7 +359,7 @@ export default function AIAssistantPage() {
                         <div className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:-0.15s]" />
                         <div className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce" />
                       </div>
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-accent/70">{language === 'bn' ? 'চিন্তা করছি...' : 'Processing Live Data...'}</span>
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-accent/70">{language === 'bn' ? 'আপনার ব্যবসা নিয়ে ভাবছি...' : 'Thinking about your business...'}</span>
                     </div>
                   </div>
                 )}
@@ -389,7 +390,7 @@ export default function AIAssistantPage() {
             <CardFooter className="p-3 md:p-4 w-full bg-white">
               <div className="flex w-full gap-2 items-center bg-muted/10 p-1 rounded-2xl border">
                 <Input 
-                  placeholder={language === 'bn' ? "যেকোনো কিছু জিজ্ঞেস করুন..." : "Ask me anything..."}
+                  placeholder={language === 'bn' ? "ব্যবসা নিয়ে কিছু জিজ্ঞেস করুন..." : "Ask about your business..."}
                   className="flex-1 text-sm h-12 border-none bg-transparent focus-visible:ring-0 shadow-none"
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -419,7 +420,7 @@ export default function AIAssistantPage() {
             <CardContent className="p-0 flex-1 overflow-hidden">
               <ScrollArea className="h-full">
                 {sessions.length === 0 ? (
-                  <div className="p-8 text-center text-[10px] opacity-40 italic">No previous chats.</div>
+                  <div className="p-8 text-center text-[10px] opacity-40 italic">No previous discussions.</div>
                 ) : (
                   <div className="divide-y divide-white/5">
                     {sessions.map((session) => (
@@ -465,14 +466,14 @@ export default function AIAssistantPage() {
             </div>
             <CardHeader className="p-4 pb-2 relative">
               <CardTitle className="text-xs uppercase tracking-widest font-black opacity-70 flex items-center gap-2">
-                <Sparkles className="w-3 h-3" /> Live Memory
+                <Sparkles className="w-3 h-3" /> Partner Brain
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 relative">
               <p className="text-[11px] font-medium leading-relaxed italic">
                 {language === 'bn' 
-                  ? "আমি আপনার ব্যবসার প্রতিটি সেশন আলাদাভাবে মনে রাখছি। আপনি চাইলে আগের যেকোনো কথা আবার বের করে দেখতে পারেন।" 
-                  : "I'm storing each discussion session separately. You can revisit or delete specific conversations as needed."}
+                  ? "আমি আপনার ব্যবসার প্রতিটি খুঁটিনাটি মনে রাখছি। আপনি যা ভুলে যাবেন, আমি তা মনে করিয়ে দেব।" 
+                  : "I'm monitoring every detail of your business. I'll remind you of things you might miss."}
               </p>
             </CardContent>
           </Card>
@@ -484,12 +485,12 @@ export default function AIAssistantPage() {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Lock className="w-5 h-5" /> {language === 'bn' ? 'হিস্ট্রি মুছুন' : 'Wipe History'}
+              <Lock className="w-5 h-5" /> History Protection
             </DialogTitle>
             <DialogDescription>
               {deleteTargetId === "all" 
-                ? (language === 'bn' ? "সব চ্যাট মুছতে সিক্রেট পাসওয়ার্ড দিন।" : "Enter secret password to wipe ALL conversation history.")
-                : (language === 'bn' ? "এই চ্যাটটি মুছতে সিক্রেট পাসওয়ার্ড দিন।" : "Enter secret password to delete this specific conversation.")}
+                ? (language === 'bn' ? "সব হিস্ট্রি মুছতে সিক্রেট পাসওয়ার্ড দিন।" : "Enter secret password to wipe ALL history.")
+                : (language === 'bn' ? "এই আলোচনাটি মুছতে সিক্রেট পাসওয়ার্ড দিন।" : "Enter secret password to delete this session.")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-2">

@@ -57,7 +57,9 @@ export async function businessChat(input: BusinessChatInput): Promise<{ reply: s
       1. DEEP ANALYSIS: Find patterns in sales and inventory that the owner might miss.
       2. ADVISE & PREDICT: Suggest what to restock, who to collect 'Baki' from, and predict next month's performance.
       3. BE CONVERSATIONAL: Discuss ideas, listen to the owner, and be supportive.
-      4. LANGUAGE: If language is 'bn', reply in Bengali (বাংলা). If English, use English.`,
+      4. CORRECT ERRORS: If the owner's plan seems risky or potentially loss-making, explain WHY and suggest a better way.
+      5. OMNISCIENCE: You know the margins, the slow-moving stock, and the debt history. Use it to give a "master-class" business advice.
+      6. LANGUAGE: If language is 'bn', reply in Bengali (বাংলা). If English, use English.`,
       history: input.history.map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         content: [{ text: m.content }]
