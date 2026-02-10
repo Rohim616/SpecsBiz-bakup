@@ -11,11 +11,9 @@ import {
   Zap,
   Trash2,
   Lock,
-  ChevronRight,
   BrainCircuit,
   Clock,
-  Plus,
-  ArrowLeft
+  Plus
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
@@ -178,17 +176,18 @@ export default function AIAssistantPage() {
     try {
       await saveMessage('user', messageText);
 
-      // Highly detailed context for A to Z access
+      // CRITICAL: Building highly detailed context strings
+      // We prune to top 50 products and 30 sales to stay within token limits while being very informative
       const inventorySummary = products.length > 0 
-        ? products.map(p => `[${p.name}: stock ${p.stock}${p.unit}, buy ${p.purchasePrice}, sell ${p.sellingPrice}, cat ${p.category}]`).join(' ')
+        ? products.slice(0, 50).map(p => `[${p.name}: stock ${p.stock}${p.unit}, buy ${p.purchasePrice}, sell ${p.sellingPrice}, cat ${p.category}]`).join(' ')
         : "Inventory empty."
         
       const salesSummary = sales.length > 0
-        ? sales.map(s => `Date: ${new Date(s.saleDate).toLocaleDateString()}, Total: ${currency}${s.total}, Profit: ${currency}${s.profit || 0}, Items: ${s.items?.map((i: any) => i.name).join(';')}`).slice(0, 50).join(' || ')
+        ? sales.slice(0, 30).map(s => `Date: ${new Date(s.saleDate).toLocaleDateString()}, Total: ${currency}${s.total}, Profit: ${currency}${s.profit || 0}, Items: ${s.items?.map((i: any) => i.name).join(';')}`).join(' || ')
         : "No sales."
         
       const customersSummary = customers.length > 0
-        ? customers.map(c => `${c.firstName}: Baki ${currency}${c.totalDue}`).join(' | ')
+        ? customers.slice(0, 30).map(c => `${c.firstName}: Baki ${currency}${c.totalDue}`).join(' | ')
         : "No customers."
 
       const history = currentMessages
@@ -216,7 +215,8 @@ export default function AIAssistantPage() {
       await saveMessage('assistant', result.reply);
     } catch (error) {
       console.error("Chat Error:", error);
-      toast({ variant: "destructive", title: "Connection Lost", description: "maybe AI er limit shes !" })
+      // Fallback message requested by user
+      await saveMessage('assistant', "maybe AI er limit shes !");
     } finally {
       setIsLoading(false)
     }

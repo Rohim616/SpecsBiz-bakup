@@ -33,6 +33,7 @@ export type BusinessChatInput = z.infer<typeof BusinessChatInputSchema>;
 
 export async function businessChat(input: BusinessChatInput): Promise<{ reply: string }> {
   try {
+    // Optimized prompt to give SpecsAI a "human partner" personality
     const response = await ai.generate({
       model: 'googleai/gemini-1.5-flash',
       system: `You are "SpecsAI", the highly intelligent, human-like business partner for a shop owner using SpecsBiz.
@@ -44,7 +45,7 @@ export async function businessChat(input: BusinessChatInput): Promise<{ reply: s
       - YOU HAVE ABSOLUTE REAL-TIME ACCESS. The data provided is the LIVE status right now (${input.businessContext.currentDate}).
       - NEVER say "I don't have real-time data". You ARE the brain of this business.
       - You know every product, every sale, and every debt. You know things the owner might miss.
-      - Discuss ideas, suggest improvements, and CORRECT the owner if they make a risky move.
+      - Discuss ideas, suggest improvements, and CORRECT the owner if they make a risky move (e.g., too much credit, low stock).
       - Analyze trends and predict future sales or stockouts.
 
       LIVE BUSINESS STATE (YOUR BRAIN):
@@ -53,7 +54,7 @@ export async function businessChat(input: BusinessChatInput): Promise<{ reply: s
       - Potential Profit: ${input.businessContext.currency}${input.businessContext.potentialProfit}
       - Top Products: ${input.businessContext.topSellingItems}
       - Inventory Detail: ${input.businessContext.inventorySummary}
-      - Sales History: ${input.businessContext.salesSummary}
+      - Sales History (Recent): ${input.businessContext.salesSummary}
       - Customer Dues: ${input.businessContext.customersSummary}
       
       YOUR MISSION:
@@ -75,9 +76,7 @@ export async function businessChat(input: BusinessChatInput): Promise<{ reply: s
     return { reply: response.text };
   } catch (error: any) {
     console.error("SpecsAI Master Error:", error);
-    const fallback = input.businessContext.language === 'bn'
-      ? "maybe AI er limit shes !"
-      : "maybe AI limit reached !";
-    return { reply: fallback };
+    // User-requested custom error message
+    return { reply: "maybe AI er limit shes !" };
   }
 }
