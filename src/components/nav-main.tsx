@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   FileSpreadsheet,
   PieChart,
-  BookOpen
+  BookOpen,
+  PackageSearch
 } from "lucide-react"
 import { useUser } from "@/firebase"
 import { useBusinessData } from "@/hooks/use-business-data"
@@ -43,7 +44,6 @@ export function NavMain() {
   const { language } = useBusinessData()
   const [mounted, setMounted] = useState(false)
   
-  // Hydration guard: ensures component only renders dynamic content after client mount
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -54,6 +54,7 @@ export function NavMain() {
   const menuItems = [
     { title: t.dashboard, icon: LayoutDashboard, href: "/" },
     { title: t.inventory, icon: Package, href: "/inventory" },
+    { title: t.procurement, icon: PackageSearch, href: "/procurement" },
     { title: t.sales, icon: ShoppingCart, href: "/sales" },
     { title: t.customers, icon: Users, href: "/customers" },
     { title: t.notebook, icon: BookOpen, href: "/notebook" },
@@ -63,18 +64,15 @@ export function NavMain() {
     { title: t.aiAssistant, icon: Bot, href: "/ai-assistant" },
   ]
 
-  // Helper to check active path with trailing slash support
   const checkActive = (href: string) => {
     if (href === "/") return pathname === "/" || pathname === ""
     return pathname === href || pathname === `${href}/` || pathname.startsWith(`${href}/`)
   }
 
-  // Handle click to close mobile menu
   const handleItemClick = () => {
     setOpenMobile(false)
   }
 
-  // If not mounted, we render a simplified version to match server output exactly
   if (!mounted) {
     return (
       <Sidebar collapsible="icon">

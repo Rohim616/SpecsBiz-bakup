@@ -14,9 +14,29 @@
         "barcode": { "type": "string" },
         "price": { "type": "number" },
         "stockQuantity": { "type": "number" },
-        "alertThreshold": { "type": "number" }
+        "alertThreshold": { "type": "number" },
+        "purchasePrice": { "type": "number" },
+        "sellingPrice": { "type": "number" },
+        "stock": { "type": "number" },
+        "unit": { "type": "string" },
+        "category": { "type": "string" }
       },
-      "required": ["id", "name", "price", "stockQuantity"]
+      "required": ["id", "name"]
+    },
+    "Procurement": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Procurement",
+      "type": "object",
+      "description": "Represents a stock buying/restock record.",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "quantity": { "type": "number" },
+        "buyPrice": { "type": "number" },
+        "totalCost": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" }
+      }
     },
     "Sale": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -28,9 +48,10 @@
         "customerId": { "type": "string" },
         "saleDate": { "type": "string", "format": "date-time" },
         "totalAmount": { "type": "number" },
-        "productIds": { "type": "array", "items": { "type": "string" } }
-      },
-      "required": ["id", "customerId", "saleDate", "totalAmount"]
+        "total": { "type": "number" },
+        "profit": { "type": "number" },
+        "items": { "type": "array" }
+      }
     },
     "Customer": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -47,53 +68,7 @@
         "totalDue": { "type": "number" },
         "segment": { "type": "string" }
       },
-      "required": ["id", "firstName", "email"]
-    },
-    "BakiRecord": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "BakiRecord",
-      "type": "object",
-      "description": "Represents a specific debt entry for a customer.",
-      "properties": {
-        "id": { "type": "string" },
-        "productName": { "type": "string" },
-        "quantity": { "type": "number" },
-        "amount": { "type": "number" },
-        "paidAmount": { "type": "number" },
-        "takenDate": { "type": "string", "format": "date-time" },
-        "promiseDate": { "type": "string", "format": "date-time" },
-        "note": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "paid"] }
-      }
-    },
-    "AiMessage": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AiMessage",
-      "type": "object",
-      "description": "A persistent message in the AI conversation history.",
-      "properties": {
-        "id": { "type": "string" },
-        "role": { "type": "string", "enum": ["user", "assistant"] },
-        "content": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "role", "content", "timestamp"]
-    },
-    "Note": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Note",
-      "type": "object",
-      "description": "Represents a notebook entry.",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "content": { "type": "string" },
-        "color": { "type": "string" },
-        "isPinned": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "title"]
+      "required": ["id", "firstName"]
     },
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -123,16 +98,12 @@
         "definition": { "entityName": "Product", "schema": { "$ref": "#/backend/entities/Product" } }
       },
       {
+        "path": "/users/{userId}/procurements/{procurementId}",
+        "definition": { "entityName": "Procurement", "schema": { "$ref": "#/backend/entities/Procurement" } }
+      },
+      {
         "path": "/users/{userId}/customers/{customerId}",
         "definition": { "entityName": "Customer", "schema": { "$ref": "#/backend/entities/Customer" } }
-      },
-      {
-        "path": "/users/{userId}/aiMessages/{messageId}",
-        "definition": { "entityName": "AiMessage", "schema": { "$ref": "#/backend/entities/AiMessage" } }
-      },
-      {
-        "path": "/users/{userId}/notes/{noteId}",
-        "definition": { "entityName": "Note", "schema": { "$ref": "#/backend/entities/Note" } }
       },
       {
         "path": "/users/{userId}/sales/{saleId}",

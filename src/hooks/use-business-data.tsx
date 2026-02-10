@@ -22,6 +22,7 @@ const LOCAL_KEYS = {
   PRODUCTS: 'specsbiz_local_products',
   SALES: 'specsbiz_local_sales',
   CUSTOMERS: 'specsbiz_local_customers',
+  PROCUREMENTS: 'specsbiz_local_procurements',
   CURRENCY: 'specsbiz_settings_currency',
   LANGUAGE: 'specsbiz_settings_language',
 };
@@ -30,6 +31,7 @@ interface BusinessContextType {
   products: any[];
   sales: any[];
   customers: any[];
+  procurements: any[];
   isLoading: boolean;
   currency: string;
   language: 'en' | 'bn';
@@ -46,6 +48,7 @@ interface BusinessContextType {
     updateBakiRecord: (customerId: string, recordId: string, updates: any, oldAmount: number) => void;
     payBakiRecord: (customerId: string, recordId: string, amountToPay: number, currentRecord: any) => void;
     deleteBakiRecord: (customerId: string, recordId: string, remainingAmount: number) => void;
+    addRestock: (productId: string, qty: number, buyPrice: number) => void;
     setCurrency: (val: string) => void;
     setLanguage: (lang: 'en' | 'bn') => void;
     resetAllData: () => Promise<void>;
@@ -61,6 +64,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const [localProducts, setLocalProducts] = useState<any[]>([]);
   const [localSales, setLocalSales] = useState<any[]>([]);
   const [localCustomers, setLocalCustomers] = useState<any[]>([]);
+  const [localProcurements, setLocalProcurements] = useState<any[]>([]);
   const [currency, setCurrencyState] = useState('৳');
   const [language, setLanguageState] = useState<'en' | 'bn'>('bn');
 
@@ -70,12 +74,14 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         const p = localStorage.getItem(LOCAL_KEYS.PRODUCTS);
         const s = localStorage.getItem(LOCAL_KEYS.SALES);
         const c = localStorage.getItem(LOCAL_KEYS.CUSTOMERS);
+        const pr = localStorage.getItem(LOCAL_KEYS.PROCUREMENTS);
         const curr = localStorage.getItem(LOCAL_KEYS.CURRENCY);
         const lang = localStorage.getItem(LOCAL_KEYS.LANGUAGE) as 'en' | 'bn';
         
         if (p) setLocalProducts(JSON.parse(p));
         if (s) setLocalSales(JSON.parse(s));
         if (c) setLocalCustomers(JSON.parse(c));
+        if (pr) setLocalProcurements(JSON.parse(pr));
         if (curr) setCurrencyState(curr);
         if (lang) setLanguageState(lang);
       } catch (e) {
@@ -99,14 +105,21 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     return query(collection(db, 'users', user.uid, 'customers'), orderBy('firstName'));
   }, [user?.uid, db]);
 
+  const procQuery = useMemoFirebase(() => {
+    if (!user?.uid || !db) return null;
+    return query(collection(db, 'users', user.uid, 'procurements'), orderBy('date', 'desc'));
+  }, [user?.uid, db]);
+
   const { data: fbProducts, isLoading: pLoading } = useCollection(productsQuery);
   const { data: fbSales, isLoading: sLoading } = useCollection(salesQuery);
   const { data: fbCustomers, isLoading: cLoading } = useCollection(customersQuery);
+  const { data: fbProc, isLoading: prLoading } = useCollection(procQuery);
 
   const products = user ? (fbProducts || []) : localProducts;
   const sales = user ? (fbSales || []) : localSales;
   const customers = user ? (fbCustomers || []) : localCustomers;
-  const isLoading = isUserLoading || (user && (pLoading || sLoading || cLoading));
+  const procurements = user ? (fbProc || []) : localProcurements;
+  const isLoading = isUserLoading || (user && (pLoading || sLoading || cLoading || prLoading));
 
   const addProduct = useCallback((product: any) => {
     const id = product.id || Date.now().toString();
@@ -121,6 +134,42 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       });
     }
   }, [user?.uid, db]);
+
+  const addRestock = useCallback((productId: string, qty: number, buyPrice: number) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    const newStock = (product.stock || 0) + qty;
+    const procId = Date.now().toString();
+    const procData = {
+      id: procId,
+      productId,
+      productName: product.name,
+      quantity: qty,
+      buyPrice: buyPrice,
+      totalCost: qty * buyPrice,
+      date: new Date().toISOString()
+    };
+
+    if (user?.uid && db) {
+      setDocumentNonBlocking(doc(db, 'users', user.uid, 'procurements', procId), procData, { merge: true });
+      updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
+        stock: newStock,
+        purchasePrice: buyPrice
+      });
+    } else {
+      setLocalProcurements(prev => {
+        const updated = [procData, ...prev];
+        localStorage.setItem(LOCAL_KEYS.PROCUREMENTS, JSON.stringify(updated));
+        return updated;
+      });
+      setLocalProducts(prev => {
+        const updated = prev.map(p => p.id === productId ? { ...p, stock: newStock, purchasePrice: buyPrice } : p);
+        localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [user?.uid, db, products]);
 
   const updateProduct = useCallback((productId: string, data: any) => {
     if (user?.uid && db) {
@@ -191,30 +240,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
 
     if (user?.uid && db) {
       deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'sales', saleId));
-      
-      if (saleToDelete.isBakiPayment) {
-        // Revert debt for customer
-        if (saleToDelete.customerId && saleToDelete.bakiRecordId) {
-          const customerRef = doc(db, 'users', user.uid, 'customers', saleToDelete.customerId);
-          const recordRef = doc(db, 'users', user.uid, 'customers', saleToDelete.customerId, 'bakiRecords', saleToDelete.bakiRecordId);
-          
-          // We need to fetch current values to be precise, but non-blocking updates usually handle merging.
-          // For simplicity in this logic, we assume we want to re-increase the due amount.
-          const customer = customers.find(c => c.id === saleToDelete.customerId);
-          if (customer) {
-            updateDocumentNonBlocking(customerRef, {
-              totalDue: (customer.totalDue || 0) + saleToDelete.total
-            });
-          }
-          
-          // Also reset the record status if we had it
-          updateDocumentNonBlocking(recordRef, {
-            paidAmount: 0, // In a more complex app, we'd store what it was before, but resetting to 0 is safer than leaving it paid
-            status: 'pending'
-          });
-        }
-      } else if (saleToDelete.items) {
-        // Restore stock
+      if (!saleToDelete.isBakiPayment && saleToDelete.items) {
         saleToDelete.items.forEach((item: any) => {
           const productRef = doc(db, 'users', user.uid, 'products', item.id);
           const currentProduct = products.find(p => p.id === item.id);
@@ -226,29 +252,12 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         });
       }
     } else {
-      // Local Mode
       setLocalSales(prev => {
         const updated = prev.filter(s => s.id !== saleId);
         localStorage.setItem(LOCAL_KEYS.SALES, JSON.stringify(updated));
         return updated;
       });
-
-      if (saleToDelete.isBakiPayment) {
-        setLocalCustomers(prev => {
-          return prev.map(c => {
-            if (c.id === saleToDelete.customerId) {
-              const records = (c.bakiRecords || []).map((r: any) => {
-                if (r.id === saleToDelete.bakiRecordId) {
-                  return { ...r, paidAmount: 0, status: 'pending' };
-                }
-                return r;
-              });
-              return { ...c, totalDue: (c.totalDue || 0) + saleToDelete.total, bakiRecords: records };
-            }
-            return c;
-          });
-        });
-      } else {
+      if (!saleToDelete.isBakiPayment) {
         setLocalProducts(prev => {
           const updatedProducts = prev.map(p => {
             const saleItem = saleToDelete.items?.find((i: any) => i.id === p.id);
@@ -457,12 +466,14 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(LOCAL_KEYS.PRODUCTS);
     localStorage.removeItem(LOCAL_KEYS.SALES);
     localStorage.removeItem(LOCAL_KEYS.CUSTOMERS);
+    localStorage.removeItem(LOCAL_KEYS.PROCUREMENTS);
     setLocalProducts([]);
     setLocalSales([]);
     setLocalCustomers([]);
+    setLocalProcurements([]);
 
     if (user?.uid && db) {
-      const collections = ['products', 'sales', 'customers'];
+      const collections = ['products', 'sales', 'customers', 'procurements'];
       for (const collName of collections) {
         const collRef = collection(db, 'users', user.uid, collName);
         const snapshot = await getDocs(collRef);
@@ -481,6 +492,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     products,
     sales,
     customers,
+    procurements,
     isLoading,
     currency,
     language,
@@ -497,6 +509,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       updateBakiRecord,
       payBakiRecord,
       deleteBakiRecord,
+      addRestock,
       setCurrency,
       setLanguage,
       resetAllData

@@ -6,6 +6,7 @@ export const translations = {
     inventory: "Inventory",
     sales: "Sales",
     customers: "Customers",
+    procurement: "Stock Entry",
     masterLedger: "Master Ledger",
     biAnalytics: "BI Analytics",
     analytics: "Analytics",
@@ -15,6 +16,16 @@ export const translations = {
     cloudSync: "Cloud Sync",
     offlineMode: "Offline Mode",
     management: "Management",
+
+    // Procurement
+    stockEntryHistory: "Stock Entry History",
+    procurementDesc: "Records of every product you brought into the shop.",
+    totalProcurementCost: "Total Stock Cost",
+    newStockEntry: "New Stock Entry",
+    productBought: "Product Bought",
+    buyQty: "Qty Bought",
+    totalCostSpent: "Total Cost Spent",
+    buyingPriceHistory: "Buying Price History",
 
     // Dashboard
     businessOverview: "Business Overview",
@@ -38,6 +49,7 @@ export const translations = {
     // Inventory
     manageStock: "Manage your stock and profit margins.",
     addProduct: "Add Product",
+    restock: "Restock",
     printStock: "Print Stock",
     searchInventory: "Search inventory by name...",
     allCategories: "All Categories",
@@ -76,72 +88,6 @@ export const translations = {
     nextAddBaki: "Next: Add Baki",
     saveProfileBaki: "Save Profile & Baki",
 
-    // Reports / Master Ledger
-    masterLedgerDesc: "Comprehensive A-Z business transaction report.",
-    printLedger: "Print Ledger",
-    exportCSV: "Export CSV",
-    totalCashReceived: "Total Cash Received",
-    marketDues: "Market Dues (Baki)",
-    inventoryValue: "Inventory Value",
-    filterType: "Filter by item, customer or supplier...",
-    date: "Date",
-    type: "Type",
-    itemDescription: "Item / Description",
-    entity: "Entity",
-    totalVal: "Total Val",
-    paid: "Paid",
-    unpaid: "Unpaid",
-    status: "Status",
-
-    // Analytics
-    intelligenceReports: "Intelligence Reports",
-    salesTrackingDesc: "Detailed sales and profit tracking system.",
-    netProfit: "Net Profit",
-    avgTransaction: "Avg Transaction",
-    revenuePerOrder: "Revenue per order",
-    growthForecast: "Growth Forecast",
-    performanceTimeline: "Performance Timeline",
-    revVsProfit: "Revenue vs Profit trends",
-    reportBreakdown: "Report Breakdown",
-    allTransactionsPeriod: "All transactions recorded in this period.",
-    searchHistory: "Search history...",
-    aiHealthAudit: "AI Health Audit",
-    auditComplete: "Audit Complete",
-    auditFailed: "Audit Failed",
-
-    // BI
-    biInsights: "Deep insights into costs, margins, and potential profit.",
-    totalInvestment: "Total Investment",
-    potentialProfit: "Potential Profit",
-    totalStockValue: "Total Stock Value",
-    warehouseValueDesc: "Total estimated selling value of your warehouse.",
-    investmentDesc: "Total value based on purchase costs of all stock.",
-    marginDesc: "Expected margin if current inventory is cleared.",
-    revenueTrends: "Revenue Trends",
-    monthlyRevVolume: "Monthly revenue vs order volume",
-    categoryAnalysis: "Category Analysis",
-    profitPotentialCat: "Profit potential by category",
-    runAudit: "Run AI Health Audit",
-
-    // AI Assistant
-    aiStatus: "Connection Status",
-    smartBrain: "Intelligence",
-    thinking: "Thinking and analyzing...",
-    readyToHelp: "Ready to help",
-    online: "Always Active",
-    chatHistory: "Chat History",
-    clearChat: "Clear Memory",
-    clearHistoryDesc: "Wiping memory will delete all previous conversations. Enter secret key.",
-
-    // Notebook
-    notesPlaceholder: "Write your ideas here...",
-    newNote: "New Note",
-    noteTitle: "Note Title",
-    allNotes: "All Notes",
-    pinned: "Pinned",
-    noNotes: "Your notebook is empty.",
-    aiNoteAssistant: "AI Note Magic",
-
     // Common
     loading: "Loading...",
     noData: "No data found.",
@@ -165,6 +111,7 @@ export const translations = {
     inventory: "ইনভেন্টরি",
     sales: "বিক্রয়",
     customers: "কাস্টমার",
+    procurement: "মাল ক্রয় হিসাব",
     masterLedger: "মাস্টার লেজার",
     biAnalytics: "বিআই অ্যানালিটিক্স",
     analytics: "অ্যানালিটিক্স",
@@ -174,6 +121,16 @@ export const translations = {
     cloudSync: "ক্লাউড সিঙ্ক",
     offlineMode: "অফলাইন মোড",
     management: "ব্যবস্থাপনা",
+
+    // Procurement
+    stockEntryHistory: "পণ্য ক্রয়ের ইতিহাস",
+    procurementDesc: "দোকানের জন্য আজ পর্যন্ত যা যা মাল কিনেছেন তার রেকর্ড।",
+    totalProcurementCost: "মোট ক্রয় খরচ",
+    newStockEntry: "নতুন মাল যোগ (ক্রয়)",
+    productBought: "কেনা পণ্য",
+    buyQty: "পরিমাণ",
+    totalCostSpent: "মোট খরচ",
+    buyingPriceHistory: "মালের দামের ইতিহাস",
 
     // Dashboard
     businessOverview: "ব্যবসার অবস্থা",
@@ -197,6 +154,7 @@ export const translations = {
     // Inventory
     manageStock: "আপনার স্টক এবং লাভের হিসাব পরিচালনা করুন।",
     addProduct: "নতুন পণ্য যোগ করুন",
+    restock: "মাল কিনুন",
     printStock: "স্টক প্রিন্ট করুন",
     searchInventory: "পণ্যের নাম দিয়ে খুঁজুন...",
     allCategories: "সব ক্যাটাগরি",
@@ -234,72 +192,6 @@ export const translations = {
     noteRemarks: "বিশেষ মন্তব্য (নোট)",
     nextAddBaki: "পরবর্তী: বাকি লিখুন",
     saveProfileBaki: "প্রোফাইল ও বাকি সেভ করুন",
-
-    // Reports / Master Ledger
-    masterLedgerDesc: "ব্যবসার যাবতীয় লেনদেনের পূর্ণাঙ্গ রিপোর্ট।",
-    printLedger: "লেজার প্রিন্ট করুন",
-    exportCSV: "CSV ডাউনলোড",
-    totalCashReceived: "মোট নগদ আদায়",
-    marketDues: "বাজার বাকি (বকেয়া)",
-    inventoryValue: "ইনভেন্টরি ভ্যালু",
-    filterType: "আইটেম বা কাস্টমার দিয়ে খুঁজুন...",
-    date: "তারিখ",
-    type: "ধরণ",
-    itemDescription: "পণ্য বা বিবরণ",
-    entity: "ব্যক্তি/কাস্টমার",
-    totalVal: "মোট মূল্য",
-    paid: "জমা",
-    unpaid: "বকেয়া",
-    status: "অবস্থা",
-
-    // Analytics
-    intelligenceReports: "ইন্টেলিজেন্স রিপোর্ট",
-    salesTrackingDesc: "বিক্রয় ও লাভের বিস্তারিত ট্র্যাকিং সিস্টেম।",
-    netProfit: "নিট লাভ",
-    avgTransaction: "গড় লেনদেন",
-    revenuePerOrder: "প্রতি অর্ডারে আয়",
-    growthForecast: "প্রবৃদ্ধির পূর্বাভাস",
-    performanceTimeline: "পারফরম্যান্স টাইমলাইন",
-    revVsProfit: "আয় বনাম লাভের প্রবণতা",
-    reportBreakdown: "রিপোর্ট ব্রেকডাউন",
-    allTransactionsPeriod: "এই সময়ের সব লেনদেন।",
-    searchHistory: "ইতিহাস খুঁজুন...",
-    aiHealthAudit: "AI হেলথ অডিট",
-    auditComplete: "অডিট সম্পন্ন",
-    auditFailed: "অডিট ব্যর্থ",
-
-    // BI
-    biInsights: "খরচ, মার্জিন এবং সম্ভাব্য লাভের গভীর বিশ্লেষণ।",
-    totalInvestment: "মোট বিনিয়োগ",
-    potentialProfit: "সম্ভাব্য লাভ",
-    totalStockValue: "স্টকের মোট মূল্য",
-    warehouseValueDesc: "আপনার গুদামের মোট সম্ভাব্য বিক্রয় মূল্য।",
-    investmentDesc: "মালের কেনা দামের ওপর ভিত্তি করে মোট বিনিয়োগ।",
-    marginDesc: "বর্তমান স্টক শেষ হলে সম্ভাব্য লাভ।",
-    revenueTrends: "আয় বৃদ্ধির ধারা",
-    monthlyRevVolume: "মাসিক আয় বনাম অর্ডারের সংখ্যা",
-    categoryAnalysis: "ক্যাটাগরি বিশ্লেষণ",
-    profitPotentialCat: "ক্যাটাগরি ভিত্তিক লাভের সম্ভাবনা",
-    runAudit: "AI হেলথ অডিট করুন",
-
-    // AI Assistant
-    aiStatus: "অ্যাসিস্ট্যান্ট স্ট্যাটাস",
-    smartBrain: "স্মার্ট ব্রেইন",
-    thinking: "ডেটা এনালাইজ করছি...",
-    readyToHelp: "অনলাইনে আছে",
-    online: "সক্রিয়",
-    chatHistory: "চ্যাট মেমোরি",
-    clearChat: "মেমোরি মুছুন",
-    clearHistoryDesc: "মেমোরি মুছলে SpecsAI আপনার আগের সব কথা ভুলে যাবে। সিক্রেট কী দিন।",
-
-    // Notebook
-    notesPlaceholder: "এখানে আপনার আইডিয়া লিখুন...",
-    newNote: "নতুন নোট",
-    noteTitle: "নোটের শিরোনাম",
-    allNotes: "সব নোট",
-    pinned: "পিন করা",
-    noNotes: "আপনার নোটবুক খালি।",
-    aiNoteAssistant: "AI নোট ম্যাজিক",
 
     // Common
     loading: "লোড হচ্ছে...",
