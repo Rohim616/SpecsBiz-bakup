@@ -51,18 +51,36 @@
 }
 
 /* Fix for extremely small screens */
-@media (max-width: 380px) {
+@media (max-width: 480px) {
   html {
-    font-size: 13px;
+    font-size: 12px;
   }
   .container {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
-  h1 { font-size: 1.5rem !important; }
-  h2 { font-size: 1.25rem !important; }
-  .p-4 { padding: 0.75rem !important; }
-  .p-6 { padding: 1rem !important; }
+  h1 { font-size: 1.4rem !important; }
+  h2 { font-size: 1.2rem !important; }
+  .p-4 { padding: 0.6rem !important; }
+  .p-6 { padding: 0.8rem !important; }
+  
+  /* Make buttons more compact on tiny screens */
+  button, .btn {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    height: 2.25rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Compact Cards */
+  .card-header { padding: 0.75rem !important; }
+  .card-content { padding: 0.75rem !important; }
+}
+
+@media (max-width: 350px) {
+  html {
+    font-size: 11px;
+  }
 }
 
 @keyframes tada {
@@ -75,4 +93,14 @@
 
 .animate-tada {
   animation: tada 1.5s ease infinite;
+}
+
+/* Custom Scrollbar for better visibility on small screens */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--accent));
+  border-radius: 10px;
 }
