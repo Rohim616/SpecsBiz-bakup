@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -308,7 +307,7 @@ export default function AnalyticsPage() {
         </Card>
       )}
 
-      {/* Timeline Section with Modern BarChart */}
+      {/* Timeline Section */}
       <Card className="shadow-lg border-accent/10 overflow-hidden bg-white">
         <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5 p-4">
           <div className="space-y-1">
@@ -357,14 +356,12 @@ export default function AnalyticsPage() {
                     fill="url(#revenueGradient)" 
                     radius={[4, 4, 0, 0]} 
                     barSize={20}
-                    activeBar={{ opacity: 1, stroke: 'hsl(var(--accent))', strokeWidth: 1 }}
                   />
                   <Bar 
                     dataKey="profit" 
                     fill="url(#profitGradient)" 
                     radius={[4, 4, 0, 0]} 
                     barSize={20}
-                    activeBar={{ opacity: 1, stroke: 'hsl(var(--primary))', strokeWidth: 1 }}
                   />
                 </RechartsBarChart>
               </ResponsiveContainer>
