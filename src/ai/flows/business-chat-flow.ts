@@ -72,7 +72,7 @@ export async function businessChat(input: BusinessChatInput): Promise<{ reply: s
     return { reply: response.text };
   } catch (error: any) {
     console.error("SpecsAI Connection Error:", error);
-    // User requested no mention of API keys if possible, but keeping it as a fallback error message
-    return { reply: input.businessContext.language === 'bn' ? "দুঃখিত ভাই, আমার ব্রেইন একটু জ্যাম হয়ে গেছে। দয়া করে আর একবার মেসেজটা দিন, আমি এখনই আপনার ডাটা চেক করে বলছি।" : "Sorry Partner, my brain is a bit jammed. Please send the message again, I'm checking your data right now." };
+    // User requested custom error message for connection issues
+    return { reply: input.businessContext.language === 'bn' ? "দুঃখিত ভাই, সার্ভারের সাথে যোগাযোগ করতে পারছি না। মনে হচ্ছে এপিআই কি অথবা কানেকশনে সমস্যা হচ্ছে।" : "Sorry Partner, I can't connect to the server. Please check your API key or connection." };
   }
 }
