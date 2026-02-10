@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -34,13 +33,13 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
         
-        {/* OneSignal Initialization Script with ID from screenshot */}
+        {/* OneSignal Initialization Script with your unique App ID */}
         <script dangerouslySetInnerHTML={{
           __html: `
             window.OneSignalDeferred = window.OneSignalDeferred || [];
             OneSignalDeferred.push(async function(OneSignal) {
               await OneSignal.init({
-                appId: "39316530-c197-4734-94f1-e6aac18dc20c",
+                appId: "39316530-c197-4734-94f1-e6aae18dc20c",
                 safari_web_id: "web.onesignal.auto.0bc6006c-...", 
                 notifyButton: {
                   enable: false,
