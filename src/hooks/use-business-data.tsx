@@ -43,6 +43,7 @@ interface BusinessContextType {
     updateCustomer: (customerId: string, data: any) => void;
     deleteCustomer: (customerId: string) => void;
     addBakiRecord: (customerId: string, record: any) => void;
+    updateBakiRecord: (customerId: string, recordId: string, updates: any, oldAmount: number) => void;
     payBakiRecord: (customerId: string, recordId: string, amountToPay: number, currentRecord: any) => void;
     deleteBakiRecord: (customerId: string, recordId: string, remainingAmount: number) => void;
     setCurrency: (val: string) => void;
@@ -251,6 +252,36 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.uid, db, customers, localCustomers]);
 
+  const updateBakiRecord = useCallback((customerId: string, recordId: string, updates: any, oldAmount: number) => {
+    if (user?.uid && db) {
+      updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId, 'bakiRecords', recordId), updates);
+      
+      if (updates.amount !== undefined && updates.amount !== oldAmount) {
+        const customer = customers.find(c => c.id === customerId);
+        if (customer) {
+          const diff = updates.amount - oldAmount;
+          updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
+            totalDue: Math.max(0, (customer.totalDue || 0) + diff)
+          });
+        }
+      }
+    } else {
+      const updatedCustomers = localCustomers.map(c => {
+        if (c.id === customerId) {
+          const records = (c.bakiRecords || []).map((r: any) => r.id === recordId ? { ...r, ...updates } : r);
+          let newTotal = c.totalDue || 0;
+          if (updates.amount !== undefined) {
+            newTotal = newTotal - oldAmount + updates.amount;
+          }
+          return { ...c, totalDue: Math.max(0, newTotal), bakiRecords: records };
+        }
+        return c;
+      });
+      setLocalCustomers(updatedCustomers);
+      localStorage.setItem(LOCAL_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
+    }
+  }, [user?.uid, db, customers, localCustomers]);
+
   const payBakiRecord = useCallback((customerId: string, recordId: string, amountToPay: number, currentRecord: any) => {
     const newPaidAmount = (currentRecord.paidAmount || 0) + amountToPay;
     const isFullyPaid = newPaidAmount >= currentRecord.amount;
@@ -422,6 +453,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       updateCustomer,
       deleteCustomer,
       addBakiRecord,
+      updateBakiRecord,
       payBakiRecord,
       deleteBakiRecord,
       setCurrency,
