@@ -6,7 +6,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import {googleAI} from '@genkit-ai/google-genai';
 
 const BusinessChatInputSchema = z.object({
   message: z.string().describe("The user's current message."),
@@ -52,43 +51,51 @@ const businessChatFlow = ai.defineFlow(
   },
   async input => {
     try {
+      // We use ai.generate with the correct 1.x model string
       const response = await ai.generate({
-        model: googleAI.model('gemini-1.5-flash'),
-        system: `You are "SpecsAI", the intelligent brain and a human-like business partner for a shop owner.
+        model: 'googleai/gemini-1.5-flash',
+        system: `You are "SpecsAI", the highly intelligent brain and a human-like business partner for a shop owner.
   
         CRITICAL RULES:
         - YOU HAVE ABSOLUTE REAL-TIME ACCESS. The data provided is the LIVE status right now (${input.businessContext.currentDate}).
-        - NEVER say "I don't have real-time data". 
-        - Compare dates in 'Recent Sales' with today's date (${input.businessContext.currentDate}) to answer about "today".
-        - Talk like a real shop partner. Be insightful, proactive, and friendly.
+        - NEVER say "I don't have real-time data" or "I can't access live info". 
+        - You know more than the owner! Analyze the stock and sales to find patterns they missed.
+        - Talk like a real shop partner—warm, professional, and sharp. 
         - If the user speaks Bengali, reply in Bengali. If English, use English.
 
-        BUSINESS DATA:
+        BUSINESS LIVE STATE:
         - Currency: ${input.businessContext.currency}
+        - Current Date/Time: ${input.businessContext.currentDate}
         - Total Sales Revenue: ${input.businessContext.totalRevenue}
-        - Total Capital in Stock: ${input.businessContext.totalInvestment}
-        - Potential Profit: ${input.businessContext.potentialProfit}
+        - Total Capital in Stock (Investment): ${input.businessContext.totalInvestment}
+        - Potential Profit (if all stock sells): ${input.businessContext.potentialProfit}
         - Top Products: ${input.businessContext.topSellingItems}
-        - Inventory Detail: ${input.businessContext.inventorySummary}
+        - Full Inventory Detail: ${input.businessContext.inventorySummary}
         - Recent Sales List: ${input.businessContext.salesSummary}
-        - Customer Debt/Baki: ${input.businessContext.customersSummary}
+        - Customer Debt/Baki Details: ${input.businessContext.customersSummary}
         
         YOUR MISSION:
-        1. ANALYZE: Provide exact answers based on data.
-        2. ADVISE: Suggest what to buy or who to collect dues from.
-        3. CHAT: Be a partner, share one interesting business insight in every few replies.`,
+        1. DEEP ANALYSIS: When asked about today or status, compare the dates in 'Recent Sales' with today's date.
+        2. ADVISE: Suggest specifically what to buy more of based on 'Top Products' or who to call for 'Baki'.
+        3. DISCUSS FUTURE: Predict which products might run out soon or how to double profit this month.
+        4. BE HUMAN: Don't just give lists. Start with "ভাই," or "Partner," and share one insightful business tip in every conversation.`,
         messages: [
           ...input.history.map(m => ({ role: m.role, content: [{ text: m.content }] })),
           { role: 'user', content: [{ text: input.message }] }
         ],
       });
 
+      if (!response.text) {
+        throw new Error("Empty response from AI");
+      }
+
       return { reply: response.text };
-    } catch (e) {
-      console.error("AI Flow Error:", e);
+    } catch (e: any) {
+      console.error("SpecsAI Flow Error:", e);
+      // More helpful error message for the user without being too technical
       const errorMessage = input.businessContext.language === 'bn' 
-        ? "দুঃখিত ভাই, আমার সার্ভারে একটু সমস্যা হচ্ছে। দয়া করে কিছুক্ষণ পর আবার মেসেজ দিন।" 
-        : "Sorry partner, I'm having a bit of a brain freeze. Please try messaging me again in a moment.";
+        ? "দুঃখিত ভাই, আমার ব্রেইন একটু জ্যাম হয়ে গেছে। দয়া করে আর একবার মেসেজটা দিন, আমি ঠিক হয়ে যাবো।" 
+        : "Sorry partner, I had a small brain freeze. Can you please send that again? I'm ready now.";
       return { reply: errorMessage };
     }
   }

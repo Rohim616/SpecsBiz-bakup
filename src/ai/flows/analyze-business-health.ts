@@ -29,6 +29,7 @@ export async function analyzeBusinessHealth(input: AnalyzeBusinessHealthInput): 
 
 const prompt = ai.definePrompt({
   name: 'analyzeBusinessHealthPrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: {schema: AnalyzeBusinessHealthInputSchema},
   output: {schema: AnalyzeBusinessHealthOutputSchema},
   prompt: `You are a professional business consultant and financial analyst.
