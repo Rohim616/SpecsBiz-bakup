@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -19,6 +20,14 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog"
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -123,7 +132,7 @@ export default function AnalyticsPage() {
         return {
           name: format(month, "MMM"),
           revenue: monthSales.reduce((sum, s) => sum + (s.total || 0), 0),
-          profit: monthSales.reduce((sum, s) => sum + (sum === 0 ? 0 : (s.profit || 0)), 0) // Fixed double sum issue
+          profit: monthSales.reduce((sum, s) => sum + (s.profit || 0), 0)
         }
       })
     }
@@ -444,10 +453,10 @@ export default function AnalyticsPage() {
           </DialogHeader>
           <div className="py-4 space-y-2">
             <Label className="text-xs font-bold uppercase opacity-70">{t.secretKey}</Label>
-            <Input type="password" placeholder="••••••••" className="h-12 text-lg font-bold" value={deletePass} onChange={e => setDeletePass(e.target.value)} />
+            <Input type="password" placeholder="••••••••" className="h-12 text-lg font-bold" value={deletePass} onChange={e => setDeletePass(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleDeleteSale()} />
           </div>
           <DialogFooter>
-            <Button variant="destructive" className="w-full h-12 text-base font-bold" onClick={handleDeleteSale}>
+            <Button variant="destructive" className="w-full h-12 text-base font-bold shadow-lg" onClick={handleDeleteSale}>
               {t.authorizeDelete}
             </Button>
           </DialogFooter>
