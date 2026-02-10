@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -160,7 +159,8 @@ export default function AnalyticsPage() {
         inventoryData: inventorySummary,
         salesData: salesSummary,
         totalInvestment: products.reduce((acc, p) => acc + ((p.purchasePrice || 0) * (p.stock || 0)), 0),
-        potentialProfit: products.reduce((acc, p) => acc + (((p.sellingPrice || 0) - (p.purchasePrice || 0)) * (p.stock || 0)), 0)
+        potentialProfit: products.reduce((acc, p) => acc + (((p.sellingPrice || 0) - (p.purchasePrice || 0)) * (p.stock || 0)), 0),
+        language: language
       })
       setAuditResult(result)
       toast({ title: t.auditComplete })
@@ -275,7 +275,7 @@ export default function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <CardTitle className="text-xl flex items-center gap-2">
-                  <ShieldCheck className="w-6 h-6 text-accent" /> AI Health Audit Report
+                  <ShieldCheck className="w-6 h-6 text-accent" /> {language === 'bn' ? 'এআই হেলথ অডিট রিপোর্ট' : 'AI Health Audit Report'}
                 </CardTitle>
                 <CardDescription className="text-primary-foreground/70">Strategic business optimization analysis.</CardDescription>
               </div>
@@ -288,11 +288,11 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
              <div className="grid md:grid-cols-2 gap-8">
                <div className="space-y-4">
-                 <h4 className="text-sm font-bold flex items-center gap-2"><TrendingUp className="w-4 h-4 text-accent" /> Executive Summary</h4>
+                 <h4 className="text-sm font-bold flex items-center gap-2"><TrendingUp className="w-4 h-4 text-accent" /> {language === 'bn' ? 'সারসংক্ষেপ' : 'Executive Summary'}</h4>
                  <p className="text-xs text-muted-foreground leading-relaxed italic border-l-2 border-accent pl-4">"{auditResult.summary}"</p>
                </div>
                <div className="space-y-4">
-                 <h4 className="text-sm font-bold flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-blue-500" /> Recommendations</h4>
+                 <h4 className="text-sm font-bold flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-blue-500" /> {language === 'bn' ? 'পরামর্শসমূহ' : 'Recommendations'}</h4>
                  <div className="grid gap-2">
                    {auditResult.recommendations.map((rec, i) => (
                      <div key={i} className="text-[11px] bg-muted/30 p-2 rounded-lg flex items-start gap-2">

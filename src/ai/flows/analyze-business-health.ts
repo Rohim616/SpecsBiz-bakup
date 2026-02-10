@@ -11,6 +11,7 @@ const AnalyzeBusinessHealthInputSchema = z.object({
   salesData: z.string().describe('Recent sales performance data.'),
   totalInvestment: z.number().describe('Total money tied up in inventory.'),
   potentialProfit: z.number().describe('Calculated total profit if all stock is sold.'),
+  language: z.enum(['en', 'bn']).describe('The language for the report output.'),
 });
 export type AnalyzeBusinessHealthInput = z.infer<typeof AnalyzeBusinessHealthInputSchema>;
 
@@ -34,6 +35,12 @@ const prompt = ai.definePrompt({
   
   Analyze the following data for "SpecsBiz" and provide a deep business health audit.
   
+  IMPORTANT INSTRUCTION:
+  The user's preferred language is: {{language}}. 
+  If language is 'bn', you MUST provide the "summary", "predictions", and "recommendations" in Bengali (বাংলা).
+  If language is 'en', provide them in English.
+  
+  BUSINESS DATA:
   Total Investment (Cost of Stock): {{{totalInvestment}}}
   Calculated Potential Profit: {{{potentialProfit}}}
   Inventory Details: {{{inventoryData}}}
