@@ -229,16 +229,34 @@ export default function BusinessIntelligencePage() {
               <ChartContainer config={chartConfig} className="h-full w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="revenueBI" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.05} />
-                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <XAxis 
+                      dataKey="name" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontWeight: 500 }} 
+                    />
+                    <YAxis 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontWeight: 500 }}
+                      tickFormatter={(val) => `${currency}${val}`}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar 
                       dataKey="revenue" 
-                      fill="var(--color-revenue)" 
-                      radius={[8, 8, 0, 0]} 
-                      barSize={35}
-                      activeBar={{ opacity: 0.8, strokeWidth: 2 }}
+                      fill="url(#revenueBI)" 
+                      radius={[6, 6, 0, 0]} 
+                      barSize={32}
+                      activeBar={{ opacity: 1, stroke: 'hsl(var(--primary))', strokeWidth: 1.5 }}
                     />
                   </BarChart>
                 </ResponsiveContainer>

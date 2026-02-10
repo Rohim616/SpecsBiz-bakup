@@ -309,7 +309,7 @@ export default function AnalyticsPage() {
         </Card>
       )}
 
-      {/* Timeline Section with BarChart */}
+      {/* Timeline Section with Advanced BarChart */}
       <Card className="shadow-lg border-accent/10 overflow-hidden bg-white">
         <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5 p-4">
           <div className="space-y-1">
@@ -321,38 +321,50 @@ export default function AnalyticsPage() {
         <CardContent className="p-6">
           <div className="h-[350px] w-full">
             <ChartContainer config={chartConfig} className="h-full w-full">
-              <RechartsBarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barGap={6}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.05} />
+              <RechartsBarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barGap={8}>
+                <defs>
+                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={0.9}/>
+                    <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0.4}/>
+                  </linearGradient>
+                  <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.9}/>
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.08} />
                 <XAxis 
                   dataKey="name" 
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false} 
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontWeight: 500 }}
+                  dy={10}
                 />
                 <YAxis 
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false} 
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontWeight: 500 }}
+                  tickFormatter={(val) => `${currency}${val}`}
                 />
                 <Tooltip 
-                  cursor={{ fill: 'hsl(var(--accent))', opacity: 0.05 }}
+                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.1 }}
                   content={<ChartTooltipContent />} 
                 />
                 <Bar 
                   dataKey="revenue" 
-                  fill="var(--color-revenue)" 
-                  radius={[6, 6, 0, 0]} 
-                  barSize={18}
-                  activeBar={{ opacity: 0.8 }}
+                  fill="url(#revenueGradient)" 
+                  radius={[4, 4, 0, 0]} 
+                  barSize={20}
+                  activeBar={{ opacity: 1, stroke: 'hsl(var(--accent))', strokeWidth: 1 }}
                 />
                 <Bar 
                   dataKey="profit" 
-                  fill="var(--color-profit)" 
-                  radius={[6, 6, 0, 0]} 
-                  barSize={18}
-                  activeBar={{ opacity: 0.8 }}
+                  fill="url(#profitGradient)" 
+                  radius={[4, 4, 0, 0]} 
+                  barSize={20}
+                  activeBar={{ opacity: 1, stroke: 'hsl(var(--primary))', strokeWidth: 1 }}
                 />
               </RechartsBarChart>
             </ChartContainer>
