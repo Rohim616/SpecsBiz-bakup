@@ -12,7 +12,10 @@ import {
   Inbox,
   ArrowUpRight,
   RefreshCw,
-  Loader2
+  Loader2,
+  Tag,
+  TrendingUp,
+  Info
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,6 +30,12 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useBusinessData } from "@/hooks/use-business-data"
 import { useToast } from "@/hooks/use-toast"
 import { translations } from "@/lib/translations"
@@ -97,7 +106,7 @@ export default function ProcurementPage() {
           <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform">
             <Package className="w-12 h-12 md:w-20 md:h-20" />
           </div>
-          <p className="text-[8px] md:text-[9px] uppercase font-bold opacity-70 tracking-widest leading-none">Total Records</p>
+          <p className="text-[8px] md:text-[9px] uppercase font-bold opacity-70 tracking-widest leading-none">Total Entry Records</p>
           <div className="text-lg md:text-2xl font-black truncate mt-1">{procurements.length}</div>
         </Card>
       </div>
@@ -125,40 +134,79 @@ export default function ProcurementPage() {
             </div>
           ) : (
             <ScrollArea className="w-full">
-              <div className="min-w-[600px]">
+              <div className="min-w-[800px]">
                 <Table>
                   <TableHeader className="bg-muted/30">
                     <TableRow>
-                      <TableHead className="pl-4 py-2 font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">{t.date}</TableHead>
-                      <TableHead className="font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">{t.productBought}</TableHead>
+                      <TableHead className="pl-4 py-3 font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">{t.date}</TableHead>
+                      <TableHead className="font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">Product Details</TableHead>
                       <TableHead className="font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">{t.buyQty}</TableHead>
-                      <TableHead className="font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">{t.buyPrice}</TableHead>
+                      <TableHead className="font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">Buying Context</TableHead>
                       <TableHead className="text-right pr-4 font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">{t.totalCostSpent}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProc.map((p) => (
-                      <TableRow key={p.id} className="hover:bg-accent/5 transition-all group">
-                        <TableCell className="pl-4 py-3 text-[9px] font-bold text-muted-foreground">
-                          {new Date(p.date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="font-black text-primary group-hover:text-accent transition-colors text-xs">
-                          {p.productName}
-                          <div className="text-[8px] font-bold opacity-40 uppercase tracking-tighter mt-0.5">{p.type || 'restock'}</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 font-black text-[9px] h-5 px-1.5">{p.quantity}</Badge>
-                        </TableCell>
-                        <TableCell className="text-[9px] font-black text-muted-foreground/60">
-                          {currency}{p.buyPrice?.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right pr-4">
-                          <span className="font-black text-primary text-xs">
-                            {currency}{p.totalCost?.toLocaleString()}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredProc.map((p) => {
+                      const product = products.find(prod => prod.id === p.productId);
+                      const currentSellPrice = product?.sellingPrice || 0;
+                      const margin = currentSellPrice > 0 ? (((currentSellPrice - p.buyPrice) / currentSellPrice) * 100).toFixed(1) : 0;
+                      
+                      return (
+                        <TableRow key={p.id} className="hover:bg-accent/5 transition-all group border-b border-accent/5">
+                          <TableCell className="pl-4 py-4 text-[9px] font-bold text-muted-foreground align-top">
+                            {new Date(p.date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="space-y-1">
+                              <p className="font-black text-primary group-hover:text-accent transition-colors text-sm leading-tight">
+                                {p.productName}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-black bg-accent/10 text-accent px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                                  {product?.category || 'General'}
+                                </span>
+                                <span className="text-[8px] font-bold text-muted-foreground/50 uppercase">
+                                  {p.type || 'restock'}
+                                </span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="flex flex-col gap-1">
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 font-black text-[10px] h-6 px-2 w-fit">
+                                {p.quantity} {product?.unit || 'pcs'}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-muted-foreground">{t.buyPrice}:</span>
+                                <span className="text-[11px] font-black text-primary">{currency}{p.buyPrice?.toLocaleString()}</span>
+                              </div>
+                              {currentSellPrice > 0 && (
+                                <div className="flex items-center gap-2 bg-emerald-50/50 p-1.5 rounded-lg border border-emerald-100/50 w-fit">
+                                  <TrendingUp className="w-3 h-3 text-emerald-600" />
+                                  <span className="text-[9px] font-bold text-emerald-700">
+                                    Sell: {currency}{currentSellPrice} ({margin}% Margin)
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right pr-4 align-top">
+                            <div className="space-y-1">
+                              <span className="font-black text-primary text-sm block">
+                                {currency}{p.totalCost?.toLocaleString()}
+                              </span>
+                              <span className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                                Grand Total
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
