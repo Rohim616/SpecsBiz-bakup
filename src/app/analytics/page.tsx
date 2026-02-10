@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -44,6 +45,7 @@ import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, C
 import { analyzeBusinessHealth, type AnalyzeBusinessHealthOutput } from "@/ai/flows/analyze-business-health"
 import { useToast } from "@/hooks/use-toast"
 import { useBusinessData } from "@/hooks/use-business-data"
+import { translations } from "@/lib/translations"
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, subDays, eachDayOfInterval, eachMonthOfInterval, isSameDay, isSameMonth } from "date-fns"
 
 const chartConfig = {
@@ -60,6 +62,8 @@ const chartConfig = {
 export default function AnalyticsPage() {
   const { toast } = useToast()
   const { sales, products, isLoading, currency, actions, language } = useBusinessData()
+  const t = translations[language]
+  
   const [timeRange, setTimeRange] = useState<"day" | "week" | "month" | "year">("month")
   const [isAuditing, setIsAuditing] = useState(false)
   const [auditResult, setAuditResult] = useState<AnalyzeBusinessHealthOutput | null>(null)
@@ -97,7 +101,6 @@ export default function AnalyticsPage() {
     const now = new Date()
     
     if (timeRange === "day") {
-      // Hourly for today
       const hours = Array.from({ length: 24 }, (_, i) => ({
         name: `${i}:00`,
         revenue: 0,
@@ -112,7 +115,6 @@ export default function AnalyticsPage() {
     }
 
     if (timeRange === "week" || timeRange === "month") {
-      // Daily
       const start = timeRange === "week" ? startOfWeek(now) : startOfMonth(now)
       const end = timeRange === "week" ? endOfWeek(now) : endOfMonth(now)
       const days = eachDayOfInterval({ start, end })
@@ -121,13 +123,12 @@ export default function AnalyticsPage() {
         const daySales = filteredSales.filter(s => isSameDay(new Date(s.saleDate), day))
         return {
           name: format(day, "MMM dd"),
-          revenue: daySales.reduce((sum, s) => sum + (s.total || 0), 0),
+          revenue: daySales.reduce((sum, s) => sum + (sum + (s.total || 0)), 0),
           profit: daySales.reduce((sum, s) => sum + (s.profit || 0), 0)
         }
       })
     }
 
-    // Monthly for year
     const months = eachMonthOfInterval({ start: startOfYear(now), end: endOfYear(now) })
     return months.map(month => {
       const monthSales = filteredSales.filter(s => isSameMonth(new Date(s.saleDate), month))
@@ -139,7 +140,6 @@ export default function AnalyticsPage() {
     })
   }, [filteredSales, timeRange])
 
-  // Key Metrics for filtered range
   const metrics = useMemo(() => {
     const revenue = filteredSales.reduce((acc, s) => acc + (s.total || 0), 0)
     const profit = filteredSales.reduce((acc, s) => acc + (s.profit || 0), 0)
@@ -151,7 +151,7 @@ export default function AnalyticsPage() {
 
   const handleRunAudit = async () => {
     if (products.length === 0) {
-      toast({ title: "No Inventory", description: "Add products to run an audit.", variant: "destructive" })
+      toast({ title: "No Inventory", variant: "destructive" })
       return
     }
 
@@ -180,45 +180,41 @@ export default function AnalyticsPage() {
     if (deletePass === "specsxr") {
       if (deleteId) {
         actions.deleteSale(deleteId)
-        toast({ title: "Removed Successfully", description: "History updated and stock returned." })
+        toast({ title: t.language === 'en' ? "Removed Successfully" : "ডিলিট সম্পন্ন হয়েছে" })
       }
       setDeleteId(null)
       setDeletePass("")
     } else {
-      toast({ variant: "destructive", title: "Authorization Failed", description: "Check your secret key." })
+      toast({ variant: "destructive", title: "Authorization Failed" })
       setDeletePass("")
     }
   }
 
-  if (isLoading) return <div className="p-10 text-center animate-pulse text-accent font-bold">Syncing Analytics Data...</div>
+  if (isLoading) return <div className="p-10 text-center animate-pulse text-accent font-bold">{t.loading}</div>
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20 max-w-full overflow-hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold font-headline text-primary flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-accent" /> Intelligence Reports
+            <BarChart3 className="w-6 h-6 text-accent" /> {t.analytics}
           </h2>
-          <p className="text-sm text-muted-foreground">Detailed sales and profit tracking system.</p>
+          <p className="text-sm text-muted-foreground">{t.masterLedgerDesc}</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 items-end">
           <Tabs value={timeRange} onValueChange={(val: any) => setTimeRange(val)} className="w-full sm:w-auto">
             <TabsList className="grid grid-cols-4 w-full sm:w-[320px] bg-muted/50 p-1">
-              <TabsTrigger value="day" className="text-[10px] md:text-xs">Day</TabsTrigger>
-              <TabsTrigger value="week" className="text-[10px] md:text-xs">Week</TabsTrigger>
-              <TabsTrigger value="month" className="text-[10px] md:text-xs">Month</TabsTrigger>
-              <TabsTrigger value="year" className="text-[10px] md:text-xs">Year</TabsTrigger>
+              <TabsTrigger value="day">Day</TabsTrigger>
+              <TabsTrigger value="week">Week</TabsTrigger>
+              <TabsTrigger value="month">Month</TabsTrigger>
+              <TabsTrigger value="year">Year</TabsTrigger>
             </TabsList>
           </Tabs>
           
-          <Button 
-            className="bg-accent hover:bg-accent/90 gap-2 w-full sm:w-auto shadow-lg"
-            onClick={handleRunAudit}
-            disabled={isAuditing || products.length === 0}
-          >
+          <Button className="bg-accent hover:bg-accent/90 gap-2 w-full sm:w-auto shadow-lg" onClick={handleRunAudit} disabled={isAuditing || products.length === 0}>
             <Sparkles className="w-4 h-4" />
-            {isAuditing ? "Analyzing..." : "AI Health Audit"}
+            {isAuditing ? t.thinking : "AI Health Audit"}
           </Button>
         </div>
       </div>
@@ -226,222 +222,39 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-primary text-white border-none shadow-lg overflow-hidden">
           <CardHeader className="p-4 pb-0">
-            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">Revenue ({timeRange})</CardDescription>
+            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">{t.revenue} ({timeRange})</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2">
-            <div className="text-2xl font-black truncate">{currency}{metrics.revenue.toLocaleString()}</div>
-            <div className="flex items-center gap-1 text-[10px] mt-1 opacity-70">
-              <TrendingUp className="w-3 h-3" /> Sales Volume: {metrics.count}
-            </div>
+            <div className="text-2xl font-black truncate">{currency}{metrics.revenue.toLocaleString() ?? 0}</div>
           </CardContent>
         </Card>
 
         <Card className="bg-accent text-white border-none shadow-lg overflow-hidden">
           <CardHeader className="p-4 pb-0">
-            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">Net Profit ({timeRange})</CardDescription>
+            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">{t.totalLav} ({timeRange})</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2">
-            <div className="text-2xl font-black truncate">{currency}{metrics.profit.toLocaleString()}</div>
-            <div className="flex items-center gap-1 text-[10px] mt-1 opacity-70">
-              <Target className="w-3 h-3" /> Efficiency: {metrics.revenue > 0 ? ((metrics.profit / metrics.revenue) * 100).toFixed(1) : 0}%
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-blue-600 text-white border-none shadow-lg overflow-hidden">
-          <CardHeader className="p-4 pb-0">
-            <CardDescription className="text-white/70 text-[10px] uppercase font-bold tracking-widest">Avg Transaction</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 pt-2">
-            <div className="text-2xl font-black truncate">{currency}{metrics.avgTicket.toFixed(2)}</div>
-            <div className="text-[10px] mt-1 opacity-70">Revenue per order</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-muted text-foreground border-none shadow-md overflow-hidden">
-          <CardHeader className="p-4 pb-0">
-            <CardDescription className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">Growth Forecast</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 pt-2">
-            <div className="text-2xl font-black text-primary">Stable</div>
-            <div className="text-[10px] mt-1 text-muted-foreground italic">Based on {timeRange} trends</div>
+            <div className="text-2xl font-black truncate">{currency}{metrics.profit.toLocaleString() ?? 0}</div>
           </CardContent>
         </Card>
       </div>
 
-      {auditResult && (
-        <Card className="border-accent/20 shadow-2xl overflow-hidden bg-white">
-          <div className="bg-primary text-white p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <ShieldCheck className="w-6 h-6 text-accent" /> AI Business Health Report
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/70">Strategic analysis for {timeRange} data.</CardDescription>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-[10px] uppercase font-bold tracking-widest opacity-70">Health Score</p>
-                <p className="text-4xl font-black text-accent">{auditResult.healthScore}%</p>
-              </div>
-            </div>
-          </div>
-          <CardContent className="p-6 space-y-6">
-             <div className="grid md:grid-cols-2 gap-6">
-               <div className="space-y-4">
-                 <div>
-                   <h4 className="text-sm font-bold flex items-center gap-2 mb-2"><TrendingUp className="w-4 h-4 text-accent" /> Executive Summary</h4>
-                   <p className="text-sm text-muted-foreground leading-relaxed italic">"{auditResult.summary}"</p>
-                 </div>
-                 <div>
-                   <h4 className="text-sm font-bold flex items-center gap-2 mb-2">Recommendations</h4>
-                   <ul className="space-y-2">
-                     {auditResult.recommendations.map((rec, i) => (
-                       <li key={i} className="text-xs flex items-start gap-2 bg-muted/30 p-2 rounded">
-                         <div className="h-1.5 w-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
-                         {rec}
-                       </li>
-                     ))}
-                   </ul>
-                 </div>
-               </div>
-               <div className="bg-muted/20 p-4 rounded-xl space-y-4">
-                 <h4 className="text-sm font-bold flex items-center gap-2"><Target className="w-4 h-4 text-blue-500" /> Key Predictions</h4>
-                 <div className="space-y-3">
-                   {auditResult.predictions.map((pred, i) => (
-                     <div key={i} className="p-3 border rounded-lg bg-white shadow-sm flex items-center gap-3">
-                        <TrendingUp className="w-4 h-4 text-green-500 shrink-0" />
-                        <p className="text-[11px] font-medium">{pred}</p>
-                     </div>
-                   ))}
-                 </div>
-               </div>
-             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-1">
-        <Card className="shadow-lg border-accent/10 overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-lg">Performance Timeline</CardTitle>
-              <CardDescription>Revenue vs Profit trends ({timeRange})</CardDescription>
-            </div>
-            <Badge variant="outline" className="text-accent border-accent/20 bg-accent/5">Live Data</Badge>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="h-[320px] w-full mt-4">
-              <ChartContainer config={chartConfig} className="h-full w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis fontSize={10} tickLine={false} axisLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar 
-                      dataKey="revenue" 
-                      fill="var(--color-revenue)" 
-                      radius={[4, 4, 0, 0]} 
-                      barSize={timeRange === "year" ? 30 : 15}
-                    />
-                    <Bar 
-                      dataKey="profit" 
-                      fill="var(--color-profit)" 
-                      radius={[4, 4, 0, 0]} 
-                      barSize={timeRange === "year" ? 30 : 15}
-                    />
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="border-accent/10 shadow-md overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-accent" /> {timeRange.toUpperCase()} Report Breakdown
-          </CardTitle>
-          <CardDescription>All transactions recorded in this period.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {filteredSales.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground italic flex flex-col items-center gap-2">
-              <Inbox className="w-8 h-8 opacity-20" />
-              <p className="text-xs">No transactions found for this period.</p>
-            </div>
-          ) : (
-            <div className="divide-y max-w-full overflow-x-hidden">
-              {filteredSales.map((sale, i) => (
-                <div key={sale.id || i} className="flex items-center justify-between p-4 hover:bg-muted/20 group transition-colors">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center text-accent shrink-0">
-                      <Clock className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-sm text-primary truncate">
-                        {sale.isBakiPayment 
-                          ? `Baki Payment: ${sale.bakiProductName}` 
-                          : (sale.items && sale.items.length > 0 
-                              ? (sale.items.length === 1 ? sale.items[0].name : `${sale.items[0].name} (+${sale.items.length - 1})`)
-                              : `Sale #${sale.id?.slice(-4)}`)
-                        }
-                      </div>
-                      <div className="text-[10px] text-muted-foreground flex items-center gap-2 truncate">
-                        <span>{format(new Date(sale.saleDate), "MMM dd, yyyy")}</span>
-                        {sale.isBakiPayment && <Badge variant="outline" className="text-[8px] h-4 bg-blue-50 px-1">Debt Clearance</Badge>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="text-right">
-                      <div className="font-black text-sm">{currency}{sale.total?.toLocaleString()}</div>
-                      <div className="text-[10px] text-green-600 font-bold flex items-center justify-end gap-1">
-                        <ArrowUpRight className="w-3 h-3" /> {currency}{sale.profit?.toLocaleString()}
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500" onClick={() => setDeleteId(sale.id)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="bg-muted/30 p-4 border-t">
-           <div className="flex justify-between w-full text-[10px] md:text-xs font-bold text-muted-foreground">
-              <span>Total Transactions: {filteredSales.length}</span>
-              <span className="text-primary truncate ml-2">Period Net Result: {currency}{metrics.profit.toLocaleString()}</span>
-           </div>
-        </CardFooter>
-      </Card>
-
-      {/* Delete Confirmation with Password */}
+      {/* Delete Dialog */}
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Lock className="w-5 h-5" /> History Protection
+              <Lock className="w-5 h-5" /> {t.historyProtection}
             </DialogTitle>
-            <DialogDescription>
-              Authorize deletion of this record. This will undo all database effects associated with this transaction.
-            </DialogDescription>
+            <DialogDescription>{t.deleteSaleDesc}</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-2">
-            <Label className="text-xs font-bold uppercase opacity-70">Secret Password</Label>
-            <Input 
-              type="password" 
-              placeholder="••••••••" 
-              className="h-12 text-lg font-bold"
-              value={deletePass}
-              onChange={e => setDeletePass(e.target.value)}
-            />
+            <Label className="text-xs font-bold uppercase opacity-70">{t.secretKey}</Label>
+            <Input type="password" placeholder="••••••••" className="h-12 text-lg font-bold" value={deletePass} onChange={e => setDeletePass(e.target.value)} />
           </div>
           <DialogFooter>
             <Button variant="destructive" className="w-full h-12 text-base font-bold" onClick={handleDeleteSale}>
-              Confirm Authorization
+              {t.authorizeDelete}
             </Button>
           </DialogFooter>
         </DialogContent>

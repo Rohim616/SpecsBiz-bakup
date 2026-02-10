@@ -63,11 +63,14 @@ import { generateProductDescription } from "@/ai/flows/generate-product-descript
 import { useToast } from "@/hooks/use-toast"
 import { useBusinessData } from "@/hooks/use-business-data"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
+import { translations } from "@/lib/translations"
 import { cn } from "@/lib/utils"
 
 export default function InventoryPage() {
   const { toast } = useToast()
-  const { products, sales, actions, isLoading, currency } = useBusinessData()
+  const { products, sales, actions, isLoading, currency, language } = useBusinessData()
+  const t = translations[language]
+  
   const [isGenerating, setIsGenerating] = useState(false)
   const [search, setSearch] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
@@ -241,7 +244,7 @@ export default function InventoryPage() {
   const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl;
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-10">
+    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-10 max-w-full overflow-hidden">
       {/* Print Only Header */}
       <div className="hidden print:flex flex-col items-center justify-center mb-8 border-b pb-6 w-full text-center">
         <div className="flex items-center gap-4 mb-2">
@@ -258,52 +261,14 @@ export default function InventoryPage() {
         <div className="text-[10px] mt-2 opacity-60 font-medium flex items-center gap-2 justify-center">
           <Calendar className="w-3 h-3" /> Report Date: {reportDate || "Loading..."}
         </div>
-        
-        <div className="mt-4 flex gap-2 flex-wrap justify-center">
-          <span className="text-[9px] bg-muted px-2 py-1 rounded border">Category: {printFilters.category.toUpperCase()}</span>
-          <span className="text-[9px] bg-muted px-2 py-1 rounded border">Stock Filter: {printFilters.stockStatus.toUpperCase()}</span>
-          <span className="text-[9px] bg-muted px-2 py-1 rounded border">Performance Sort: {printFilters.performance.toUpperCase()}</span>
-        </div>
-      </div>
-
-      {/* Print Only Table */}
-      <div className="hidden print:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {printColumns.name && <TableHead className="font-bold text-black uppercase text-[10px]">Product Name</TableHead>}
-              {printColumns.category && <TableHead className="font-bold text-black uppercase text-[10px]">Category</TableHead>}
-              {printColumns.buyPrice && <TableHead className="font-bold text-black uppercase text-[10px]">Buy Price</TableHead>}
-              {printColumns.sellPrice && <TableHead className="font-bold text-black uppercase text-[10px]">Sell Price</TableHead>}
-              {printColumns.stock && <TableHead className="font-bold text-black uppercase text-[10px]">Stock Level</TableHead>}
-              {printColumns.salesCount && <TableHead className="font-bold text-black uppercase text-[10px]">Units Sold</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {printableProducts.map((p) => (
-              <TableRow key={p.id}>
-                {printColumns.name && <TableCell className="text-sm font-bold">{p.name}</TableCell>}
-                {printColumns.category && <TableCell className="text-[10px]">{p.category || 'N/A'}</TableCell>}
-                {printColumns.buyPrice && <TableCell className="text-[10px]">{currency}{p.purchasePrice?.toLocaleString()}</TableCell>}
-                {printColumns.sellPrice && <TableCell className="text-[10px] font-bold">{currency}{p.sellingPrice?.toLocaleString()}</TableCell>}
-                {printColumns.stock && (
-                  <TableCell className={cn("text-xs", p.stock < 5 ? "text-red-600 font-bold" : "")}>
-                    {p.stock} {p.unit}
-                  </TableCell>
-                )}
-                {printColumns.salesCount && <TableCell className="text-xs font-bold text-blue-600">{productSalesStats[p.id] || 0}</TableCell>}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-headline text-primary flex items-center gap-2">
-            <Package className="w-5 h-5 md:w-6 md:h-6 text-accent" /> Inventory
+            <Package className="w-5 h-5 md:w-6 md:h-6 text-accent" /> {t.inventory}
           </h2>
-          <p className="text-xs md:text-sm text-muted-foreground">Manage your stock and profit margins.</p>
+          <p className="text-xs md:text-sm text-muted-foreground">{t.manageStock}</p>
         </div>
         
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -314,7 +279,7 @@ export default function InventoryPage() {
                 className="flex-1 sm:flex-none gap-2 border-primary text-primary shadow-sm hover:bg-primary/5" 
                 disabled={products.length === 0}
               >
-                <Printer className="w-4 h-4" /> Print Stock
+                <Printer className="w-4 h-4" /> {t.printStock}
               </Button>
             </DialogTrigger>
             <DialogContent className="w-[95vw] sm:max-w-[500px]">
@@ -333,19 +298,19 @@ export default function InventoryPage() {
                     <Label className="text-xs font-bold uppercase text-muted-foreground">Select Items to Include</Label>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label className="text-[10px]">Category</Label>
+                        <Label className="text-[10px]">{t.language === 'en' ? 'Category' : 'ক্যাটাগরি'}</Label>
                         <Select value={printFilters.category} onValueChange={(v) => setPrintFilters({...printFilters, category: v})}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All Categories</SelectItem>
+                            <SelectItem value="all">{t.allCategories}</SelectItem>
                             {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[10px]">Stock Status</Label>
+                        <Label className="text-[10px]">{t.stockLevel}</Label>
                         <Select value={printFilters.stockStatus} onValueChange={(v) => setPrintFilters({...printFilters, stockStatus: v})}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
@@ -359,20 +324,6 @@ export default function InventoryPage() {
                         </Select>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">Ordering & Priority</Label>
-                    <Select value={printFilters.performance} onValueChange={(v) => setPrintFilters({...printFilters, performance: v})}>
-                      <SelectTrigger className="h-10 border-accent/20">
-                        <SelectValue placeholder="Sort By" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Alphabetical (A-Z)</SelectItem>
-                        <SelectItem value="mostSold">Most Sold Units First</SelectItem>
-                        <SelectItem value="leastSold">Least Sold Units First</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <div className="space-y-3">
@@ -393,18 +344,11 @@ export default function InventoryPage() {
                     </div>
                   </div>
                 </div>
-
-                <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-start gap-3">
-                  <TrendingUp className="w-5 h-5 text-blue-600 shrink-0" />
-                  <p className="text-[10px] text-blue-700 leading-relaxed">
-                    <strong>Smart Report Info:</strong> Your report will include current live stock levels and total unit sales for the selected criteria.
-                  </p>
-                </div>
               </div>
 
               <DialogFooter>
                 <Button className="w-full bg-accent h-12 text-lg shadow-xl" onClick={handlePrint}>
-                  <Printer className="w-5 h-5 mr-2" /> Generate & Print Report
+                  <Printer className="w-5 h-5 mr-2" /> {t.printStock}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -413,25 +357,25 @@ export default function InventoryPage() {
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
               <Button className="bg-accent hover:bg-accent/90 flex-1 sm:flex-none shadow-lg">
-                <Plus className="w-4 h-4 mr-2" /> Add Product
+                <Plus className="w-4 h-4 mr-2" /> {t.addProduct}
               </Button>
             </DialogTrigger>
             <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
-                <CardDescription>Enter product details for stock management.</CardDescription>
+                <DialogTitle>{t.addProduct}</DialogTitle>
+                <CardDescription>{t.manageStock}</CardDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-                  <Label htmlFor="name" className="sm:text-right text-xs">Name</Label>
+                  <Label htmlFor="name" className="sm:text-right text-xs">{t.language === 'en' ? 'Name' : 'নাম'}</Label>
                   <Input className="sm:col-span-3 h-9" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-                  <Label className="sm:text-right text-xs">Category</Label>
+                  <Label className="sm:text-right text-xs">{t.language === 'en' ? 'Category' : 'ক্যাটাগরি'}</Label>
                   <Input className="sm:col-span-3 h-9" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-                  <Label className="sm:text-right text-xs">Unit Type</Label>
+                  <Label className="sm:text-right text-xs">{t.unitType}</Label>
                   <Select value={newProduct.unit} onValueChange={(val) => setNewProduct({...newProduct, unit: val})}>
                     <SelectTrigger className="sm:col-span-3 h-9">
                       <SelectValue />
@@ -445,14 +389,14 @@ export default function InventoryPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase opacity-70">Buy Price (per {newProduct.unit})</Label>
+                    <Label className="text-[10px] font-bold uppercase opacity-70">{t.buyPrice} (per {newProduct.unit})</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">{currency}</span>
                       <Input type="number" step="0.01" className="pl-8" value={newProduct.purchasePrice} onChange={e => setNewProduct({...newProduct, purchasePrice: e.target.value})} />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase opacity-70">Sell Price (per {newProduct.unit})</Label>
+                    <Label className="text-[10px] font-bold uppercase opacity-70">{t.sellPrice} (per {newProduct.unit})</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">{currency}</span>
                       <Input type="number" step="0.01" className="pl-8" value={newProduct.sellingPrice} onChange={e => setNewProduct({...newProduct, sellingPrice: e.target.value})} />
@@ -460,33 +404,33 @@ export default function InventoryPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                  <Label className="sm:text-right text-xs">Stock ({newProduct.unit})</Label>
+                  <Label className="sm:text-right text-xs">{t.stock} ({newProduct.unit})</Label>
                   <Input type="number" step="0.01" className="sm:col-span-3 h-9" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 items-start gap-4">
-                  <Label className="sm:text-right mt-2 text-xs">Description</Label>
+                  <Label className="sm:text-right mt-2 text-xs">{t.description}</Label>
                   <div className="sm:col-span-3 space-y-2">
                     <Textarea className="min-h-[60px] text-xs" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} />
                     <Button size="sm" variant="secondary" className="w-full gap-2 text-[10px]" onClick={() => handleAIDescription(false)} disabled={isGenerating}>
-                      <Sparkles className="w-3.5 h-3.5" /> {isGenerating ? "Analyzing..." : "AI Generate Description"}
+                      <Sparkles className="w-3.5 h-3.5" /> {isGenerating ? t.thinking : t.aiGenerateDesc}
                     </Button>
                   </div>
                 </div>
               </div>
               <DialogFooter>
-                <Button className="bg-accent w-full" onClick={handleAddProduct}>Save Product</Button>
+                <Button className="bg-accent w-full" onClick={handleAddProduct}>{t.saveProduct}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      <Card className="print:hidden shadow-sm border-accent/10">
+      <Card className="print:hidden shadow-sm border-accent/10 overflow-hidden">
         <CardHeader className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
-              placeholder="Search inventory by name..." 
+              placeholder={t.searchInventory} 
               className="pl-9 h-10 bg-white shadow-inner" 
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -496,10 +440,10 @@ export default function InventoryPage() {
             <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
             <Select value={filterCategory} onValueChange={setFilterCategory}>
               <SelectTrigger className="w-full md:w-[180px] bg-white h-10">
-                <SelectValue placeholder="All Categories" />
+                <SelectValue placeholder={t.allCategories} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">{t.allCategories}</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
@@ -509,21 +453,21 @@ export default function InventoryPage() {
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           {isLoading ? (
-            <div className="text-center py-10 text-xs">Loading...</div>
+            <div className="text-center py-10 text-xs">{t.loading}</div>
           ) : filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2 text-center">
               <Inbox className="w-8 h-8 opacity-20" />
-              <p className="text-xs italic">No products found for this filter.</p>
+              <p className="text-xs italic">{t.noData}</p>
             </div>
           ) : (
             <div className="min-w-[600px]">
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead className="text-xs font-bold uppercase">Product Name & Category</TableHead>
-                    <TableHead className="text-xs font-bold uppercase">Performance</TableHead>
-                    <TableHead className="text-xs font-bold uppercase">Pricing</TableHead>
-                    <TableHead className="text-xs font-bold uppercase">Stock Level</TableHead>
+                    <TableHead className="text-xs font-bold uppercase">{t.productNameCat}</TableHead>
+                    <TableHead className="text-xs font-bold uppercase">{t.performance}</TableHead>
+                    <TableHead className="text-xs font-bold uppercase">{t.pricing}</TableHead>
+                    <TableHead className="text-xs font-bold uppercase">{t.stockLevel}</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -555,8 +499,8 @@ export default function InventoryPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground font-medium">Buy: {currency}{p.purchasePrice?.toLocaleString()}</span>
-                            <span className="font-bold text-primary text-[11px] md:text-xs">Sell: {currency}{p.sellingPrice?.toLocaleString()}</span>
+                            <span className="text-[10px] text-muted-foreground font-medium">{t.buyPrice}: {currency}{p.purchasePrice?.toLocaleString()}</span>
+                            <span className="font-bold text-primary text-[11px] md:text-xs">{t.sellPrice}: {currency}{p.sellingPrice?.toLocaleString()}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-[10px] md:text-xs">
@@ -574,10 +518,10 @@ export default function InventoryPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem className="gap-2 text-xs" onClick={() => openEditDialog(p)}>
-                                <Edit2 className="w-3.5 h-3.5" /> Edit
+                                <Edit2 className="w-3.5 h-3.5" /> {t.edit}
                               </DropdownMenuItem>
                               <DropdownMenuItem className="gap-2 text-destructive text-xs" onClick={() => actions.deleteProduct(p.id)}>
-                                <Trash className="w-3.5 h-3.5" /> Delete
+                                <Trash className="w-3.5 h-3.5" /> {t.delete}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -592,29 +536,24 @@ export default function InventoryPage() {
         </CardContent>
       </Card>
 
-      <div className="hidden print:flex items-center justify-between text-[10px] text-muted-foreground italic border-t pt-4 mt-8">
-         <p>* Total Products in this Report: {printableProducts.length}</p>
-         <p>Authorized by SpecsBiz Intelligence Engine.</p>
-      </div>
-
       {/* Edit Dialog */}
       <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
+            <DialogTitle>{t.edit} {t.language === 'en' ? 'Product' : 'পণ্য'}</DialogTitle>
           </DialogHeader>
           {editingProduct && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                <Label className="sm:text-right text-xs">Name</Label>
+                <Label className="sm:text-right text-xs">{t.language === 'en' ? 'Name' : 'নাম'}</Label>
                 <Input className="sm:col-span-3 h-9" value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                <Label className="sm:text-right text-xs">Category</Label>
+                <Label className="sm:text-right text-xs">{t.language === 'en' ? 'Category' : 'ক্যাটাগরি'}</Label>
                 <Input className="sm:col-span-3 h-9" value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-                <Label className="sm:text-right text-xs">Unit Type</Label>
+                <Label className="sm:text-right text-xs">{t.unitType}</Label>
                 <Select value={editingProduct.unit} onValueChange={(val) => setEditingProduct({...editingProduct, unit: val})}>
                   <SelectTrigger className="sm:col-span-3 h-9">
                     <SelectValue />
@@ -628,14 +567,14 @@ export default function InventoryPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase opacity-70">Buy Price (per {editingProduct.unit})</Label>
+                  <Label className="text-[10px] font-bold uppercase opacity-70">{t.buyPrice} (per {editingProduct.unit})</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">{currency}</span>
                     <Input type="number" step="0.01" className="pl-8" value={editingProduct.purchasePrice} onChange={e => setEditingProduct({...editingProduct, purchasePrice: e.target.value})} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase opacity-70">Sell Price (per {editingProduct.unit})</Label>
+                  <Label className="text-[10px] font-bold uppercase opacity-70">{t.sellPrice} (per {editingProduct.unit})</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">{currency}</span>
                     <Input type="number" step="0.01" className="pl-8" value={editingProduct.sellingPrice} onChange={e => setEditingProduct({...editingProduct, sellingPrice: e.target.value})} />
@@ -643,22 +582,22 @@ export default function InventoryPage() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                <Label className="sm:text-right text-xs">Stock ({editingProduct.unit})</Label>
+                <Label className="sm:text-right text-xs">{t.stock} ({editingProduct.unit})</Label>
                 <Input type="number" step="0.01" className="sm:col-span-3 h-9" value={editingProduct.stock} onChange={e => setEditingProduct({...editingProduct, stock: e.target.value})} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-4 items-start gap-4">
-                <Label className="sm:text-right mt-2 text-xs">Description</Label>
+                <Label className="sm:text-right mt-2 text-xs">{t.description}</Label>
                 <div className="sm:col-span-3 space-y-2">
                   <Textarea className="min-h-[60px] text-xs" value={editingProduct.description} onChange={e => setEditingProduct({...editingProduct, description: e.target.value})} />
                   <Button size="sm" variant="secondary" className="w-full gap-2 text-[10px]" onClick={() => handleAIDescription(true)} disabled={isGenerating}>
-                    <Sparkles className="w-3.5 h-3.5" /> {isGenerating ? "Analyzing..." : "AI Generate Description"}
+                    <Sparkles className="w-3.5 h-3.5" /> {isGenerating ? t.thinking : t.aiGenerateDesc}
                   </Button>
                 </div>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button className="bg-accent w-full" onClick={handleUpdateProduct}>Update Changes</Button>
+            <Button className="bg-accent w-full" onClick={handleUpdateProduct}>{t.updateChanges}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
