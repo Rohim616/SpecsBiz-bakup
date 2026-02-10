@@ -2,9 +2,7 @@
 'use server';
 /**
  * @fileOverview SpecsAI - The Ultimate Master Brain Partner for SpecsBiz.
- * 
- * - businessChat: A server action that powers the human-like business partner.
- * - Directly accesses inventory, sales, and debt data to provide expert advice.
+ * Powering a human-like business partner with full A-to-Z data access.
  */
 
 import { ai } from '@/ai/genkit';

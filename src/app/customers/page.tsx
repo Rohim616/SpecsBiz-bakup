@@ -5,35 +5,19 @@ import { useState, useMemo, useEffect } from "react"
 import { 
   Users, 
   Search, 
-  Sparkles, 
-  MoreHorizontal,
+  Plus, 
+  Eye, 
+  Package, 
+  CheckCircle2, 
+  ChevronLeft, 
+  ArrowRight,
   Inbox,
-  Plus,
-  MapPin,
-  Trash,
-  Edit2,
-  DollarSign,
-  ArrowUpRight,
-  Calendar,
-  Package,
-  Eye,
-  History,
-  CheckCircle2,
-  X,
-  CreditCard,
-  ChevronLeft,
-  FileText,
-  MoreVertical,
-  ShoppingCart,
-  ArrowRight
+  DollarSign
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Progress } from "@/components/ui/progress"
 import { 
   Table, 
   TableBody, 
@@ -51,12 +35,6 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
 import { 
   Sheet, 
   SheetContent, 
@@ -82,14 +60,11 @@ export default function CustomersPage() {
   const [search, setSearch] = useState("")
   const [productSearch, setProductSearch] = useState("")
   const [isAddOpen, setIsAddOpen] = useState(false)
-  const [addStep, setAddStep] = useState(1) // 1: Profile, 2: Baki Details
-  const [editingCustomer, setEditingCustomer] = useState<any>(null)
+  const [addStep, setAddStep] = useState(1) 
   
-  // Details Sheet States
   const [detailsCustomer, setDetailsCustomer] = useState<any>(null)
   const [isRecordAddOpen, setIsRecordAddOpen] = useState(false)
   
-  // New Record State
   const [newRecord, setNewRecord] = useState({
     productName: "",
     quantity: "1",
@@ -109,7 +84,6 @@ export default function CustomersPage() {
     segment: "Baki User"
   })
 
-  // Auto calculate amount when quantity or unit price changes
   useEffect(() => {
     const qty = parseFloat(newRecord.quantity) || 0
     const price = parseFloat(newRecord.unitPrice) || 0
@@ -127,7 +101,6 @@ export default function CustomersPage() {
     toast({ title: language === 'en' ? "Product Selected" : "পণ্য সিলেক্ট করা হয়েছে" })
   }
 
-  // Fetch Baki Records for selected customer
   const bakiRecordsQuery = useMemoFirebase(() => {
     if (!user?.uid || !db || !detailsCustomer) return null;
     return query(
@@ -295,7 +268,7 @@ export default function CustomersPage() {
                   </Button>
                 ) : (
                   <>
-                    <Button variant="outline" onClick={() => setAddStep(1)}><ChevronLeft className="w-4 h-4 mr-1" /> Back</Button>
+                    <Button variant="outline" onClick={() => setAddStep(1)}>Back</Button>
                     <Button className="flex-1 bg-primary" onClick={handleAddCustomerAndBaki}>{t.saveProfileBaki}</Button>
                   </>
                 )}
@@ -367,7 +340,6 @@ export default function CustomersPage() {
         </CardContent>
       </Card>
 
-      {/* Details Sheet */}
       <Sheet open={!!detailsCustomer} onOpenChange={(open) => !open && setDetailsCustomer(null)}>
         <SheetContent side="right" className="w-full sm:max-w-xl p-0 flex flex-col">
           <SheetHeader className="p-6 border-b bg-accent/5">
@@ -418,7 +390,6 @@ export default function CustomersPage() {
         </SheetContent>
       </Sheet>
 
-      {/* Add Baki Dialog */}
       <Dialog open={isRecordAddOpen} onOpenChange={setIsRecordAddOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>New Baki Record</DialogTitle></DialogHeader>
