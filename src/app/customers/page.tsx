@@ -395,7 +395,7 @@ export default function CustomersPage() {
           <DialogHeader><DialogTitle>New Baki Record</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
              <div className="relative">
-                <Label>Search Product</Label>
+                <Label className="text-xs font-bold uppercase mb-1.5 block">Search Product (A to Z)</Label>
                 <Input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Type product name..." className="bg-accent/5" />
                 {filteredProducts.length > 0 && (
                   <Card className="absolute z-50 w-full mt-1 max-h-40 overflow-hidden shadow-xl">
@@ -412,13 +412,25 @@ export default function CustomersPage() {
              </div>
              <Input placeholder="Product Name" value={newRecord.productName} onChange={e => setNewRecord({...newRecord, productName: e.target.value})} />
              <div className="grid grid-cols-2 gap-4">
-                <Input type="number" step="0.01" placeholder="Qty" value={newRecord.quantity} onChange={e => setNewRecord({...newRecord, quantity: e.target.value})} />
-                <Input type="number" step="0.01" placeholder="Unit Price" value={newRecord.unitPrice} onChange={e => setNewRecord({...newRecord, unitPrice: e.target.value})} />
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold">Qty</Label>
+                  <Input type="number" step="0.01" value={newRecord.quantity} onChange={e => setNewRecord({...newRecord, quantity: e.target.value})} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold">Unit Price</Label>
+                  <Input type="number" step="0.01" value={newRecord.unitPrice} onChange={e => setNewRecord({...newRecord, unitPrice: e.target.value})} />
+                </div>
              </div>
-             <Input type="number" step="0.01" className="font-bold text-destructive" placeholder="Total" value={newRecord.amount} onChange={e => setNewRecord({...newRecord, amount: e.target.value})} />
-             <Input type="date" value={newRecord.promiseDate} onChange={e => setNewRecord({...newRecord, promiseDate: e.target.value})} />
+             <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-destructive">Total Owed (Auto)</Label>
+                <Input type="number" step="0.01" className="font-black text-destructive bg-destructive/5 text-lg" value={newRecord.amount} onChange={e => setNewRecord({...newRecord, amount: e.target.value})} />
+             </div>
+             <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold">Promise Date</Label>
+                <Input type="date" value={newRecord.promiseDate} onChange={e => setNewRecord({...newRecord, promiseDate: e.target.value})} />
+             </div>
           </div>
-          <DialogFooter><Button className="w-full bg-accent" onClick={handleAddBakiRecordOnly}>Save Baki</Button></DialogFooter>
+          <DialogFooter><Button className="w-full bg-accent h-12 font-bold" onClick={handleAddBakiRecordOnly}>Save Baki Record</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
