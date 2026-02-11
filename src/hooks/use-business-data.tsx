@@ -27,6 +27,7 @@ const LOCAL_KEYS = {
   CURRENCY: 'specsbiz_settings_currency',
   LANGUAGE: 'specsbiz_settings_language',
   AI_API_KEY: 'specsbiz_settings_ai_api_key',
+  AI_MODEL: 'specsbiz_settings_ai_model',
 };
 
 interface BusinessContextType {
@@ -38,6 +39,7 @@ interface BusinessContextType {
   currency: string;
   language: 'en' | 'bn';
   aiApiKey: string;
+  aiModel: string;
   actions: {
     addProduct: (product: any) => void;
     updateProduct: (productId: string, data: any) => void;
@@ -55,7 +57,7 @@ interface BusinessContextType {
     syncInventoryToProcurement: () => Promise<void>;
     setCurrency: (val: string) => void;
     setLanguage: (lang: 'en' | 'bn') => void;
-    setAiApiKey: (key: string) => void;
+    setAiConfig: (key: string, model: string) => void;
     resetAllData: () => Promise<void>;
   };
 }
@@ -73,6 +75,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState('৳');
   const [language, setLanguageState] = useState<'en' | 'bn'>('bn');
   const [aiApiKey, setAiApiKeyState] = useState('');
+  const [aiModel, setAiModel] = useState('gemini-1.5-flash');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -84,6 +87,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         const curr = localStorage.getItem(LOCAL_KEYS.CURRENCY);
         const lang = localStorage.getItem(LOCAL_KEYS.LANGUAGE) as 'en' | 'bn';
         const akey = localStorage.getItem(LOCAL_KEYS.AI_API_KEY);
+        const amodel = localStorage.getItem(LOCAL_KEYS.AI_MODEL);
         
         if (p) setLocalProducts(JSON.parse(p));
         if (s) setLocalSales(JSON.parse(s));
@@ -92,6 +96,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         if (curr) setCurrencyState(curr);
         if (lang) setLanguageState(lang);
         if (akey) setAiApiKeyState(akey);
+        if (amodel) setAiModel(amodel);
       } catch (e) {
         console.error("Error loading local data", e);
       }
@@ -553,9 +558,11 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(LOCAL_KEYS.LANGUAGE, lang);
   }, []);
 
-  const setAiApiKey = useCallback((key: string) => {
+  const setAiConfig = useCallback((key: string, model: string) => {
     setAiApiKeyState(key);
+    setAiModel(model);
     localStorage.setItem(LOCAL_KEYS.AI_API_KEY, key);
+    localStorage.setItem(LOCAL_KEYS.AI_MODEL, model);
   }, []);
 
   const resetAllData = useCallback(async () => {
@@ -593,6 +600,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     currency,
     language,
     aiApiKey,
+    aiModel,
     actions: {
       addProduct,
       updateProduct,
@@ -610,7 +618,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       syncInventoryToProcurement,
       setCurrency,
       setLanguage,
-      setAiApiKey,
+      setAiConfig,
       resetAllData
     }
   };

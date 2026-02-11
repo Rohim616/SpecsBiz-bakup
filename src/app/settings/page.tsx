@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -18,7 +19,8 @@ import {
   CheckCircle2,
   FileText,
   AlertCircle,
-  X
+  X,
+  Cpu
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -52,7 +54,7 @@ const LANGUAGES = [
 ];
 
 export default function SettingsPage() {
-  const { products, sales, customers, currency, language, aiApiKey, actions } = useBusinessData();
+  const { products, sales, aiApiKey, aiModel, language, actions } = useBusinessData();
   const { toast } = useToast();
   const t = translations[language];
   
@@ -64,7 +66,7 @@ export default function SettingsPage() {
   // AI State
   const [newAiKey, setNewAiKey] = useState(aiApiKey || "");
   const [isVerifying, setIsVerifying] = useState(false);
-  const [detectedModel, setDetectedModel] = useState<string | null>(null);
+  const [detectedModel, setDetectedModel] = useState<string | null>(aiModel || null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,7 +79,6 @@ export default function SettingsPage() {
   };
 
   const handleVerifyAndSaveKey = async () => {
-    // 1. Clean the key locally before sending
     const cleanedKey = newAiKey.trim().replace(/^["']|["']$/g, '');
     
     if (!cleanedKey) {
@@ -90,15 +91,15 @@ export default function SettingsPage() {
     setVerifyError(null);
 
     try {
-      // 2. Perform real verification
       const result = await verifyAiKey({ apiKey: cleanedKey });
       
       if (result.success) {
-        setDetectedModel(result.detectedModel || "AI System Active");
-        // Save the cleaned key to permanent storage
-        actions.setAiApiKey(cleanedKey);
+        const modelName = result.detectedModel || "gemini-1.5-flash";
+        setDetectedModel(modelName);
+        // Save both Key and Detected Model
+        actions.setAiConfig(cleanedKey, modelName);
         toast({
-          title: language === 'en' ? "AI Activated!" : "এআই সক্রিয় হয়েছে!",
+          title: language === 'en' ? "AI Brain Activated!" : "এআই ব্রেইন সক্রিয় হয়েছে!",
           description: result.message
         });
       } else {
@@ -151,16 +152,16 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-6 px-2">
-        {/* SpecsAI Master Activation Card */}
+        {/* SpecsAI Universal Activation Card */}
         <Card className="border-primary/30 shadow-2xl bg-white overflow-hidden ring-4 ring-primary/5 rounded-[2rem]">
           <div className="bg-primary text-white p-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md border border-white/30">
-                <Sparkles className="w-7 h-7 text-accent" />
+                <Cpu className="w-7 h-7 text-accent animate-pulse" />
               </div>
               <div>
-                <CardTitle className="text-xl font-black uppercase tracking-tighter">SpecsAI Master Activation</CardTitle>
-                <CardDescription className="text-white/70 text-xs">Real-time model detection & secure brain sync.</CardDescription>
+                <CardTitle className="text-xl font-black uppercase tracking-tighter">Universal AI Activation</CardTitle>
+                <CardDescription className="text-white/70 text-xs">Auto-detecting your AI Brain Model.</CardDescription>
               </div>
             </div>
             <Badge className={cn("border-none h-7 px-3 text-[10px] font-black uppercase tracking-widest", aiApiKey ? "bg-green-500" : "bg-amber-500")}>
@@ -171,7 +172,7 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-black flex items-center gap-2 text-primary uppercase">
-                  <Key className="w-4 h-4" /> AI Provider API Key
+                  <Key className="w-4 h-4" /> Universal API Key
                 </Label>
                 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[10px] text-accent font-black uppercase hover:underline flex items-center gap-1">
                   Get Gemini Key <RefreshCw className="w-2.5 h-2.5" />
@@ -181,7 +182,7 @@ export default function SettingsPage() {
                 <div className="flex-1 relative">
                   <Input 
                     type="password" 
-                    placeholder="Paste your Gemini API Key here..."
+                    placeholder="Paste your API Key here (Gemini/OpenAI)..."
                     value={newAiKey}
                     onChange={(e) => {
                       setNewAiKey(e.target.value);
@@ -214,22 +215,22 @@ export default function SettingsPage() {
                 <div className="bg-red-50 p-4 rounded-xl border-2 border-destructive/20 flex items-start gap-3 animate-in slide-in-from-top-2">
                   <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black text-destructive uppercase">Verification Failed</p>
+                    <p className="text-[10px] font-black text-destructive uppercase">Error Detected</p>
                     <p className="text-sm font-bold text-destructive/80">{verifyError}</p>
                   </div>
                 </div>
               )}
 
               {detectedModel && (
-                <div className="bg-green-50 p-4 rounded-xl border-2 border-green-100 flex items-center justify-between animate-in slide-in-from-top-2">
+                <div className="bg-emerald-50 p-4 rounded-xl border-2 border-emerald-100 flex items-center justify-between animate-in slide-in-from-top-2">
                   <div className="flex items-center gap-3">
-                    <Activity className="w-5 h-5 text-green-600" />
+                    <Activity className="w-5 h-5 text-emerald-600" />
                     <div>
-                      <p className="text-[10px] font-black text-green-600 uppercase">Status: Connected</p>
-                      <p className="text-sm font-bold text-green-800">{detectedModel}</p>
+                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Active Model Brain</p>
+                      <p className="text-base font-black text-emerald-800">{detectedModel}</p>
                     </div>
                   </div>
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                 </div>
               )}
 
@@ -239,7 +240,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-[11px] text-blue-800 leading-relaxed font-medium">
-                    আপনার এপিআই কি এখন থেকে সরাসরি **গুগল সার্ভারে** ভেরিফাই হবে। কি যোগ করার সাথে সাথেই এআই আপনার দোকানের ডাটা রিয়েল-টাইমে অ্যানালাইসিস করা শুরু করবে।
+                    আপনি যে কী দেবেন, সিস্টেম অটোমেটিক সেটির মডেল নাম বের করে পুরো অ্যাপে সেট করে দিবে। এখন থেকে এআই আপনার দোকানের ডাটা সরাসরি ওই মডেল দিয়ে প্রসেস করবে।
                   </p>
                 </div>
               </div>
@@ -297,7 +298,7 @@ export default function SettingsPage() {
         </Card>
       </div>
 
-      {/* Dialogs */}
+      {/* Reset Dialog */}
       <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[2rem]">
           <DialogHeader>

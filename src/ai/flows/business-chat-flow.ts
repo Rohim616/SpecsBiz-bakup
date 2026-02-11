@@ -1,7 +1,8 @@
+
 'use server';
 /**
  * @fileOverview SpecsAI - The Ultimate Master Brain Partner for SpecsBiz.
- * Powering a human-like business partner with dynamic API key support.
+ * Powering a human-like business partner with dynamic API key and Model support.
  */
 
 import { ai } from '@/ai/genkit';
@@ -25,6 +26,7 @@ const BusinessChatInputSchema = z.object({
     language: z.enum(['en', 'bn']),
     currentDate: z.string(),
     aiApiKey: z.string().optional(),
+    aiModel: z.string().optional(),
   }).describe('Snapshot of the current business state.'),
 });
 
@@ -32,16 +34,16 @@ export type BusinessChatInput = z.infer<typeof BusinessChatInputSchema>;
 
 export async function businessChat(input: BusinessChatInput): Promise<{ reply: string }> {
   try {
-    // Clean key before use
     const userKey = input.businessContext.aiApiKey?.trim().replace(/^["']|["']$/g, '');
+    const userModel = input.businessContext.aiModel || 'gemini-1.5-flash';
     
     // Dynamic model configuration
     const modelInstance = userKey 
-      ? googleAI.model('gemini-1.5-flash', { apiKey: userKey })
-      : 'googleai/gemini-1.5-flash';
+      ? googleAI.model(userModel, { apiKey: userKey })
+      : `googleai/${userModel}`;
 
     const response = await ai.generate({
-      model: modelInstance,
+      model: modelInstance as any,
       system: `You are "SpecsAI", the highly intelligent MASTER BUSINESS PARTNER for a shop owner.
       
       CRITICAL IDENTITY:
@@ -67,17 +69,14 @@ export async function businessChat(input: BusinessChatInput): Promise<{ reply: s
       prompt: input.message,
     });
 
-    if (!response.text) {
-      throw new Error("Empty response from AI.");
-    }
-
-    return { reply: response.text };
+    return { reply: response.text || "..." };
   } catch (error: any) {
     console.error("SpecsAI Connection Error:", error);
+    const lang = input.businessContext.language;
     return { 
-      reply: input.businessContext.language === 'bn' 
-        ? "দুঃখিত ভাই, আপনার এআই সিস্টেমটি আপনার দেওয়া কি (Key) দিয়ে কানেক্ট হতে পারছে না। দয়া করে Settings চেক করুন।" 
-        : "Sorry Partner, your AI system couldn't connect with the provided Key. Please check your Settings." 
+      reply: lang === 'bn' 
+        ? "দুঃখিত ভাই, আপনার এআই ব্রেইন কানেক্ট করতে পারছে না। দয়া করে সেটিংস থেকে আবার ভেরিফাই করুন।" 
+        : "Sorry Partner, your AI Brain couldn't connect. Please re-verify in Settings." 
     };
   }
 }

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview SpecsAI Advisor - A strategic growth and profit optimization expert.
@@ -21,6 +22,7 @@ const GrowthExpertInputSchema = z.object({
     currentLanguage: z.enum(['en', 'bn']),
     currency: z.string(),
     aiApiKey: z.string().optional(),
+    aiModel: z.string().optional(),
   }),
 });
 
@@ -36,28 +38,22 @@ const advisorFlow = ai.defineFlow(
     outputSchema: GrowthExpertOutputSchema,
   },
   async (input) => {
-    // Clean key before use
     const userKey = input.context.aiApiKey?.trim().replace(/^["']|["']$/g, '');
+    const userModel = input.context.aiModel || 'gemini-1.5-flash';
     
-    // Dynamic model injection: If user provides a key, we prioritize it via the provider.
     const modelInstance = userKey 
-      ? googleAI.model('gemini-1.5-flash', { apiKey: userKey })
-      : 'googleai/gemini-1.5-flash';
+      ? googleAI.model(userModel, { apiKey: userKey })
+      : `googleai/${userModel}`;
 
     try {
       const response = await ai.generate({
-        model: modelInstance,
+        model: modelInstance as any,
         system: `You are "SpecsAI Advisor", a world-class Strategic Business Growth Expert for shop owners.
         
         YOUR PERSONALITY:
         - Sharp, data-driven, and highly professional.
-        - Speak like a business consultant who genuinely wants the shop to double its profit.
         - LANGUAGE: ${input.context.currentLanguage === 'bn' ? 'Bengali (বাংলা)' : 'English'}.
         - IMPORTANT: ALWAYS START with "নমস্কার ভাই," (if Bengali) or "Greetings Partner," (if English).
-        
-        YOUR GOAL:
-        - Analyze the provided shop data to find growth opportunities.
-        - Focus on PROFIT MAXIMIZATION and slow-moving items identification.
         
         DATA CONTEXT:
         - Inventory: ${input.context.inventorySummary}
@@ -73,7 +69,7 @@ const advisorFlow = ai.defineFlow(
 
       return { 
         reply: response.text || "আমি আপনার দোকানের তথ্য অ্যানালাইসিস করছি...",
-        detectedModel: userKey ? "SpecsAI Custom (Active)" : "Default Brain"
+        detectedModel: userModel
       };
     } catch (error: any) {
       console.error("Advisor Execution Error:", error);
@@ -90,8 +86,8 @@ export async function growthExpertChat(input: z.infer<typeof GrowthExpertInputSc
     const lang = input.context.currentLanguage;
     return { 
       reply: lang === 'bn' 
-        ? `দুঃখিত ভাই, আপনার এপিআই কি-তে সমস্যা হচ্ছে। ভুল কি বা নেটওয়ার্ক সমস্যার কারণে এটি হতে পারে। (এরর: ${error.message?.substring(0, 50)})` 
-        : `Sorry Partner, there's an issue with your API Key connection. (Error: ${error.message?.substring(0, 50)})` 
+        ? `দুঃখিত ভাই, আপনার এআই সিস্টেমে সমস্যা হচ্ছে। ভুল কি বা নেটওয়ার্ক এরর হতে পারে। (${error.message?.substring(0, 50)})` 
+        : `Sorry Partner, there's an issue with your AI. (${error.message?.substring(0, 50)})` 
     };
   }
 }

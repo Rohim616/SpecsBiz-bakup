@@ -7,30 +7,28 @@ import {
   Loader2,
   Sparkles,
   Zap,
-  TrendingUp,
-  BarChart2,
   Trash2,
   ChevronRight,
-  Target
+  Target,
+  Cpu
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useBusinessData } from "@/hooks/use-business-data"
 import { growthExpertChat } from "@/ai/flows/growth-expert-flow"
 import { useToast } from "@/hooks/use-toast"
 import { translations } from "@/lib/translations"
 import { useUser, useFirestore, useMemoFirebase, useCollection } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp, getDocs, writeBatch, limit } from "firebase/firestore"
+import { collection, query, orderBy, addDoc, serverTimestamp, getDocs, writeBatch, limit, doc } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 
 export default function SpecsAIAdvisorPage() {
   const { toast } = useToast()
   const { user } = useUser()
   const db = useFirestore()
-  const { products, sales, currency, language, aiApiKey } = useBusinessData()
+  const { products, sales, currency, language, aiApiKey, aiModel } = useBusinessData()
   const t = translations[language]
   
   const [input, setInput] = useState("")
@@ -96,7 +94,8 @@ export default function SpecsAIAdvisorPage() {
           topProducts,
           currentLanguage: language,
           currency,
-          aiApiKey: aiApiKey // Pass user key
+          aiApiKey: aiApiKey,
+          aiModel: aiModel
         }
       })
 
@@ -129,7 +128,10 @@ export default function SpecsAIAdvisorPage() {
           </div>
           <div>
             <h2 className="text-xl font-black text-primary uppercase tracking-tighter">SpecsAI Advisor</h2>
-            <p className="text-[9px] font-bold text-accent uppercase tracking-[0.3em]">Growth & Strategy Engine</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em]">Growth & Strategy Engine</span>
+              {aiModel && <Badge variant="outline" className="text-[8px] h-4 py-0 px-1 border-accent/20 text-accent font-black">{aiModel}</Badge>}
+            </div>
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={clearMemory} className="text-muted-foreground hover:text-destructive">
@@ -143,7 +145,7 @@ export default function SpecsAIAdvisorPage() {
             <Target className="w-5 h-5 text-amber-600" />
             <div className="flex-1">
               <p className="text-xs font-bold text-amber-800">
-                AI Is Inactive! Please go to <span className="underline cursor-pointer" onClick={() => window.location.href='/settings'}>Settings</span> and add your Gemini API Key to activate.
+                AI Is Inactive! Please go to <span className="underline cursor-pointer font-black" onClick={() => window.location.href='/settings'}>Settings</span> and verify your API Key to unlock the brain.
               </p>
             </div>
           </div>
@@ -175,7 +177,7 @@ export default function SpecsAIAdvisorPage() {
                 <div className="flex justify-start">
                   <div className="bg-accent/5 p-6 rounded-[2rem] rounded-tl-none border border-accent/10 flex items-center gap-3">
                     <Loader2 className="w-4 h-4 animate-spin text-accent" />
-                    <span className="text-[10px] font-bold text-accent uppercase tracking-widest">Studying Trends...</span>
+                    <span className="text-[10px] font-bold text-accent uppercase tracking-widest">Thinking with {aiModel}...</span>
                   </div>
                 </div>
               )}
