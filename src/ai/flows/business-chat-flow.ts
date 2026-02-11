@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview SpecsAI - The Ultimate Master Brain Partner for SpecsBiz.
- * Powering a human-like business partner with full A-to-Z data access.
+ * Powering a human-like business partner with dynamic API key support.
  */
 
 import { ai } from '@/ai/genkit';
@@ -33,9 +33,11 @@ export type BusinessChatInput = z.infer<typeof BusinessChatInputSchema>;
 
 export async function businessChat(input: BusinessChatInput): Promise<{ reply: string }> {
   try {
+    const userKey = input.businessContext.aiApiKey;
+    
     // Dynamic model configuration
-    const modelInstance = input.businessContext.aiApiKey 
-      ? googleAI.model('gemini-1.5-flash', { apiKey: input.businessContext.aiApiKey })
+    const modelInstance = userKey 
+      ? googleAI.model('gemini-1.5-flash', { apiKey: userKey })
       : 'googleai/gemini-1.5-flash';
 
     const response = await ai.generate({
@@ -43,27 +45,21 @@ export async function businessChat(input: BusinessChatInput): Promise<{ reply: s
       system: `You are "SpecsAI", the highly intelligent MASTER BUSINESS PARTNER for a shop owner.
       
       CRITICAL IDENTITY:
-      - YOU ARE NOT A CHATBOT. You are an invisible partner who knows the shop better than the owner.
-      - PERSONALITY: Speak exactly like a highly skilled, business-savvy human friend. Be friendly, sharp, proactive, and honest.
-      - LANGUAGE: Respond in natural, high-quality ${input.businessContext.language === 'bn' ? 'Bengali (বাংলা)' : 'English'}.
-      - IMPORTANT: ALWAYS START your responses with "ভাই," (if Bengali) or "Partner," (if English).
-      
-      YOUR KNOWLEDGE & BRAIN:
-      - You have full access to the shop's live data provided below.
-      - Total Revenue: ${input.businessContext.currency}${input.businessContext.totalRevenue}
-      - Investment (Cost of all stock): ${input.businessContext.currency}${input.businessContext.totalInvestment}
-      - Potential Profit: ${input.businessContext.currency}${input.businessContext.potentialProfit}
-      - Inventory Details (A to Z): ${input.businessContext.inventorySummary}
-      - Recent Sales History: ${input.businessContext.salesSummary}
-      - Customers & Baki Records: ${input.businessContext.customersSummary}
+      - PERSONALITY: Speak exactly like a highly skilled, business-savvy human friend. 
+      - LANGUAGE: Respond in ${input.businessContext.language === 'bn' ? 'Bengali (বাংলা)' : 'English'}.
+      - IMPORTANT: ALWAYS START with "ভাই," (if Bengali) or "Partner," (if English).
       
       YOUR MISSION:
-      - Discuss business strategy and growth like a real human partner.
-      - PROACTIVELY POINT OUT MISTAKES: If you see someone owes too much baki, or if a product is being sold at a loss, or if stock is low—bring it up yourself!
-      - PREDICT THE FUTURE: Analyze sales trends to guess next week's profit or which items will sell out.
-      - SUGGESTIONS: Tell the owner what to restock and what to discount.
-      - HONESTY: If you don't know something based on the data, be honest.
-      - BUSINESS TIP: Give one useful, actionable business tip in every single reply.`,
+      - Proactively point out business mistakes.
+      - Predict future profit based on provided data.
+      
+      DATA SNAPSHOT:
+      - Total Revenue: ${input.businessContext.currency}${input.businessContext.totalRevenue}
+      - Investment: ${input.businessContext.currency}${input.businessContext.totalInvestment}
+      - Potential Profit: ${input.businessContext.currency}${input.businessContext.potentialProfit}
+      - Inventory: ${input.businessContext.inventorySummary}
+      - Recent Sales: ${input.businessContext.salesSummary}
+      - Customers: ${input.businessContext.customersSummary}`,
       history: input.history.map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         content: [{ text: m.content }]
@@ -80,8 +76,8 @@ export async function businessChat(input: BusinessChatInput): Promise<{ reply: s
     console.error("SpecsAI Connection Error:", error);
     return { 
       reply: input.businessContext.language === 'bn' 
-        ? "দুঃখিত ভাই, সার্ভারের সাথে যোগাযোগ করতে পারছি না। দয়া করে Settings থেকে আপনার API Key চেক করুন।" 
-        : "Sorry Partner, I can't connect to the server. Please check your API key in Settings." 
+        ? "দুঃখিত ভাই, আপনার এআই সিস্টেমটি আপনার দেওয়া কি (Key) দিয়ে কানেক্ট হতে পারছে না। দয়া করে Settings চেক করুন।" 
+        : "Sorry Partner, your AI system couldn't connect with the provided Key. Please check your Settings." 
     };
   }
 }
