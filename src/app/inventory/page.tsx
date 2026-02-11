@@ -277,7 +277,10 @@ export default function InventoryPage() {
           </DialogTrigger>
           <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[2rem]">
             <DialogHeader>
-              <DialogTitle className="text-primary font-black uppercase tracking-tighter">{t.addProduct}</DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-primary font-black uppercase tracking-tighter">{t.addProduct}</DialogTitle>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsAddOpen(false)}><X className="w-4 h-4" /></Button>
+              </div>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-1.5">
@@ -410,7 +413,10 @@ export default function InventoryPage() {
       <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="text-primary font-black uppercase tracking-tighter">Edit Product Details</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-primary font-black uppercase tracking-tighter">Edit Product Details</DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setEditingProduct(null)}><X className="w-4 h-4" /></Button>
+            </div>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-1.5">
@@ -470,9 +476,12 @@ export default function InventoryPage() {
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent className="sm:max-w-[400px] rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive font-black uppercase">
-              <Lock className="w-5 h-5" /> Permanent Deletion
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-destructive font-black uppercase">
+                <Lock className="w-5 h-5" /> Permanent Deletion
+              </DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setDeleteId(null)}><X className="w-4 h-4" /></Button>
+            </div>
             <DialogDescription>
               Enter secret key 'specsxr' to confirm deletion.
             </DialogDescription>
@@ -499,9 +508,12 @@ export default function InventoryPage() {
       <Dialog open={!!restockProduct} onOpenChange={(open) => !open && setRestockProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[400px] rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-primary font-black uppercase tracking-tighter">
-              <PackagePlus className="w-5 h-5 text-accent" /> {t.newStockEntry}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-primary font-black uppercase tracking-tighter">
+                <PackagePlus className="w-5 h-5 text-accent" /> {t.newStockEntry}
+              </DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setRestockProduct(null)}><X className="w-4 h-4" /></Button>
+            </div>
             <DialogDescription className="font-black text-accent text-xs">{restockProduct?.name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

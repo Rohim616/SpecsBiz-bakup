@@ -231,7 +231,7 @@ export default function DashboardPage() {
                     </DialogDescription>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full" onClick={() => setIsSaleDialogOpen(false)}>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/50 hover:bg-destructive hover:text-white transition-all shadow-sm" onClick={() => setIsSaleDialogOpen(false)}>
                   <X className="w-5 h-5" />
                 </Button>
               </div>
@@ -491,14 +491,19 @@ export default function DashboardPage() {
       <Dialog open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[550px] p-0 overflow-hidden border-accent/20 shadow-2xl rounded-3xl">
           <DialogHeader className="p-6 bg-accent/5 border-b">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent/10 rounded-xl">
-                <FileText className="w-6 h-6 text-accent" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-accent/10 rounded-xl">
+                  <FileText className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-black text-primary">{t.billSummary}</DialogTitle>
+                  <DialogDescription className="text-[10px] uppercase font-black tracking-widest opacity-60">Final Checkout Confirmation</DialogDescription>
+                </div>
               </div>
-              <div>
-                <DialogTitle className="text-xl font-black text-primary">{t.billSummary}</DialogTitle>
-                <DialogDescription className="text-[10px] uppercase font-black tracking-widest opacity-60">Final Checkout Confirmation</DialogDescription>
-              </div>
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/50 hover:bg-destructive hover:text-white transition-all shadow-sm" onClick={() => setIsSummaryOpen(false)}>
+                <X className="w-5 h-5" />
+              </Button>
             </div>
           </DialogHeader>
           
@@ -610,17 +615,22 @@ export default function DashboardPage() {
       <Dialog open={!!viewProduct} onOpenChange={(open) => !open && setViewProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-3xl p-0 overflow-hidden border-accent/20 shadow-2xl">
           <div className="bg-primary text-white p-6 md:p-8">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                <Package className="w-8 h-8 text-accent" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-xl md:text-2xl font-black truncate leading-tight">{viewProduct?.name}</DialogTitle>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge className="bg-accent text-white border-none text-[9px] font-black uppercase tracking-widest h-5">{viewProduct?.category || 'General'}</Badge>
-                  <span className="text-[10px] font-bold opacity-60 uppercase">{viewProduct?.id?.slice(-8)}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <Package className="w-8 h-8 text-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <DialogTitle className="text-xl md:text-2xl font-black truncate leading-tight">{viewProduct?.name}</DialogTitle>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge className="bg-accent text-white border-none text-[9px] font-black uppercase tracking-widest h-5">{viewProduct?.category || 'General'}</Badge>
+                    <span className="text-[10px] font-bold opacity-60 uppercase">{viewProduct?.id?.slice(-8)}</span>
+                  </div>
                 </div>
               </div>
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/10 hover:bg-destructive hover:text-white transition-all border border-white/20" onClick={() => setViewProduct(null)}>
+                <X className="w-5 h-5" />
+              </Button>
             </div>
           </div>
 
@@ -720,9 +730,14 @@ export default function DashboardPage() {
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Lock className="w-5 h-5" /> {language === 'en' ? 'History Protection' : 'হিস্ট্রি প্রটেকশন'}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Lock className="w-5 h-5" /> {language === 'en' ? 'History Protection' : 'হিস্ট্রি প্রটেকশন'}
+              </DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setDeleteId(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
             <DialogDescription>
               {language === 'en' 
                 ? 'Deleting this sale will restore item stock and remove revenue data. Enter secret key to confirm.'

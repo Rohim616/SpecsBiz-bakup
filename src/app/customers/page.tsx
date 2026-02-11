@@ -406,7 +406,10 @@ export default function CustomersPage() {
       <Dialog open={isAddOpen} onOpenChange={handleOpenAddDialog}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle>{addStep === 1 ? t.registerNewCustomer : t.initialBakiDetails}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>{addStep === 1 ? t.registerNewCustomer : t.initialBakiDetails}</DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsAddOpen(false)}><X className="w-4 h-4" /></Button>
+            </div>
           </DialogHeader>
           <div className="py-4">
             {addStep === 1 ? (
@@ -513,7 +516,12 @@ export default function CustomersPage() {
                   <Edit2 className="w-3.5 h-3.5" />
                 </Button>
               </SheetTitle>
-              <p className="text-[10px] font-black text-muted-foreground bg-white px-2 py-1 rounded-lg border">{detailsCustomer?.phone || 'No Phone'}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-black text-muted-foreground bg-white px-2 py-1 rounded-lg border">{detailsCustomer?.phone || 'No Phone'}</p>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/10 text-muted-foreground" onClick={() => setDetailsCustomer(null)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <div className="mt-4 flex gap-3">
               <div className="flex-1 bg-white p-3 rounded-xl border-2 border-accent/10 shadow-inner">
@@ -570,7 +578,12 @@ export default function CustomersPage() {
       {/* Edit Customer Profile Dialog */}
       <Dialog open={isCustomerEditOpen} onOpenChange={setIsCustomerEditOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem]">
-          <DialogHeader><DialogTitle>Edit Profile</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Edit Profile</DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsCustomerEditOpen(false)}><X className="w-4 h-4" /></Button>
+            </div>
+          </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -598,7 +611,12 @@ export default function CustomersPage() {
       {/* Add Baki to Existing Customer Dialog */}
       <Dialog open={isRecordAddOpen} onOpenChange={setIsRecordAddOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem]">
-          <DialogHeader><DialogTitle>Add Baki Record</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Add Baki Record</DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsRecordAddOpen(false)}><X className="w-4 h-4" /></Button>
+            </div>
+          </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="relative">
               <Label className="text-[10px] font-black uppercase mb-1.5 block text-primary">Select Product</Label>
@@ -607,7 +625,7 @@ export default function CustomersPage() {
                 <Input placeholder="Type to search product..." value={productSearch} onChange={e => setProductSearch(e.target.value)} className="h-11 rounded-xl border-accent/20" />
               </div>
               {filteredProducts.length > 0 && (
-                <Card className="absolute z-50 w-full mt-1 max-h-40 overflow-hidden shadow-2xl bg-white border-accent/10 rounded-xl">
+                <Card className="absolute z-50 w-full mt-1 max-h-40 overflow-hidden shadow-xl bg-white border-accent/10 rounded-xl">
                   <ScrollArea className="h-full">
                     {filteredProducts.map(p => (
                       <button key={p.id} onClick={() => selectProduct(p)} className="w-full text-left p-3 hover:bg-accent/5 border-b text-xs flex justify-between items-center">

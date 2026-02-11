@@ -243,21 +243,23 @@ export default function SalesPage() {
       {/* Bill Summary Popup */}
       <Dialog open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[600px] p-0 overflow-hidden border-accent/20 shadow-2xl rounded-3xl">
-          <DialogHeader className="p-6 bg-accent/5 border-b flex flex-row items-center justify-between space-y-0">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent/10 rounded-xl">
-                <FileText className="w-6 h-6 text-accent" />
+          <DialogHeader className="p-6 bg-accent/5 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-accent/10 rounded-xl">
+                  <FileText className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-black text-primary">{t.billSummary}</DialogTitle>
+                  <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">
+                    {cart.length} {t.itemsInBill}
+                  </DialogDescription>
+                </div>
               </div>
-              <div>
-                <DialogTitle className="text-xl font-black text-primary">{t.billSummary}</DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">
-                  {cart.length} {t.itemsInBill}
-                </DialogDescription>
-              </div>
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/50 hover:bg-destructive hover:text-white transition-all shadow-sm" onClick={() => setIsSummaryOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsSummaryOpen(false)}>
-              <X className="w-4 h-4" />
-            </Button>
           </DialogHeader>
 
           <ScrollArea className="max-h-[60vh]">
