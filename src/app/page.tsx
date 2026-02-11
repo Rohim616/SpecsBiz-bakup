@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { 
   TrendingUp, 
   Package, 
@@ -18,7 +18,9 @@ import {
   AlertTriangle,
   Receipt,
   ArrowDownCircle,
-  Lock
+  Lock,
+  BarChart2,
+  ArrowRight
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -54,6 +56,28 @@ export default function DashboardPage() {
   const [deletePass, setDeletePass] = useState("")
 
   const totalRevenue = sales.reduce((acc, s) => acc + (s.total || 0), 0)
+
+  // Calculate Product-wise Profit
+  const productProfitData = useMemo(() => {
+    const dataMap: Record<string, { name: string, profit: number, qty: number }> = {}
+    
+    sales.forEach(sale => {
+      // We only calculate profit from actual sales items, not baki payments (which are already counted in initial baki)
+      if (!sale.isBakiPayment && sale.items) {
+        sale.items.forEach((item: any) => {
+          const itemId = item.id || item.name;
+          if (!dataMap[itemId]) {
+            dataMap[itemId] = { name: item.name, profit: 0, qty: 0 }
+          }
+          const itemProfit = (item.sellingPrice - (item.purchasePrice || 0)) * item.quantity;
+          dataMap[itemId].profit += itemProfit;
+          dataMap[itemId].qty += item.quantity;
+        })
+      }
+    })
+
+    return Object.values(dataMap).sort((a, b) => b.profit - a.profit).slice(0, 5); // Top 5
+  }, [sales])
 
   const stats = [
     { label: t.revenue, value: `${currency}${totalRevenue.toLocaleString()}`, trend: "up", icon: DollarSign, color: "text-green-600" },
@@ -145,7 +169,6 @@ export default function DashboardPage() {
             </DialogHeader>
 
             <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0">
-              {/* Product Selection Side */}
               <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r flex flex-col min-h-[300px] lg:min-h-0 bg-muted/20 overflow-hidden">
                 <div className="p-3 md:p-4 border-b bg-white shrink-0">
                   <div className="relative">
@@ -175,7 +198,6 @@ export default function DashboardPage() {
                 </ScrollArea>
               </div>
 
-              {/* Billing Side (Matches Screenshot) */}
               <div className="lg:col-span-7 flex flex-col min-h-[400px] lg:min-h-0 bg-white overflow-hidden">
                 <ScrollArea className="flex-1 p-4 md:p-6">
                   {cart.length === 0 ? (
@@ -253,7 +275,6 @@ export default function DashboardPage() {
                   )}
                 </ScrollArea>
 
-                {/* Master Summary Footer (Matches Screenshot) */}
                 <div className="p-4 md:p-6 border-t bg-white space-y-4 shrink-0">
                   <div className="grid grid-cols-2 gap-3">
                     <div className={cn(
@@ -303,8 +324,58 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-6">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Product Profit Analysis Card */}
+        <Card className="border-accent/10">
+          <CardHeader className="p-4 md:p-6 pb-2 md:pb-4 bg-accent/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm md:text-base flex items-center gap-2">
+                  <BarChart2 className="w-4 h-4 md:w-5 md:h-5 text-accent" />
+                  {language === 'en' ? 'Top Profitable Products' : 'পণ্যভিত্তিক লাভ বিশ্লেষণ'}
+                </CardTitle>
+                <CardDescription className="text-[10px] uppercase font-bold opacity-60 mt-1">
+                  {language === 'en' ? 'Ranking by total net profit' : 'সর্বোচ্চ লাভ অনুযায়ী তালিকা'}
+                </CardDescription>
+              </div>
+              <Badge className="bg-accent text-white border-none text-[10px]">{language === 'en' ? 'Live' : 'লাইভ'}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {productProfitData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground opacity-30 gap-2">
+                <BarChart2 className="w-10 h-10" />
+                <p className="text-xs italic">{language === 'en' ? 'No sales data yet' : 'এখনো কোনো বিক্রয় তথ্য নেই'}</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-black/5">
+                {productProfitData.map((item, idx) => (
+                  <div key={idx} className="p-4 flex items-center justify-between hover:bg-accent/5 transition-colors group">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-primary truncate group-hover:text-accent transition-colors">{item.name}</p>
+                        <p className="text-[9px] font-medium text-muted-foreground uppercase">{language === 'en' ? 'Sold' : 'বিক্রি'}: {item.qty}</p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-black text-green-600">+{currency}{item.profit.toLocaleString()}</p>
+                      <div className="flex items-center gap-1 justify-end">
+                        <TrendingUp className="w-2.5 h-2.5 text-green-500" />
+                        <span className="text-[8px] font-bold text-green-500 uppercase tracking-tighter">Profit</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity Card */}
+        <Card className="border-accent/10">
           <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
             <CardTitle className="text-sm md:text-base flex items-center gap-2"><Clock className="w-4 h-4 md:w-5 md:h-5 text-accent" /> {t.recentActivity}</CardTitle>
             <CardDescription className="text-xs">Your latest transactions and payments.</CardDescription>
@@ -317,7 +388,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="divide-y">
-                {sales.slice(0, 10).map((sale, i) => (
+                {sales.slice(0, 5).map((sale, i) => (
                   <div key={i} className="flex items-center justify-between p-3 md:p-4 hover:bg-muted/5 group">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`p-1.5 md:p-2 rounded-full shrink-0 ${sale.isBakiPayment ? 'bg-blue-100' : 'bg-accent/10'}`}>
