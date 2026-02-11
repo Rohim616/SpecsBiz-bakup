@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview SpecsAI - The Ultimate Master Brain Partner for SpecsBiz.
@@ -33,7 +32,8 @@ export type BusinessChatInput = z.infer<typeof BusinessChatInputSchema>;
 
 export async function businessChat(input: BusinessChatInput): Promise<{ reply: string }> {
   try {
-    const userKey = input.businessContext.aiApiKey;
+    // Clean key before use
+    const userKey = input.businessContext.aiApiKey?.trim().replace(/^["']|["']$/g, '');
     
     // Dynamic model configuration
     const modelInstance = userKey 

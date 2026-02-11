@@ -36,7 +36,8 @@ const advisorFlow = ai.defineFlow(
     outputSchema: GrowthExpertOutputSchema,
   },
   async (input) => {
-    const userKey = input.context.aiApiKey;
+    // Clean key before use
+    const userKey = input.context.aiApiKey?.trim().replace(/^["']|["']$/g, '');
     
     // Dynamic model injection: If user provides a key, we prioritize it via the provider.
     const modelInstance = userKey 
