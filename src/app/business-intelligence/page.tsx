@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useMemo, useState } from "react"
@@ -38,7 +37,7 @@ const chartConfig = {
 
 export default function BusinessIntelligencePage() {
   const { toast } = useToast()
-  const { products, sales, currency, isLoading, language, aiApiKey } = useBusinessData()
+  const { products, sales, currency, isLoading, language, aiApiKey, aiModel } = useBusinessData()
   const t = translations[language]
   
   const [isAuditing, setIsAuditing] = useState(false)
@@ -95,7 +94,7 @@ export default function BusinessIntelligencePage() {
       return
     }
     if (!aiApiKey) {
-      toast({ title: "Activation Required", description: "Please add Gemini API Key in Settings to use AI Health Audit.", variant: "destructive" });
+      toast({ title: "Activation Required", description: "Please add and verify API Key in Settings first.", variant: "destructive" });
       return;
     }
 
@@ -110,7 +109,8 @@ export default function BusinessIntelligencePage() {
         totalInvestment: metrics.totalInvestment,
         potentialProfit: metrics.potentialProfit,
         language: language,
-        aiApiKey: aiApiKey
+        aiApiKey: aiApiKey,
+        aiModel: aiModel
       })
       
       setAuditResult(result)
@@ -192,7 +192,7 @@ export default function BusinessIntelligencePage() {
                 <CardTitle className="text-xl flex items-center gap-2">
                   <ShieldCheck className="w-6 h-6 text-accent" /> {language === 'bn' ? 'এআই হেলথ অডিট রিপোর্ট' : 'AI Health Audit Report'}
                 </CardTitle>
-                <CardDescription className="text-primary-foreground/70">Strategic business optimization analysis.</CardDescription>
+                <CardDescription className="text-primary-foreground/70">Strategic business optimization analysis with {aiModel}.</CardDescription>
               </div>
               <div className="text-right">
                 <p className="text-[10px] uppercase font-bold tracking-widest opacity-70">Health Score</p>

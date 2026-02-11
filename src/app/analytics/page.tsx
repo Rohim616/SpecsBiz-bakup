@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -55,7 +54,7 @@ const chartConfig = {
 
 export default function AnalyticsPage() {
   const { toast } = useToast()
-  const { sales, products, isLoading, currency, actions, language, aiApiKey } = useBusinessData()
+  const { sales, products, isLoading, currency, actions, language, aiApiKey, aiModel } = useBusinessData()
   const t = translations[language]
   
   const [timeRange, setTimeRange] = useState<"day" | "week" | "month" | "year">("week")
@@ -114,12 +113,12 @@ export default function AnalyticsPage() {
     else if (timeRange === "month") steps = eachDayOfInterval({ start: startOfMonth(now), end: endOfMonth(now) })
     else return eachMonthOfInterval({ start: startOfYear(now), end: endOfYear(now) }).map(m => {
       const monthSales = filteredSales.filter(s => isSameMonth(new Date(s.saleDate), m))
-      return { name: format(m, "MMM"), revenue: monthSales.reduce((sum, s) => sum + (s.total || 0), 0), profit: monthSales.reduce((sum, s) => sum + (s.profit || 0), 0) }
+      return { name: format(m, "MMM"), revenue: monthSales.reduce((sum, s) => sum + (sum.total || 0), 0), profit: monthSales.reduce((sum, s) => sum + (sum.profit || 0), 0) }
     })
 
     return steps.map(d => {
       const daySales = filteredSales.filter(s => isSameDay(new Date(s.saleDate), d))
-      return { name: format(d, "MMM dd"), revenue: daySales.reduce((sum, s) => sum + (s.total || 0), 0), profit: daySales.reduce((sum, s) => sum + (s.profit || 0), 0) }
+      return { name: format(d, "MMM dd"), revenue: daySales.reduce((sum, s) => sum + (sum.total || 0), 0), profit: daySales.reduce((sum, s) => sum + (sum.profit || 0), 0) }
     })
   }, [filteredSales, timeRange])
 
@@ -129,7 +128,7 @@ export default function AnalyticsPage() {
       return
     }
     if (!aiApiKey) {
-      toast({ title: "Setup Required", description: "Please add Gemini API Key in Settings to run AI Audit.", variant: "destructive" });
+      toast({ title: "Setup Required", description: "Please add and verify API Key in Settings to run AI Audit.", variant: "destructive" });
       return;
     }
     setIsAuditing(true)
@@ -140,7 +139,8 @@ export default function AnalyticsPage() {
         totalInvestment: products.reduce((acc, p) => acc + ((p.purchasePrice || 0) * (p.stock || 0)), 0),
         potentialProfit: products.reduce((acc, p) => acc + (((p.sellingPrice || 0) - (p.purchasePrice || 0)) * (p.stock || 0)), 0),
         language: language,
-        aiApiKey: aiApiKey
+        aiApiKey: aiApiKey,
+        aiModel: aiModel
       })
       setAuditResult(result)
       toast({ title: t.auditComplete })
@@ -205,6 +205,31 @@ export default function AnalyticsPage() {
           <div className="text-2xl font-black text-primary">{metrics.efficiency.toFixed(1)}%</div>
         </Card>
       </div>
+
+      {auditResult && (
+        <Card className="border-accent/20 shadow-2xl overflow-hidden bg-white animate-in zoom-in-95 duration-500 mb-6">
+          <div className="bg-accent text-white p-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5" /> Quick AI Health Audit ({aiModel})
+            </CardTitle>
+          </div>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex justify-between items-center bg-muted/20 p-4 rounded-xl">
+              <span className="font-bold">Health Score:</span>
+              <span className="text-3xl font-black text-accent">{auditResult.healthScore}%</span>
+            </div>
+            <p className="text-sm italic border-l-4 border-accent pl-4">{auditResult.summary}</p>
+            <div className="grid gap-2">
+              {auditResult.recommendations.map((rec, i) => (
+                <div key={i} className="text-xs bg-muted/10 p-2 rounded-lg flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
+                  {rec}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="p-6">
         <div className="h-[350px] w-full">

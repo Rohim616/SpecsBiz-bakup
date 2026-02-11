@@ -1,7 +1,7 @@
-
 'use server';
 /**
  * @fileOverview AI agent to analyze overall business health and predict future performance.
+ * Optimized for dynamic model detection and user-provided API keys.
  */
 
 import {ai} from '@/ai/genkit';
@@ -15,6 +15,7 @@ const AnalyzeBusinessHealthInputSchema = z.object({
   potentialProfit: z.number().describe('Calculated total profit if all stock is sold.'),
   language: z.enum(['en', 'bn']).describe('The language for the report output.'),
   aiApiKey: z.string().optional().describe('User provided API Key.'),
+  aiModel: z.string().optional().describe('User provided Model Name.'),
 });
 export type AnalyzeBusinessHealthInput = z.infer<typeof AnalyzeBusinessHealthInputSchema>;
 
@@ -32,7 +33,6 @@ export async function analyzeBusinessHealth(input: AnalyzeBusinessHealthInput): 
 
 const prompt = ai.definePrompt({
   name: 'analyzeBusinessHealthPrompt',
-  model: 'googleai/gemini-1.5-flash',
   input: {schema: AnalyzeBusinessHealthInputSchema},
   output: {schema: AnalyzeBusinessHealthOutputSchema},
   prompt: `You are a professional business consultant and financial analyst.
@@ -60,12 +60,15 @@ const analyzeBusinessHealthFlow = ai.defineFlow(
     outputSchema: AnalyzeBusinessHealthOutputSchema,
   },
   async input => {
-    // Dynamic model override
-    const modelOverride = input.aiApiKey 
-      ? googleAI.model('gemini-1.5-flash', { apiKey: input.aiApiKey })
-      : undefined;
+    const userKey = input.aiApiKey?.trim().replace(/^["']|["']$/g, '');
+    const userModel = input.aiModel || 'gemini-1.5-flash';
+    
+    // Dynamic model configuration
+    const modelInstance = userKey 
+      ? googleAI.model(userModel, { apiKey: userKey })
+      : `googleai/${userModel}`;
 
-    const {output} = await prompt(input, { model: modelOverride });
+    const {output} = await prompt(input, { model: modelInstance as any });
     return output!;
   }
 );
