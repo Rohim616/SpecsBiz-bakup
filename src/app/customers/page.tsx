@@ -17,7 +17,8 @@ import {
   Inbox,
   PackageSearch,
   ShoppingCart,
-  Tag
+  Tag,
+  FileText
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -221,10 +222,12 @@ export default function CustomersPage() {
       quantity: parseFloat(newRecord.quantity) || 1,
       unit: newRecord.unit,
       amount: parseFloat(newRecord.amount) || 0,
-      note: newRecord.note
+      note: newRecord.note,
+      promiseDate: newRecord.promiseDate ? new Date(newRecord.promiseDate).toISOString() : null
     }, editingRecord.amount, editingRecord.productId, editingRecord.quantity);
     setIsRecordEditOpen(false);
     setEditingRecord(null);
+    toast({ title: "Entry Updated" });
   }
 
   const handleDeleteBakiRecord = (record: any) => {
@@ -236,7 +239,7 @@ export default function CustomersPage() {
 
   const startEditingRecord = (record: any) => {
     setEditingRecord(record);
-    const unitPrice = record.quantity > 0 ? (record.amount / record.quantity) : 0;
+    const unitPrice = record.quantity > 0 ? (record.amount / record.quantity) : record.amount;
     setNewRecord({
       productId: record.productId || "",
       productName: record.productName,
@@ -396,9 +399,9 @@ export default function CustomersPage() {
                   <Card key={record.id} className="border border-accent/10 shadow-sm bg-white hover:shadow-md transition-all rounded-[1.5rem] overflow-hidden">
                     <CardContent className="p-5">
                       <div className="flex justify-between items-start mb-4">
-                        <div className="space-y-2">
-                          <h4 className="font-black text-sm text-primary leading-tight">{record.productName}</h4>
-                          <div className="flex items-center gap-2">
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <h4 className="font-black text-sm text-primary leading-tight truncate">{record.productName}</h4>
+                          <div className="flex flex-wrap items-center gap-2">
                             <Badge className="bg-accent text-white border-none text-[10px] font-black px-2.5 h-6 rounded-lg uppercase">
                               Qty: {record.quantity} {record.unit || ''}
                             </Badge>
@@ -406,8 +409,24 @@ export default function CustomersPage() {
                               <Calendar className="w-3 h-3 text-accent" /> {new Date(record.takenDate).toLocaleDateString()}
                             </span>
                           </div>
+                          
+                          {/* A to Z: Show Note and Promise Date if they exist */}
+                          <div className="space-y-1.5 mt-2">
+                            {record.note && (
+                              <div className="flex items-start gap-2 bg-muted/20 p-2 rounded-lg border border-black/5">
+                                <FileText className="w-3 h-3 text-accent mt-0.5 shrink-0" />
+                                <p className="text-[10px] text-muted-foreground italic leading-tight">{record.note}</p>
+                              </div>
+                            )}
+                            {record.promiseDate && (
+                              <div className="flex items-center gap-2 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg w-fit border border-amber-100">
+                                <Calendar className="w-3 h-3 shrink-0" />
+                                <span>Promise: {new Date(record.promiseDate).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0 ml-4">
                           <p className="font-black text-xl text-primary">{currency}{record.amount.toLocaleString()}</p>
                           <div className="flex items-center gap-1 justify-end mt-2">
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-accent hover:bg-accent/10 rounded-full" onClick={() => startEditingRecord(record)}>
@@ -475,7 +494,7 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Record Edit Dialog */}
+      {/* Record Edit Dialog - A to Z Editing Enabled */}
       <Dialog open={isRecordEditOpen} onOpenChange={setIsRecordEditOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden border-accent/20 shadow-2xl">
           <DialogHeader className="p-6 bg-accent/5 border-b shrink-0">
@@ -484,29 +503,41 @@ export default function CustomersPage() {
                 <div className="p-2 bg-accent/10 rounded-xl"><Edit2 className="w-6 h-6 text-accent" /></div>
                 <div>
                   <DialogTitle className="text-xl font-black text-primary uppercase tracking-tighter">Edit Baki Entry</DialogTitle>
-                  <DialogDescription className="text-[10px] font-bold uppercase opacity-60">Update details for this entry.</DialogDescription>
+                  <DialogDescription className="text-[10px] font-bold uppercase opacity-60">Complete A to Z record adjustment.</DialogDescription>
                 </div>
               </div>
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsRecordEditOpen(false)}><X className="w-4 h-4" /></Button>
             </div>
           </DialogHeader>
-          <div className="p-6 space-y-5 bg-white">
+          <div className="p-6 space-y-5 bg-white max-h-[70vh] overflow-y-auto">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">Product</Label>
+              <Label className="text-[10px] font-black uppercase text-muted-foreground">Product Name</Label>
               <Input value={newRecord.productName} onChange={e => setNewRecord({...newRecord, productName: e.target.value})} className="h-12 rounded-xl bg-accent/5 border-accent/10 font-bold" />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase font-black text-muted-foreground">Qty</Label>
+                <Label className="text-[10px] uppercase font-black text-muted-foreground">Quantity</Label>
                 <div className="flex gap-2">
                   <Input type="number" step="0.01" className="h-12 rounded-xl font-black flex-1" value={newRecord.quantity} onChange={e => setNewRecord({...newRecord, quantity: e.target.value})} />
                   <Input placeholder="Unit" className="h-12 rounded-xl font-bold w-20 bg-muted/20" value={newRecord.unit} onChange={e => setNewRecord({...newRecord, unit: e.target.value})} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase font-black text-muted-foreground">Price ({currency})</Label>
+                <Label className="text-[10px] uppercase font-black text-muted-foreground">Unit Price ({currency})</Label>
                 <Input type="number" step="0.01" className="h-12 rounded-xl font-black text-accent" value={newRecord.unitPrice} onChange={e => setNewRecord({...newRecord, unitPrice: e.target.value})} />
+              </div>
+            </div>
+
+            {/* A to Z Editing: Note and Promise Date */}
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase font-black text-muted-foreground">Debt Remark / Note</Label>
+                <Input placeholder="Add any details..." className="h-12 rounded-xl" value={newRecord.note} onChange={e => setNewRecord({...newRecord, note: e.target.value})} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase font-black text-muted-foreground">Promise Date</Label>
+                <Input type="date" className="h-12 rounded-xl bg-muted/20 border-none" value={newRecord.promiseDate} onChange={e => setNewRecord({...newRecord, promiseDate: e.target.value})} />
               </div>
             </div>
 
@@ -517,7 +548,7 @@ export default function CustomersPage() {
           </div>
           <DialogFooter className="p-6 bg-muted/20 border-t">
             <Button className="w-full bg-primary hover:bg-primary/90 h-14 rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95" onClick={handleUpdateBakiRecord}>
-              Update Entry
+              Update Everything
             </Button>
           </DialogFooter>
         </DialogContent>
