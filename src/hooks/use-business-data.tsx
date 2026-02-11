@@ -9,7 +9,8 @@ import {
   orderBy, 
   onSnapshot,
   getDocs,
-  writeBatch
+  writeBatch,
+  increment
 } from 'firebase/firestore';
 import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { 
@@ -165,7 +166,6 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
-    const newStock = (product.stock || 0) + qty;
     const procId = Date.now().toString();
     const procData = {
       id: procId,
@@ -181,7 +181,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     if (user?.uid && db) {
       setDocumentNonBlocking(doc(db, 'users', user.uid, 'procurements', procId), procData, { merge: true });
       updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
-        stock: newStock,
+        stock: increment(qty),
         purchasePrice: buyPrice
       });
     } else {
@@ -191,7 +191,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         return updated;
       });
       setLocalProducts(prev => {
-        const updated = prev.map(p => p.id === productId ? { ...p, stock: newStock, purchasePrice: buyPrice } : p);
+        const updated = prev.map(p => p.id === productId ? { ...p, stock: (p.stock || 0) + qty, purchasePrice: buyPrice } : p);
         localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
         return updated;
       });
@@ -267,12 +267,9 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       if (data.items && !data.isBakiPayment) {
         data.items.forEach((item: any) => {
           const productRef = doc(db, 'users', user.uid, 'products', item.id);
-          const currentProduct = products.find(p => p.id === item.id);
-          if (currentProduct) {
-            updateDocumentNonBlocking(productRef, {
-              stock: Math.max(0, (currentProduct.stock || 0) - item.quantity)
-            });
-          }
+          updateDocumentNonBlocking(productRef, {
+            stock: increment(-item.quantity)
+          });
         });
       }
     } else {
@@ -295,7 +292,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         });
       }
     }
-  }, [user?.uid, db, products]);
+  }, [user?.uid, db]);
 
   const deleteSale = useCallback((saleId: string) => {
     const saleToDelete = sales.find(s => s.id === saleId);
@@ -306,12 +303,9 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       if (!saleToDelete.isBakiPayment && saleToDelete.items) {
         saleToDelete.items.forEach((item: any) => {
           const productRef = doc(db, 'users', user.uid, 'products', item.id);
-          const currentProduct = products.find(p => p.id === item.id);
-          if (currentProduct) {
-            updateDocumentNonBlocking(productRef, {
-              stock: (currentProduct.stock || 0) + item.quantity
-            });
-          }
+          updateDocumentNonBlocking(productRef, {
+            stock: increment(item.quantity)
+          });
         });
       }
     } else {
@@ -334,7 +328,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         });
       }
     }
-  }, [user?.uid, db, sales, products]);
+  }, [user?.uid, db, sales]);
 
   const addCustomer = useCallback((customer: any) => {
     const id = customer.id || Date.now().toString();
@@ -375,24 +369,18 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   }, [user?.uid, db]);
 
   const addBakiRecord = useCallback((customerId: string, record: any) => {
-    const recordId = record.id || Date.now().toString();
+    const recordId = Date.now().toString();
     const data = { ...record, id: recordId, takenDate: new Date().toISOString(), paidAmount: 0, status: 'pending' };
     
     if (user?.uid && db) {
       setDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId, 'bakiRecords', recordId), data, { merge: true });
-      const customer = customers.find(c => c.id === customerId);
-      if (customer) {
-        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
-          totalDue: (customer.totalDue || 0) + data.amount
-        });
-      }
+      updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
+        totalDue: increment(data.amount)
+      });
       if (record.productId) {
-        const product = products.find(p => p.id === record.productId);
-        if (product) {
-          updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', record.productId), {
-            stock: Math.max(0, (product.stock || 0) - (record.quantity || 1))
-          });
-        }
+        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', record.productId), {
+          stock: increment(-(record.quantity || 1))
+        });
       }
     } else {
       const updatedCustomers = localCustomers.map(c => {
@@ -416,30 +404,24 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         });
       }
     }
-  }, [user?.uid, db, customers, localCustomers, products]);
+  }, [user?.uid, db, localCustomers]);
 
   const updateBakiRecord = useCallback((customerId: string, recordId: string, updates: any, oldAmount: number, productId?: string, oldQty?: number) => {
     if (user?.uid && db) {
       updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId, 'bakiRecords', recordId), updates);
       
       if (updates.amount !== undefined && updates.amount !== oldAmount) {
-        const customer = customers.find(c => c.id === customerId);
-        if (customer) {
-          const diff = updates.amount - oldAmount;
-          updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
-            totalDue: Math.max(0, (customer.totalDue || 0) + diff)
-          });
-        }
+        const diff = updates.amount - oldAmount;
+        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
+          totalDue: increment(diff)
+        });
       }
 
       if (productId && updates.quantity !== undefined && oldQty !== undefined) {
-        const product = products.find(p => p.id === productId);
-        if (product) {
-          const qtyDiff = updates.quantity - oldQty;
-          updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
-            stock: Math.max(0, (product.stock || 0) - qtyDiff)
-          });
-        }
+        const qtyDiff = updates.quantity - oldQty;
+        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
+          stock: increment(-qtyDiff)
+        });
       }
     } else {
       const updatedCustomers = localCustomers.map(c => {
@@ -465,7 +447,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         });
       }
     }
-  }, [user?.uid, db, customers, localCustomers, products]);
+  }, [user?.uid, db, localCustomers]);
 
   const payBakiRecord = useCallback((customerId: string, recordId: string, amountToPay: number, currentRecord: any) => {
     const newPaidAmount = (currentRecord.paidAmount || 0) + amountToPay;
@@ -491,12 +473,9 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         status: isFullyPaid ? 'paid' : 'pending'
       });
       
-      const customer = customers.find(c => c.id === customerId);
-      if (customer) {
-        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
-          totalDue: Math.max(0, (customer.totalDue || 0) - amountToPay)
-        });
-      }
+      updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
+        totalDue: increment(-amountToPay)
+      });
     } else {
       const updatedCustomers = localCustomers.map(c => {
         if (c.id === customerId) {
@@ -521,24 +500,18 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       setLocalCustomers(updatedCustomers);
       localStorage.setItem(LOCAL_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
     }
-  }, [user?.uid, db, customers, localCustomers, addSale]);
+  }, [user?.uid, db, localCustomers, addSale]);
 
   const deleteBakiRecord = useCallback((customerId: string, recordId: string, remainingAmount: number, productId?: string, qty?: number) => {
     if (user?.uid && db) {
       deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId, 'bakiRecords', recordId));
-      const customer = customers.find(c => c.id === customerId);
-      if (customer) {
-        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
-          totalDue: Math.max(0, (customer.totalDue || 0) - remainingAmount)
-        });
-      }
+      updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
+        totalDue: increment(-remainingAmount)
+      });
       if (productId && qty) {
-        const product = products.find(p => p.id === productId);
-        if (product) {
-          updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
-            stock: (product.stock || 0) + qty
-          });
-        }
+        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
+          stock: increment(qty)
+        });
       }
     } else {
       const updatedCustomers = localCustomers.map(c => {
@@ -562,7 +535,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         });
       }
     }
-  }, [user?.uid, db, customers, localCustomers, products]);
+  }, [user?.uid, db, localCustomers]);
 
   const setCurrency = useCallback((val: string) => {
     setCurrencyState(val);
