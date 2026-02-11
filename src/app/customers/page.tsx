@@ -248,6 +248,21 @@ export default function CustomersPage() {
 
   const totalMarketBaki = customers.reduce((acc, c) => acc + (c.totalDue || 0), 0)
 
+  // Logic to filter customers: Hide paid ones unless searching
+  const displayCustomers = useMemo(() => {
+    return customers
+      .filter(c => {
+        const matchesSearch = `${c.firstName} ${c.lastName} ${c.phone}`.toLowerCase().includes(search.toLowerCase());
+        // If there is no search, only show active debtors
+        if (search.trim() === "") {
+          return (c.totalDue || 0) > 0;
+        }
+        // If searching, show all matches regardless of balance
+        return matchesSearch;
+      })
+      .sort((a, b) => (b.totalDue || 0) - (a.totalDue || 0)); // Sort by highest debt first
+  }, [customers, search]);
+
   if (isLoading) return <div className="p-10 text-center animate-pulse text-accent font-bold">{t.loading}</div>
 
   return (
@@ -270,7 +285,7 @@ export default function CustomersPage() {
           <p className="text-lg md:text-2xl font-black text-destructive mt-1">{currency}{totalMarketBaki.toLocaleString()}</p>
         </Card>
         <Card className="bg-primary text-white p-3 flex flex-col justify-center">
-          <p className="text-[8px] uppercase font-black opacity-70 tracking-widest leading-none">{t.activeDebtors}</p>
+          <p className="text-[8px] uppercase font-black opacity-70 tracking-widest font-headline leading-none">{t.activeDebtors}</p>
           <p className="text-lg md:text-2xl font-black mt-1">{customers.filter(c => (c.totalDue || 0) > 0).length}</p>
         </Card>
       </div>
@@ -283,10 +298,12 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
-          {customers.length === 0 ? (
+          {displayCustomers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground italic gap-2">
               <Inbox className="w-8 h-8 opacity-10" />
-              <p className="text-xs font-bold uppercase tracking-widest opacity-20">{t.noData}</p>
+              <p className="text-xs font-bold uppercase tracking-widest opacity-20">
+                {search ? "No matching customers" : "All debts are cleared!"}
+              </p>
             </div>
           ) : (
             <Table>
@@ -298,13 +315,13 @@ export default function CustomersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.filter(c => `${c.firstName} ${c.lastName} ${c.phone}`.toLowerCase().includes(search.toLowerCase())).map((c) => (
+                {displayCustomers.map((c) => (
                   <TableRow key={c.id} className="hover:bg-accent/5 group">
                     <TableCell className="pl-4 py-3 font-bold text-xs text-primary">{c.firstName} {c.lastName}</TableCell>
                     <TableCell>
                       <span className={cn(
                         "px-2 py-0.5 rounded-full text-[10px] font-black",
-                        c.totalDue > 0 ? 'bg-red-50 text-destructive' : 'bg-green-50 text-green-600'
+                        (c.totalDue || 0) > 0 ? 'bg-red-50 text-destructive' : 'bg-green-50 text-green-600'
                       )}>
                         {currency}{c.totalDue?.toLocaleString() || '0'}
                       </span>
