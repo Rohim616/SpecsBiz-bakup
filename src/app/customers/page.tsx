@@ -7,24 +7,17 @@ import {
   Search, 
   Plus, 
   Eye, 
-  Package, 
   CheckCircle2, 
-  ChevronLeft, 
-  ArrowRight,
-  Inbox,
-  DollarSign,
-  ShoppingCart,
-  Edit2,
-  Trash2,
-  Calendar,
-  X,
-  UserEdit,
-  AlertCircle,
-  AlertTriangle,
-  Lock
+  Edit2, 
+  Trash2, 
+  Calendar, 
+  X, 
+  AlertTriangle, 
+  Lock,
+  Inbox
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -41,7 +34,6 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger,
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog"
@@ -49,8 +41,7 @@ import {
   Sheet, 
   SheetContent, 
   SheetHeader, 
-  SheetTitle, 
-  SheetDescription 
+  SheetTitle 
 } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/hooks/use-toast"
@@ -78,18 +69,19 @@ export default function CustomersPage() {
   const [isCustomerEditOpen, setIsCustomerEditOpen] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   
-  // LIVE Customer Object
   const detailsCustomer = useMemo(() => {
     return customers.find(c => c.id === activeCustomerId) || null
   }, [customers, activeCustomerId])
 
   const [editingRecord, setEditingRecord] = useState<any>(null)
+  
+  // Simplified Record State for Adding New User
   const [newRecord, setNewRecord] = useState({
     productId: "",
     productName: "",
     quantity: "1",
     unitPrice: "",
-    amount: "0.00",
+    amount: "", // Direct amount input
     promiseDate: new Date().toISOString().split('T')[0],
     note: ""
   })
@@ -104,16 +96,16 @@ export default function CustomersPage() {
     segment: "Baki User"
   })
 
-  // Real-time Warnings
+  // Real-time Warnings for Duplicate Entry
   const nameWarning = useMemo(() => {
     if (!newCustomer.firstName.trim()) return null;
-    const fullName = (newCustomer.firstName + " " + (newCustomer.lastName || "")).toLowerCase().trim().replace(/\s+/g, ' ');
+    const fullName = (newCustomer.firstName + " " + (newCustomer.lastName || "")).toLowerCase().trim();
     const match = customers.find(c => {
       if (activeCustomerId && c.id === activeCustomerId) return false;
-      const cFull = (c.firstName + " " + (c.lastName || "")).toLowerCase().trim().replace(/\s+/g, ' ');
+      const cFull = (c.firstName + " " + (c.lastName || "")).toLowerCase().trim();
       return cFull === fullName;
     });
-    if (match) return language === 'bn' ? `'${match.firstName}' নামে কাস্টমার আছে!` : `Customer '${match.firstName}' exists!`;
+    if (match) return language === 'bn' ? `'${match.firstName}' নামে আছে!` : `Exist as '${match.firstName}'!`;
     return null;
   }, [newCustomer.firstName, newCustomer.lastName, customers, language, activeCustomerId]);
 
@@ -124,16 +116,20 @@ export default function CustomersPage() {
       if (activeCustomerId && c.id === activeCustomerId) return false;
       return (c.phone || "").replace(/\D/g, '') === rawPhone;
     });
-    if (match) return language === 'bn' ? `ফোন নম্বরটি '${match.firstName}' এর জন্য ব্যবহৃত!` : `Phone used by '${match.firstName}'!`;
+    if (match) return language === 'bn' ? `ফোন নম্বরটি ব্যবহৃত!` : `Phone already used!`;
     return null;
   }, [newCustomer.phone, customers, language, activeCustomerId]);
 
+  // Effect only for adding detailed baki records from the sheet
   useEffect(() => {
-    const qty = parseFloat(newRecord.quantity) || 0
-    const price = parseFloat(newRecord.unitPrice) || 0
-    const total = (qty * price).toFixed(2)
-    setNewRecord(prev => ({ ...prev, amount: total }))
-  }, [newRecord.quantity, newRecord.unitPrice])
+    if (isRecordAddOpen || isRecordEditOpen) {
+      const qty = parseFloat(newRecord.quantity) || 0
+      const price = parseFloat(newRecord.unitPrice) || 0
+      if (qty > 0 && price > 0) {
+        setNewRecord(prev => ({ ...prev, amount: (qty * price).toFixed(2) }))
+      }
+    }
+  }, [newRecord.quantity, newRecord.unitPrice, isRecordAddOpen, isRecordEditOpen])
 
   const selectProduct = (p: any) => {
     setNewRecord(prev => ({
@@ -160,23 +156,29 @@ export default function CustomersPage() {
     return rawRecords.filter((r: any) => r.status !== 'paid');
   }, [fbBakiRecords, detailsCustomer, user, activeCustomerId]);
 
+  // Handle Lightning Fast Add
   const handleAddCustomerAndBaki = () => {
     if (!newCustomer.firstName.trim()) return;
     const customerId = Date.now().toString()
     const bakiAmount = parseFloat(newRecord.amount) || 0
+    
     actions.addCustomer({ ...newCustomer, id: customerId, totalDue: bakiAmount })
     
-    if (newRecord.productName && bakiAmount > 0) {
+    if (bakiAmount > 0) {
       actions.addBakiRecord(customerId, {
-        productId: newRecord.productId,
-        productName: newRecord.productName,
-        quantity: parseFloat(newRecord.quantity) || 1,
+        productId: "",
+        productName: newRecord.note || (language === 'bn' ? "পূর্বের বকেয়া" : "Previous Debt"),
+        quantity: 1,
         amount: bakiAmount,
-        promiseDate: new Date(newRecord.promiseDate).toISOString(),
-        note: newRecord.note
+        promiseDate: new Date().toISOString(),
+        note: ""
       });
     }
+    
     setIsAddOpen(false)
+    setAddStep(1)
+    setNewCustomer({ firstName: "", lastName: "", email: "", phone: "", address: "", totalDue: 0, segment: "Baki User" })
+    setNewRecord({ productId: "", productName: "", quantity: "1", unitPrice: "", amount: "", promiseDate: new Date().toISOString().split('T')[0], note: "" })
     toast({ title: "Saved Successfully" })
   }
 
@@ -188,7 +190,7 @@ export default function CustomersPage() {
   }
 
   const handleDeleteCustomer = () => {
-    if (!activeCustomerId || !detailsCustomer) return;
+    if (!activeCustomerId) return;
     actions.deleteCustomer(activeCustomerId);
     setActiveCustomerId(null);
     setIsDeleteConfirmOpen(false);
@@ -197,17 +199,17 @@ export default function CustomersPage() {
   }
 
   const handleAddBakiRecordOnly = () => {
-    if (!activeCustomerId || !newRecord.productName) return;
+    if (!activeCustomerId || (!newRecord.productName && !newRecord.amount)) return;
     actions.addBakiRecord(activeCustomerId, {
       productId: newRecord.productId,
-      productName: newRecord.productName,
+      productName: newRecord.productName || (language === 'bn' ? "নতুন বাকি" : "New Debt"),
       quantity: parseFloat(newRecord.quantity) || 1,
       amount: parseFloat(newRecord.amount) || 0,
       promiseDate: new Date(newRecord.promiseDate).toISOString(),
       note: newRecord.note
     });
     setIsRecordAddOpen(false);
-    setNewRecord({ productId: "", productName: "", quantity: "1", unitPrice: "", amount: "0.00", promiseDate: new Date().toISOString().split('T')[0], note: "" })
+    setNewRecord({ productId: "", productName: "", quantity: "1", unitPrice: "", amount: "", promiseDate: new Date().toISOString().split('T')[0], note: "" })
   }
 
   const handleUpdateBakiRecord = () => {
@@ -224,12 +226,9 @@ export default function CustomersPage() {
 
   const handleDeleteBakiRecord = (record: any) => {
     if (!activeCustomerId) return;
-    const confirmDelete = window.confirm("Delete this entry?");
-    if (confirmDelete) {
-      const remaining = record.amount - (record.paidAmount || 0);
-      actions.deleteBakiRecord(activeCustomerId, record.id, remaining, record.productId, record.quantity);
-      toast({ title: "Removed" });
-    }
+    const remaining = record.amount - (record.paidAmount || 0);
+    actions.deleteBakiRecord(activeCustomerId, record.id, remaining, record.productId, record.quantity);
+    toast({ title: "Removed" });
   }
 
   const startEditingRecord = (record: any) => {
@@ -309,7 +308,7 @@ export default function CustomersPage() {
         <CardHeader className="p-3 border-b bg-muted/20">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder={t.searchBaki} className="pl-9 h-10 bg-white" value={search} onChange={e => setSearch(e.target.value)} />
+            <Input placeholder={t.searchBaki} className="pl-9 h-10 bg-white" value={search} onChange={e => setSearch(setSearch ? e.target.value : "")} />
           </div>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
@@ -333,7 +332,7 @@ export default function CustomersPage() {
                 {displayCustomers.map((c) => (
                   <TableRow key={c.id} className="hover:bg-accent/5">
                     <TableCell className="pl-4 py-3 font-bold text-xs text-primary">
-                      {c.firstName || c.lastName ? `${c.firstName || ''} ${c.lastName || ''}` : (language === 'bn' ? 'নামহীন কাস্টমার' : 'Untitled Customer')}
+                      {c.firstName || c.lastName ? `${c.firstName || ''} ${c.lastName || ''}` : (language === 'bn' ? 'Untitled Customer' : 'Untitled Customer')}
                     </TableCell>
                     <TableCell>
                       <span className={cn(
@@ -356,13 +355,12 @@ export default function CustomersPage() {
         </CardContent>
       </Card>
 
-      {/* Sheet for Customer Baki Details */}
       <Sheet open={!!activeCustomerId} onOpenChange={(open) => !open && setActiveCustomerId(null)}>
         <SheetContent side="right" className="w-full sm:max-w-xl p-0 flex flex-col">
           <SheetHeader className="p-4 border-b bg-accent/5">
             <div className="flex items-center justify-between">
               <SheetTitle className="text-xl font-black flex items-center gap-2">
-                {detailsCustomer?.firstName || detailsCustomer?.lastName ? `${detailsCustomer?.firstName || ''} ${detailsCustomer?.lastName || ''}` : (language === 'bn' ? 'নামহীন কাস্টমার' : 'Untitled Customer')}
+                {detailsCustomer?.firstName || detailsCustomer?.lastName ? `${detailsCustomer?.firstName || ''} ${detailsCustomer?.lastName || ''}` : 'Customer'}
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-accent" onClick={startEditingCustomer}>
                   <Edit2 className="w-3.5 h-3.5" />
                 </Button>
@@ -424,54 +422,26 @@ export default function CustomersPage() {
         </SheetContent>
       </Sheet>
 
-      {/* Edit Profile Dialog */}
       <Dialog open={isCustomerEditOpen} onOpenChange={setIsCustomerEditOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem]">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
-            <DialogDescription className="text-xs">Update contact info or remove profile.</DialogDescription>
+            <DialogDescription className="text-xs">Update info or wipe profile.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase">First Name</Label>
-                <Input value={newCustomer.firstName} onChange={e => setNewCustomer({...newCustomer, firstName: e.target.value})} className="h-11 rounded-xl" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase">Last Name</Label>
-                <Input value={newCustomer.lastName} onChange={e => setNewCustomer({...newCustomer, lastName: e.target.value})} className="h-11 rounded-xl" />
-              </div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">First Name</Label><Input value={newCustomer.firstName} onChange={e => setNewCustomer({...newCustomer, firstName: e.target.value})} className="h-11 rounded-xl" /></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Last Name</Label><Input value={newCustomer.lastName} onChange={e => setNewCustomer({...newCustomer, lastName: e.target.value})} className="h-11 rounded-xl" /></div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase">Phone</Label>
-              <Input value={newCustomer.phone} onChange={e => setNewCustomer({...newCustomer, phone: e.target.value})} className="h-11 rounded-xl" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase">Address</Label>
-              <Input value={newCustomer.address} onChange={e => setNewCustomer({...newCustomer, address: e.target.value})} className="h-11 rounded-xl" />
-            </div>
-
+            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Phone</Label><Input value={newCustomer.phone} onChange={e => setNewCustomer({...newCustomer, phone: e.target.value})} className="h-11 rounded-xl" /></div>
+            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Address</Label><Input value={newCustomer.address} onChange={e => setNewCustomer({...newCustomer, address: e.target.value})} className="h-11 rounded-xl" /></div>
             <div className="pt-4 border-t">
-              <div className={cn(
-                "p-4 rounded-2xl flex items-center justify-between",
-                detailsCustomer?.totalDue > 0 ? "bg-amber-50 border border-amber-100" : "bg-red-50 border border-red-100"
-              )}>
+              <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center justify-between">
                 <div className="flex-1 pr-4">
                   <p className="text-[10px] font-black uppercase opacity-60">Delete Customer</p>
-                  <p className="text-xs font-medium mt-1">
-                    {detailsCustomer?.totalDue > 0 
-                      ? `This customer has ${currency}${detailsCustomer?.totalDue} debt. Wipe anyway?` 
-                      : "Permanently remove this customer?"}
-                  </p>
+                  <p className="text-xs font-medium mt-1">Permanently remove this customer and all history?</p>
                 </div>
-                <Button 
-                  variant="destructive" 
-                  size="icon" 
-                  className="rounded-xl shadow-lg"
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                >
-                  <Trash2 className="w-5 h-5" />
-                </Button>
+                <Button variant="destructive" size="icon" className="rounded-xl shadow-lg" onClick={() => setIsDeleteConfirmOpen(true)}><Trash2 className="w-5 h-5" /></Button>
               </div>
             </div>
           </div>
@@ -479,25 +449,16 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
       <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Lock className="w-5 h-5" /> Master Delete
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to permanently delete <b>{detailsCustomer?.firstName || 'this customer'}</b>? This will wipe all their records and debt history. This action cannot be undone.
-            </DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-destructive"><Lock className="w-5 h-5" /> Master Delete</DialogTitle>
+            <DialogDescription>Enter secret key 'specsxr' to permanently wipe this customer.</DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-3 sm:flex-row flex-col">
-            <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setIsDeleteConfirmOpen(false)}>Cancel</Button>
-            <Button variant="destructive" className="flex-1 h-12 rounded-xl font-bold" onClick={handleDeleteCustomer}>Confirm Wipe</Button>
-          </DialogFooter>
+          <DialogFooter><Button variant="destructive" className="w-full h-12 rounded-xl font-bold" onClick={handleDeleteCustomer}>Confirm Wipe</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Baki Record Dialog */}
       <Dialog open={isRecordEditOpen} onOpenChange={setIsRecordEditOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem]">
           <DialogHeader><DialogTitle>Edit Baki Entry</DialogTitle></DialogHeader>
@@ -516,17 +477,13 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Baki to Existing Customer Dialog */}
       <Dialog open={isRecordAddOpen} onOpenChange={setIsRecordAddOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem]">
-          <DialogHeader><DialogTitle>Add New Baki</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Add New Baki Record</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="relative">
-              <Label className="text-[10px] font-black uppercase mb-1.5 block">Select Product</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-50" />
-                <Input placeholder="Search product..." value={productSearch} onChange={e => setProductSearch(e.target.value)} className="h-11 rounded-xl" />
-              </div>
+              <Label className="text-[10px] font-black uppercase mb-1.5 block">Search Product</Label>
+              <Input placeholder="Search..." value={productSearch} onChange={e => setProductSearch(e.target.value)} className="h-11 rounded-xl" />
               {filteredProducts.length > 0 && (
                 <Card className="absolute z-50 w-full mt-1 max-h-40 overflow-hidden shadow-xl bg-white border-accent/10 rounded-xl">
                   <ScrollArea className="h-full">
@@ -553,7 +510,6 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add New Customer Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem]">
           <DialogHeader>
@@ -584,30 +540,29 @@ export default function CustomersPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="relative">
-                  <Label className="text-[10px] font-black uppercase mb-1.5 block">Search Product</Label>
-                  <Input placeholder="Type..." value={productSearch} onChange={e => setProductSearch(e.target.value)} className="h-10" />
-                  {filteredProducts.length > 0 && (
-                    <Card className="absolute z-50 w-full mt-1 max-h-40 overflow-hidden shadow-xl bg-white border-accent/10">
-                      <ScrollArea className="h-full">
-                        {filteredProducts.map(p => (
-                          <button key={p.id} onClick={() => selectProduct(p)} className="w-full text-left p-3 hover:bg-accent/10 border-b text-xs flex justify-between items-center">
-                            <span className="font-bold">{p.name}</span>
-                            <span className="font-black text-accent">{currency}{p.sellingPrice}</span>
-                          </button>
-                        ))}
-                      </ScrollArea>
-                    </Card>
-                  )}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase text-primary">কত টাকা বাকি? (Amount)</Label>
+                  <Input 
+                    type="number" 
+                    placeholder="0.00" 
+                    className="h-14 text-2xl font-black bg-accent/5 border-accent/20 focus:ring-accent"
+                    value={newRecord.amount}
+                    onChange={e => setNewRecord({...newRecord, amount: e.target.value})}
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><Label className="text-[10px] uppercase font-black">Qty</Label><Input type="number" step="0.01" value={newRecord.quantity} onChange={e => setNewRecord({...newRecord, quantity: e.target.value})} /></div>
-                  <div className="space-y-1.5"><Label className="text-[10px] uppercase font-black">Price</Label><Input type="number" step="0.01" value={newRecord.unitPrice} onChange={e => setNewRecord({...newRecord, unitPrice: e.target.value})} /></div>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase text-primary">কিসের জন্য? (Reason/Note)</Label>
+                  <Input 
+                    placeholder="যেমন: চাল, ডাল বা আগের হিসাব..." 
+                    className="h-12 bg-muted/30"
+                    value={newRecord.note}
+                    onChange={e => setNewRecord({...newRecord, note: e.target.value})}
+                  />
                 </div>
                 <div className="bg-destructive/5 p-4 rounded-xl text-center border-2 border-destructive/10">
-                  <Label className="text-[10px] uppercase font-black text-destructive">Initial Baki</Label>
-                  <p className="text-2xl font-black text-destructive">{currency}{newRecord.amount}</p>
+                  <p className="text-[10px] uppercase font-black text-destructive opacity-60">Initial Baki</p>
+                  <p className="text-3xl font-black text-destructive">{currency}{newRecord.amount || '0'}</p>
                 </div>
               </div>
             )}
@@ -616,7 +571,7 @@ export default function CustomersPage() {
             {addStep === 1 ? (
               <Button className="w-full bg-accent h-12 font-black uppercase" onClick={() => setAddStep(2)} disabled={!newCustomer.firstName || !!nameWarning || !!phoneWarning}>Next</Button>
             ) : (
-              <Button className="w-full bg-primary h-12 font-black uppercase" onClick={handleAddCustomerAndBaki}>Save Everything</Button>
+              <Button className="w-full bg-primary h-14 rounded-2xl font-black uppercase shadow-xl" onClick={handleAddCustomerAndBaki}>Save Everything</Button>
             )}
           </DialogFooter>
         </DialogContent>
