@@ -141,6 +141,25 @@ export default function CustomersPage() {
 
   const handleAddCustomerAndBaki = () => {
     if (!newCustomer.firstName) return
+
+    // --- DUPLICATE CHECK ---
+    const existsByPhone = customers.find(c => c.phone && c.phone.trim() === newCustomer.phone.trim());
+    const existsByName = customers.find(c => 
+      c.firstName.trim().toLowerCase() === newCustomer.firstName.trim().toLowerCase() && 
+      c.lastName.trim().toLowerCase() === newCustomer.lastName.trim().toLowerCase()
+    );
+
+    if (existsByPhone || existsByName) {
+      toast({
+        variant: "destructive",
+        title: language === 'bn' ? "সতর্কবার্তা: কাস্টমার অলরেডি আছে!" : "Warning: Duplicate Customer!",
+        description: language === 'bn' 
+          ? "এই নামে বা এই ফোন নম্বরে একজন কাস্টমার অলরেডি আপনার তালিকায় আছে।" 
+          : "A customer with this name or phone number already exists in your list.",
+      });
+      return;
+    }
+
     const customerId = Date.now().toString()
     const bakiAmount = parseFloat(newRecord.amount) || 0
     actions.addCustomer({ ...newCustomer, id: customerId, totalDue: bakiAmount })
@@ -160,6 +179,23 @@ export default function CustomersPage() {
 
   const handleUpdateCustomer = () => {
     if (!detailsCustomer || !newCustomer.firstName) return;
+
+    // --- DUPLICATE CHECK FOR UPDATE ---
+    const existsOther = customers.find(c => 
+      c.id !== detailsCustomer.id && 
+      c.phone && c.phone.trim() === newCustomer.phone.trim()
+    );
+    if (existsOther) {
+      toast({
+        variant: "destructive",
+        title: language === 'bn' ? "আপডেট এরর: নম্বর অলরেডি ব্যবহৃত!" : "Update Error: Phone Already Used!",
+        description: language === 'bn' 
+          ? "এই ফোন নম্বরটি অলরেডি অন্য একজন কাস্টমারের প্রোফাইলে আছে।" 
+          : "This phone number is already registered to another customer.",
+      });
+      return;
+    }
+
     actions.updateCustomer(detailsCustomer.id, {
       firstName: newCustomer.firstName,
       lastName: newCustomer.lastName,

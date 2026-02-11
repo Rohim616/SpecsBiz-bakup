@@ -116,6 +116,20 @@ export default function InventoryPage() {
 
   const handleAddProduct = () => {
     if (!newProduct.name || !newProduct.sellingPrice) return;
+
+    // --- DUPLICATE CHECK ---
+    const existing = products.find(p => p.name.trim().toLowerCase() === newProduct.name.trim().toLowerCase());
+    if (existing) {
+      toast({
+        variant: "destructive",
+        title: language === 'bn' ? "সতর্কবার্তা: একই পণ্য পাওয়া গেছে!" : "Warning: Duplicate Product!",
+        description: language === 'bn' 
+          ? `'${newProduct.name}' নামে একটি পণ্য ইতিপূর্বেই ইনভেন্টরিতে আছে। নতুন করে এন্ট্রি দেওয়ার প্রয়োজন নেই।` 
+          : `'${newProduct.name}' already exists in your inventory. No need to add it again.`,
+      });
+      return;
+    }
+
     actions.addProduct({
       ...newProduct,
       stock: parseFloat(newProduct.stock) || 0,
@@ -124,11 +138,28 @@ export default function InventoryPage() {
     })
     setNewProduct({ name: "", category: "", purchasePrice: "", sellingPrice: "", stock: "", unit: "pcs" })
     setIsAddOpen(false)
-    toast({ title: "Product Added Successfully" })
+    toast({ title: language === 'en' ? "Product Added Successfully" : "পণ্য সফলভাবে তালিকায় যোগ করা হয়েছে" })
   }
 
   const handleUpdateProduct = () => {
     if (!editingProduct || !editingProduct.name) return;
+
+    // --- DUPLICATE CHECK FOR EDIT ---
+    const existsOther = products.find(p => 
+      p.id !== editingProduct.id && 
+      p.name.trim().toLowerCase() === editingProduct.name.trim().toLowerCase()
+    );
+    if (existsOther) {
+      toast({
+        variant: "destructive",
+        title: language === 'bn' ? "ভুল সংশোধন: নাম পরিবর্তন করা যাচ্ছে না!" : "Edit Error: Name Already Exists!",
+        description: language === 'bn' 
+          ? "অন্য একটি পণ্যের নাম অলরেডি এটি দেওয়া আছে। দয়া করে ভিন্ন নাম দিন।" 
+          : "Another product already has this name. Please use a unique name.",
+      });
+      return;
+    }
+
     actions.updateProduct(editingProduct.id, {
       ...editingProduct,
       stock: parseFloat(editingProduct.stock) || 0,
@@ -136,7 +167,7 @@ export default function InventoryPage() {
       sellingPrice: parseFloat(editingProduct.sellingPrice) || 0,
     });
     setEditingProduct(null);
-    toast({ title: "Product Updated" });
+    toast({ title: language === 'en' ? "Product Updated" : "পণ্যের তথ্য আপডেট করা হয়েছে" });
   }
 
   const handleAuthorizedDelete = () => {
