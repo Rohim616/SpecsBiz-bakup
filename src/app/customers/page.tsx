@@ -189,10 +189,6 @@ export default function CustomersPage() {
 
   const handleDeleteCustomer = () => {
     if (!activeCustomerId || !detailsCustomer) return;
-    if (detailsCustomer.totalDue > 0) {
-      toast({ variant: "destructive", title: "Cannot Delete", description: "Clear all debts first!" });
-      return;
-    }
     actions.deleteCustomer(activeCustomerId);
     setActiveCustomerId(null);
     setIsDeleteConfirmOpen(false);
@@ -254,7 +250,7 @@ export default function CustomersPage() {
   const startEditingCustomer = () => {
     if (!detailsCustomer) return;
     setNewCustomer({
-      firstName: detailsCustomer.firstName,
+      firstName: detailsCustomer.firstName || "",
       lastName: detailsCustomer.lastName || "",
       phone: detailsCustomer.phone || "",
       address: detailsCustomer.address || "",
@@ -275,7 +271,8 @@ export default function CustomersPage() {
   const displayCustomers = useMemo(() => {
     return customers
       .filter(c => {
-        const matchesSearch = `${c.firstName} ${c.lastName} ${c.phone}`.toLowerCase().includes(search.toLowerCase());
+        const fullName = `${c.firstName || ''} ${c.lastName || ''} ${c.phone || ''}`.toLowerCase();
+        const matchesSearch = fullName.includes(search.toLowerCase());
         return search.trim() === "" ? (c.totalDue || 0) > 0 : matchesSearch;
       })
       .sort((a, b) => (b.totalDue || 0) - (a.totalDue || 0));
@@ -335,7 +332,9 @@ export default function CustomersPage() {
               <TableBody>
                 {displayCustomers.map((c) => (
                   <TableRow key={c.id} className="hover:bg-accent/5">
-                    <TableCell className="pl-4 py-3 font-bold text-xs text-primary">{c.firstName} {c.lastName}</TableCell>
+                    <TableCell className="pl-4 py-3 font-bold text-xs text-primary">
+                      {c.firstName || c.lastName ? `${c.firstName || ''} ${c.lastName || ''}` : (language === 'bn' ? 'নামহীন কাস্টমার' : 'Untitled Customer')}
+                    </TableCell>
                     <TableCell>
                       <span className={cn(
                         "px-2 py-0.5 rounded-full text-[10px] font-black",
@@ -363,7 +362,7 @@ export default function CustomersPage() {
           <SheetHeader className="p-4 border-b bg-accent/5">
             <div className="flex items-center justify-between">
               <SheetTitle className="text-xl font-black flex items-center gap-2">
-                {detailsCustomer?.firstName} {detailsCustomer?.lastName}
+                {detailsCustomer?.firstName || detailsCustomer?.lastName ? `${detailsCustomer?.firstName || ''} ${detailsCustomer?.lastName || ''}` : (language === 'bn' ? 'নামহীন কাস্টমার' : 'Untitled Customer')}
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-accent" onClick={startEditingCustomer}>
                   <Edit2 className="w-3.5 h-3.5" />
                 </Button>
@@ -461,14 +460,14 @@ export default function CustomersPage() {
                   <p className="text-[10px] font-black uppercase opacity-60">Delete Customer</p>
                   <p className="text-xs font-medium mt-1">
                     {detailsCustomer?.totalDue > 0 
-                      ? "Debt must be ৳0 to delete profile." 
+                      ? `This customer has ${currency}${detailsCustomer?.totalDue} debt. Wipe anyway?` 
                       : "Permanently remove this customer?"}
                   </p>
                 </div>
                 <Button 
                   variant="destructive" 
                   size="icon" 
-                  className={cn("rounded-xl", detailsCustomer?.totalDue > 0 && "opacity-20 grayscale pointer-events-none")}
+                  className="rounded-xl shadow-lg"
                   onClick={() => setIsDeleteConfirmOpen(true)}
                 >
                   <Trash2 className="w-5 h-5" />
@@ -488,7 +487,7 @@ export default function CustomersPage() {
               <Lock className="w-5 h-5" /> Master Delete
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to permanently delete <b>{detailsCustomer?.firstName}</b>? This action cannot be undone.
+              Are you sure you want to permanently delete <b>{detailsCustomer?.firstName || 'this customer'}</b>? This will wipe all their records and debt history. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-3 sm:flex-row flex-col">
