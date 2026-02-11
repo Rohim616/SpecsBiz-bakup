@@ -28,7 +28,8 @@ import {
   Layers,
   Tag,
   CreditCard,
-  FileText
+  FileText,
+  X
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -57,6 +58,7 @@ export default function DashboardPage() {
   const t = translations[language]
   
   const [isSaleDialogOpen, setIsSaleDialogOpen] = useState(false)
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [cart, setCart] = useState<any[]>([])
 
@@ -138,6 +140,7 @@ export default function DashboardPage() {
     })
     toast({ title: language === 'en' ? "Sale Successful" : "বিক্রয় সম্পন্ন হয়েছে", description: `${t.finalTotal}: ${currency}${grandTotal.toLocaleString()}` })
     setCart([])
+    setIsSummaryOpen(false)
     setIsSaleDialogOpen(false)
   }
 
@@ -165,175 +168,100 @@ export default function DashboardPage() {
         
         <Dialog open={isSaleDialogOpen} onOpenChange={setIsSaleDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="lg" className="bg-accent hover:bg-accent/90 shadow-lg gap-2 text-base md:text-lg h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto">
+            <Button size="lg" className="bg-accent hover:bg-accent/90 shadow-lg gap-2 text-base md:text-lg h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto font-black uppercase">
               <ShoppingCart className="w-5 h-5 md:w-6 md:h-6" /> {t.createNewSale}
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[95vw] sm:max-w-[900px] max-h-[90vh] flex flex-col p-0 overflow-hidden border-accent/20 shadow-2xl">
-            <DialogHeader className="p-4 md:p-6 border-b bg-accent/5 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-accent/10 rounded-lg">
-                  <ShoppingCart className="w-5 h-5 text-accent" />
+          <DialogContent className="w-[95vw] sm:max-w-[800px] max-h-[90vh] flex flex-col p-0 overflow-hidden border-accent/20 shadow-2xl rounded-[2.5rem]">
+            <DialogHeader className="p-6 border-b bg-accent/5 shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-accent/10 rounded-xl">
+                    <ShoppingCart className="w-6 h-6 text-accent" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-xl font-black text-primary">Sale Terminal</DialogTitle>
+                    <DialogDescription className="text-[10px] uppercase font-black tracking-widest opacity-60">
+                      Pick products to create a bill
+                    </DialogDescription>
+                  </div>
                 </div>
-                <div>
-                  <DialogTitle className="text-lg font-bold text-primary">Bill Summary</DialogTitle>
-                  <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
-                    {cart.length} items in current bill
-                  </DialogDescription>
-                </div>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full" onClick={() => setIsSaleDialogOpen(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
               </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0">
-              <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r flex flex-col min-h-[300px] lg:min-h-0 bg-muted/20 overflow-hidden">
-                <div className="p-3 md:p-4 border-b bg-white shrink-0">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input placeholder={t.search} className="pl-9 h-10 border-accent/10" value={search} onChange={e => setSearch(e.target.value)} />
-                  </div>
+            <div className="flex-1 overflow-hidden flex flex-col bg-white">
+              <div className="p-4 border-b">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input 
+                    placeholder={t.search} 
+                    className="pl-9 h-12 border-accent/10 rounded-xl bg-accent/5 focus-visible:ring-accent font-bold" 
+                    value={search} 
+                    onChange={e => setSearch(e.target.value)} 
+                  />
                 </div>
-                <ScrollArea className="flex-1 p-3 md:p-4">
-                  <div className="space-y-2">
-                    {products
-                      .filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
-                      .map((item) => (
-                        <div key={item.id} className="p-3 border rounded-xl bg-white flex justify-between items-center hover:border-accent hover:shadow-md transition-all cursor-pointer group" onClick={() => addToCart(item)}>
-                          <div className="min-w-0 flex-1 mr-2">
-                            <p className="text-xs font-bold text-primary truncate">{item.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="text-[9px] bg-blue-50 border-blue-100 text-blue-700">{t.stock}: {item.stock} {item.unit}</Badge>
-                              <span className="text-[9px] font-bold text-accent">{currency}{item.sellingPrice}</span>
-                            </div>
-                          </div>
-                          <div className="p-1.5 rounded-full bg-accent/10 group-hover:bg-accent group-hover:text-white transition-colors">
-                            <Plus className="w-3.5 h-3.5" />
+              </div>
+              
+              <ScrollArea className="flex-1 p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {products
+                    .filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+                    .map((item) => (
+                      <div 
+                        key={item.id} 
+                        className="p-4 border rounded-2xl bg-white flex justify-between items-center hover:border-accent hover:shadow-lg transition-all cursor-pointer group active:scale-[0.98]" 
+                        onClick={() => addToCart(item)}
+                      >
+                        <div className="min-w-0 flex-1 mr-2">
+                          <p className="text-sm font-black text-primary truncate leading-tight">{item.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-[9px] bg-blue-50 border-blue-100 text-blue-700 font-bold">{t.stock}: {item.stock} {item.unit}</Badge>
+                            <span className="text-[10px] font-black text-accent">{currency}{item.sellingPrice}</span>
                           </div>
                         </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-
-              <div className="lg:col-span-7 flex flex-col min-h-[400px] lg:min-h-0 bg-white overflow-hidden">
-                <ScrollArea className="flex-1 p-4 md:p-6">
-                  {cart.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 py-20">
-                      <ShoppingCart className="w-12 h-12 mb-4" />
-                      <p className="text-sm font-medium italic">Your cart is empty. Start adding items!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-8">
-                      {cart.map((item) => {
-                        const itemTotal = item.sellingPrice * item.quantity;
-                        const itemProfit = (item.sellingPrice - (item.purchasePrice || 0)) * item.quantity;
-                        const isLoss = itemProfit < 0;
-                        
-                        return (
-                          <div key={item.id} className="space-y-4">
-                            <div className="flex justify-between items-start">
-                              <div className="min-w-0 flex-1">
-                                <h4 className="text-base font-black text-primary leading-tight">{item.name}</h4>
-                                <div className="flex items-center gap-2 mt-1 text-[10px] font-bold uppercase tracking-tight">
-                                  <span className="text-muted-foreground">{item.unit}</span>
-                                  <span className="text-blue-600">In Stock: {item.stock}</span>
-                                  <span className="text-orange-600">Buy Price: {currency}{item.purchasePrice || 0}</span>
-                                </div>
-                              </div>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500 transition-colors" onClick={() => removeFromCart(item.id)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-1.5">
-                                <Label className="text-[9px] font-black uppercase text-muted-foreground">Qty ({item.unit})</Label>
-                                <Input 
-                                  type="number" 
-                                  step="0.01" 
-                                  className="h-11 bg-[#F0FFFF] border-accent/20 text-lg font-bold" 
-                                  value={item.quantity} 
-                                  onChange={(e) => updateQuantity(item.id, e.target.value)} 
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-[9px] font-black uppercase text-muted-foreground">Unit Price ({currency})</Label>
-                                <Input 
-                                  type="number" 
-                                  step="0.01" 
-                                  className="h-11 bg-[#F0FFFF] border-accent/20 text-lg font-bold text-accent" 
-                                  value={item.sellingPrice} 
-                                  onChange={(e) => updateUnitPrice(item.id, e.target.value)} 
-                                />
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center px-4 py-2.5 bg-muted/30 rounded-xl border border-muted">
-                                <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Item Total</span>
-                                <span className="text-lg font-black text-primary">{currency}{itemTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                              </div>
-                              <div className={cn(
-                                "flex justify-between items-center px-4 py-2.5 rounded-xl border",
-                                isLoss ? "bg-red-50 border-red-100" : "bg-green-50/50 border-green-100"
-                              )}>
-                                <span className={cn("text-[9px] font-black uppercase tracking-widest", isLoss ? "text-red-600" : "text-green-600")}>
-                                  {isLoss ? 'Est. Loss' : 'Est. Lav'}
-                                </span>
-                                <span className={cn("text-base font-black", isLoss ? "text-red-600" : "text-green-600")}>
-                                  {isLoss ? '-' : '+'}{currency}{Math.abs(itemProfit).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </ScrollArea>
-
-                <div className="p-4 md:p-6 border-t bg-white space-y-4 shrink-0">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className={cn(
-                      "p-4 rounded-2xl shadow-sm border transition-colors flex flex-col justify-between",
-                      totalProfit < 0 ? "bg-destructive text-white border-none" : "bg-emerald-500 text-white border-none"
-                    )}>
-                      <p className="text-[8px] font-black uppercase opacity-80 tracking-widest">{totalProfit < 0 ? 'Total Loss' : t.totalLav}</p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <TrendingUp className="w-4 h-4 opacity-70" />
-                        <span className="text-2xl font-black">{currency}{totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <div className="p-2 rounded-full bg-accent/10 group-hover:bg-accent group-hover:text-white transition-colors">
+                          <Plus className="w-4 h-4" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="bg-primary text-white p-4 rounded-2xl shadow-sm flex flex-col justify-between items-end text-right">
-                      <p className="text-[8px] font-black uppercase opacity-80 tracking-widest">{t.finalTotal}</p>
-                      <p className="text-2xl font-black mt-1">{currency}{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                    </div>
-                  </div>
-                  <Button 
-                    className="w-full h-14 text-lg bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl shadow-xl transition-all active:scale-95 disabled:opacity-50" 
-                    disabled={cart.length === 0} 
-                    onClick={handleCheckout}
-                  >
-                    <CheckCircle2 className="w-5 h-5 mr-2" /> {t.completeSale}
-                  </Button>
+                  ))}
                 </div>
+              </ScrollArea>
+
+              {/* Action Bar */}
+              <div className="p-6 border-t bg-accent/5 flex items-center justify-between gap-4">
+                <div className="flex flex-col">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground opacity-60">Cart Items</p>
+                  <p className="text-xl font-black text-primary">{cart.length} Products</p>
+                </div>
+                <Button 
+                  disabled={cart.length === 0}
+                  onClick={() => setIsSummaryOpen(true)}
+                  className="h-14 px-8 bg-accent hover:bg-accent/90 text-white font-black uppercase text-sm rounded-2xl shadow-xl gap-2 active:scale-95"
+                >
+                  <FileText className="w-5 h-5" /> View Bill & Pay
+                </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
-          <Card key={i} className="hover:shadow-md transition-shadow">
+          <Card key={i} className="hover:shadow-md transition-shadow border-accent/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-4 pb-1 md:pb-2">
-              <CardTitle className="text-[10px] md:text-sm font-medium text-muted-foreground truncate">{stat.label}</CardTitle>
+              <CardTitle className="text-[10px] md:text-sm font-medium text-muted-foreground truncate uppercase tracking-widest">{stat.label}</CardTitle>
               <stat.icon className={`h-3 w-3 md:h-4 md:w-4 ${stat.color} shrink-0`} />
             </CardHeader>
             <CardContent className="p-3 md:p-4 pt-0">
-              <div className="text-sm md:text-2xl font-bold">{stat.value}</div>
+              <div className="text-lg md:text-2xl font-black">{stat.value}</div>
               <p className="text-[8px] md:text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
                 <ArrowUpRight className="h-2 w-2 md:h-3 md:w-3 text-green-600" />
-                <span className="text-green-600">{t.stable}</span>
+                <span className="text-green-600 font-bold">{t.stable}</span>
               </p>
             </CardContent>
           </Card>
@@ -341,14 +269,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Product Profit Analysis Card - DEEP VERSION */}
+        {/* Product Profit Analysis */}
         <Card className="border-accent/10 shadow-lg">
           <CardHeader className="p-4 md:p-6 pb-2 md:pb-4 bg-accent/5">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-sm md:text-base flex items-center gap-2">
                   <Target className="w-4 h-4 md:w-5 md:h-5 text-accent" />
-                  {language === 'en' ? 'Top Profitable Products (Details)' : 'পণ্যের বিস্তারিত লাভ বিশ্লেষণ'}
+                  {language === 'en' ? 'Top Profitable Products' : 'পণ্যের বিস্তারিত লাভ বিশ্লেষণ'}
                 </CardTitle>
                 <CardDescription className="text-[10px] uppercase font-bold opacity-60 mt-1">
                   {language === 'en' ? 'A to Z Business Insight (Tap for details)' : 'প্রতিটি পণ্যের পূর্ণাঙ্গ রিপোর্ট (ট্যাপ করুন)'}
@@ -484,6 +412,56 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {/* Bill Summary Nested Popup (Step 2 of Sale) */}
+      <Dialog open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-[550px] p-0 overflow-hidden border-accent/20 shadow-2xl rounded-3xl">
+          <DialogHeader className="p-6 bg-accent/5 border-b">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-accent/10 rounded-xl">
+                <FileText className="w-6 h-6 text-accent" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-black text-primary">{t.billSummary}</DialogTitle>
+                <DialogDescription className="text-[10px] uppercase font-black tracking-widest opacity-60">Final Checkout Confirmation</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[50vh]">
+            <div className="p-6 space-y-6">
+              {cart.map((item) => (
+                <div key={item.id} className="flex justify-between items-center gap-4 p-3 bg-muted/20 rounded-2xl">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-black text-primary truncate leading-tight">{item.name}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground">{item.quantity} {item.unit} x {currency}{item.sellingPrice}</p>
+                  </div>
+                  <p className="text-sm font-black text-accent">{currency}{(item.sellingPrice * item.quantity).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <div className="p-6 bg-muted/30 border-t space-y-4">
+            <div className="flex justify-between items-center px-6 py-4 bg-primary text-white rounded-2xl shadow-xl">
+              <div>
+                <p className="text-[10px] font-black uppercase opacity-70">Payable Total</p>
+                <p className="text-2xl font-black">{currency}{grandTotal.toLocaleString()}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black uppercase opacity-70">Total Profit</p>
+                <p className="text-sm font-black text-accent-foreground">+{currency}{totalProfit.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1 h-14 rounded-2xl font-black uppercase" onClick={() => setIsSummaryOpen(false)}>Back</Button>
+              <Button className="flex-[2] h-14 bg-teal-700 hover:bg-teal-800 text-white font-black uppercase rounded-2xl shadow-xl gap-2" onClick={handleCheckout}>
+                <CheckCircle2 className="w-5 h-5" /> Complete Sale
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Product Deep Detail Popup */}
       <Dialog open={!!viewProduct} onOpenChange={(open) => !open && setViewProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-3xl p-0 overflow-hidden border-accent/20 shadow-2xl">
@@ -503,7 +481,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="p-6 md:p-8 space-y-8 bg-white max-h-[70vh] overflow-y-auto">
-            {/* Financial Performance Section */}
             <div className="space-y-4">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
                 <TrendingUp className="w-3 h-3 text-accent" /> Financial Performance
@@ -537,7 +514,6 @@ export default function DashboardPage() {
 
             <Separator className="opacity-50" />
 
-            {/* Inventory Status Section */}
             <div className="space-y-4">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
                 <Layers className="w-3 h-3 text-accent" /> Inventory A-to-Z Info
