@@ -62,9 +62,19 @@ const SheetContent = React.forwardRef<
     <SheetPrimitive.Content
       ref={ref}
       className={cn(sheetVariants({ side }), className)}
-      // Disable auto-close on outside interaction to allow calculator usage
-      onPointerDownOutside={(e) => e.preventDefault()}
-      onInteractOutside={(e) => e.preventDefault()}
+      // DUAL WINDOW LOGIC: Allow interaction with calculator even when sheet is open
+      onPointerDownOutside={(e) => {
+        const target = e.target as HTMLElement;
+        if (target?.closest('.floating-calc-element')) {
+          e.preventDefault();
+        }
+      }}
+      onInteractOutside={(e) => {
+        const target = e.target as HTMLElement;
+        if (target?.closest('.floating-calc-element')) {
+          e.preventDefault();
+        }
+      }}
       {...props}
     >
       {children}
@@ -127,7 +137,8 @@ const SheetDescription = React.forwardRef<
     {...props}
   />
 ))
-SheetDescription.displayName = SheetPrimitive.Description.displayName
+SheetDescription.displayName =
+  SheetPrimitive.Description.displayName
 
 export {
   Sheet,

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -64,7 +63,8 @@ export function FloatingCalculator() {
         onClick();
       }}
       onPointerDown={(e) => e.stopPropagation()}
-      className={cn("h-12 w-full text-xl font-black rounded-xl transition-all active:scale-95", className)}
+      onMouseDown={(e) => e.stopPropagation()}
+      className={cn("h-12 w-full text-xl font-black rounded-xl transition-all active:scale-95 floating-calc-element", className)}
     >
       {children}
     </Button>
@@ -72,9 +72,9 @@ export function FloatingCalculator() {
 
   return (
     <>
-      {/* Floating Toggle Button - Extremely High Z-Index to stay above Dialogs */}
+      {/* Floating Toggle Button - Extremely High Z-Index & Portal Class */}
       <div 
-        className="fixed bottom-32 right-6 z-[10000] print:hidden pointer-events-auto"
+        className="fixed bottom-32 right-6 z-[10000] print:hidden pointer-events-auto floating-calc-element"
         onPointerDown={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -84,25 +84,28 @@ export function FloatingCalculator() {
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
-          className="h-14 w-14 rounded-full shadow-[0_15px_45px_rgba(0,128,128,0.6)] bg-accent hover:bg-accent/90 border-4 border-white animate-in zoom-in duration-300"
+          className="h-14 w-14 rounded-full shadow-[0_15px_45px_rgba(0,128,128,0.6)] bg-accent hover:bg-accent/90 border-4 border-white animate-in zoom-in duration-300 floating-calc-element"
           size="icon"
         >
           {isOpen ? <X className="w-7 h-7 text-white" /> : <CalcIcon className="w-7 h-7 text-white" />}
         </Button>
       </div>
 
-      {/* Custom Calculator Popup - Top Layer Priority */}
+      {/* Custom Calculator Popup - Top Layer Priority & Dual Window Protection */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200 floating-calc-element"
           onPointerDown={(e) => {
-            e.stopPropagation();
-            setIsOpen(false);
+            // Only close if clicking the actual backdrop, not the calculator itself
+            if ((e.target as HTMLElement).classList.contains('bg-black/40')) {
+              setIsOpen(false);
+            }
           }}
         >
           <div 
-            className="w-full max-w-[340px] p-6 rounded-[2.5rem] bg-white shadow-[0_30px_90px_rgba(0,0,0,0.3)] border-2 border-accent/10 animate-in zoom-in-95 duration-300 relative pointer-events-auto"
+            className="w-full max-w-[340px] p-6 rounded-[2.5rem] bg-white shadow-[0_30px_90px_rgba(0,0,0,0.3)] border-2 border-accent/10 animate-in zoom-in-95 duration-300 relative pointer-events-auto floating-calc-element"
             onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
