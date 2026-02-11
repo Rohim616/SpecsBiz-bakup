@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { 
   ShoppingCart, 
   Search, 
@@ -35,6 +35,13 @@ import {
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog"
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { translations } from "@/lib/translations"
 import { cn } from "@/lib/utils"
 
@@ -52,7 +59,8 @@ export default function SalesPage() {
     if (existing) {
       toast({ title: t.language === 'en' ? "Already in cart" : "ইতিমধ্যেই কার্টে আছে" })
     } else {
-      setCart([...cart, { ...item, quantity: 1 }])
+      // Initialize with base unit
+      setCart([...cart, { ...item, quantity: 1, selectedUnit: item.unit }])
       toast({ title: t.language === 'en' ? "Added to list" : "তালিকায় যোগ করা হয়েছে" })
     }
   }
@@ -67,24 +75,63 @@ export default function SalesPage() {
     setCart(cart.map(c => c.id === id ? { ...c, sellingPrice: numValue } : c))
   }
 
+  const updateSelectedUnit = (id: string, unit: string) => {
+    setCart(cart.map(c => {
+      if (c.id === id) {
+        let newQty = c.quantity;
+        // Logic: if switching KG to GM, 1 KG becomes 1000 GM for the user input
+        if (c.selectedUnit === 'kg' && unit === 'gm') newQty = c.quantity * 1000;
+        if (c.selectedUnit === 'gm' && unit === 'kg') newQty = c.quantity / 1000;
+        return { ...c, selectedUnit: unit, quantity: newQty };
+      }
+      return c;
+    }))
+  }
+
   const removeFromCart = (id: string) => {
     setCart(cart.filter(c => c.id !== id))
   }
 
-  const subtotal = cart.reduce((acc, c) => acc + (c.sellingPrice * c.quantity), 0)
-  const totalCost = cart.reduce((acc, c) => acc + ((c.purchasePrice || 0) * c.quantity), 0)
-  const totalProfit = subtotal - totalCost
-  const grandTotal = subtotal
+  // Master calculation with conversion factors
+  const cartSummary = useMemo(() => {
+    let subtotal = 0;
+    let totalCost = 0;
+    
+    const normalizedItems = cart.map(item => {
+      // Conversion factor relative to inventory base unit
+      let factor = 1;
+      if (item.unit === 'kg' && item.selectedUnit === 'gm') factor = 0.001;
+      if (item.unit === 'gm' && item.selectedUnit === 'kg') factor = 1000;
+      
+      const effectiveQty = item.quantity * factor;
+      const currentPrice = item.sellingPrice;
+      const buyPrice = item.purchasePrice || 0;
+      
+      const itemTotal = currentPrice * effectiveQty;
+      const itemCost = buyPrice * effectiveQty;
+      
+      subtotal += itemTotal;
+      totalCost += itemCost;
+      
+      return { ...item, quantity: effectiveQty }; // This quantity will be used for stock deduction
+    });
+
+    return {
+      subtotal,
+      totalProfit: subtotal - totalCost,
+      normalizedItems
+    };
+  }, [cart]);
 
   const handleCheckout = () => {
     actions.addSale({
-      total: grandTotal,
-      profit: totalProfit,
-      items: cart,
+      total: cartSummary.subtotal,
+      profit: cartSummary.totalProfit,
+      items: cartSummary.normalizedItems,
     })
     toast({
       title: t.language === 'en' ? "Sale Recorded" : "বিক্রয় সম্পন্ন হয়েছে",
-      description: `${t.finalTotal}: ${currency}${grandTotal.toLocaleString()}`,
+      description: `${t.finalTotal}: ${currency}${cartSummary.subtotal.toLocaleString()}`,
     })
     setCart([])
     setIsSummaryOpen(false)
@@ -216,8 +263,17 @@ export default function SalesPage() {
           <ScrollArea className="max-h-[60vh]">
             <div className="p-6 space-y-8">
               {cart.map((item) => {
-                const itemTotal = item.sellingPrice * item.quantity;
-                const itemProfit = (item.sellingPrice - (item.purchasePrice || 0)) * item.quantity;
+                const isWeightBased = item.unit === 'kg' || item.unit === 'gm';
+                const displayUnit = item.selectedUnit || item.unit;
+                
+                // Calculate item-specific conversions for UI
+                let factor = 1;
+                if (item.unit === 'kg' && displayUnit === 'gm') factor = 0.001;
+                if (item.unit === 'gm' && displayUnit === 'kg') factor = 1000;
+
+                const effectiveQty = item.quantity * factor;
+                const itemTotal = item.sellingPrice * effectiveQty;
+                const itemProfit = (item.sellingPrice - (item.purchasePrice || 0)) * effectiveQty;
                 const isLoss = itemProfit < 0;
                 
                 return (
@@ -226,7 +282,7 @@ export default function SalesPage() {
                       <div className="min-w-0 flex-1">
                         <h4 className="text-base font-black text-primary leading-tight truncate">{item.name}</h4>
                         <div className="flex items-center gap-2 mt-1 text-[10px] font-bold uppercase tracking-tight">
-                          <span className="text-blue-600 bg-blue-50 px-1.5 rounded">{t.stock}: {item.stock}</span>
+                          <span className="text-blue-600 bg-blue-50 px-1.5 rounded">{t.stock}: {item.stock} {item.unit}</span>
                           <span className="text-orange-600 bg-orange-50 px-1.5 rounded">{t.buyPrice}: {currency}{item.purchasePrice || 0}</span>
                         </div>
                       </div>
@@ -237,7 +293,21 @@ export default function SalesPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase text-muted-foreground">Qty ({item.unit})</Label>
+                        <div className="flex justify-between items-center">
+                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Qty</Label>
+                          {isWeightBased && (
+                            <div className="flex gap-1">
+                              <button 
+                                onClick={() => updateSelectedUnit(item.id, 'kg')}
+                                className={cn("text-[8px] px-1.5 py-0.5 rounded border font-black uppercase", displayUnit === 'kg' ? "bg-accent text-white border-accent" : "bg-white text-accent border-accent/20")}
+                              >KG</button>
+                              <button 
+                                onClick={() => updateSelectedUnit(item.id, 'gm')}
+                                className={cn("text-[8px] px-1.5 py-0.5 rounded border font-black uppercase", displayUnit === 'gm' ? "bg-accent text-white border-accent" : "bg-white text-accent border-accent/20")}
+                              >GM</button>
+                            </div>
+                          )}
+                        </div>
                         <Input 
                           type="number" 
                           step="0.01" 
@@ -285,17 +355,17 @@ export default function SalesPage() {
             <div className="grid grid-cols-2 gap-4">
                <div className={cn(
                  "p-4 text-white rounded-2xl shadow-lg flex flex-col justify-between",
-                 totalProfit < 0 ? "bg-destructive" : "bg-emerald-600"
+                 cartSummary.totalProfit < 0 ? "bg-destructive" : "bg-emerald-600"
                )}>
-                  <p className="text-[8px] font-black uppercase opacity-80 tracking-widest">{totalProfit < 0 ? (t.language === 'en' ? 'Total Loss' : 'মোট লস') : t.totalLav}</p>
+                  <p className="text-[8px] font-black uppercase opacity-80 tracking-widest">{cartSummary.totalProfit < 0 ? (t.language === 'en' ? 'Total Loss' : 'মোট লস') : t.totalLav}</p>
                   <div className="flex items-center gap-1 mt-1">
                     <TrendingUp className="w-4 h-4 opacity-70" />
-                    <span className="text-2xl font-black">{currency}{totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    <span className="text-2xl font-black">{currency}{cartSummary.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   </div>
                </div>
                <div className="p-4 bg-primary text-white rounded-2xl shadow-lg flex flex-col justify-between items-end text-right">
                   <p className="text-[8px] font-black uppercase opacity-80 tracking-widest">{t.finalTotal}</p>
-                  <p className="text-2xl font-black mt-1">{currency}{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                  <p className="text-2xl font-black mt-1">{currency}{cartSummary.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                </div>
             </div>
 

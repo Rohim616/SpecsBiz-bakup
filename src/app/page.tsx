@@ -46,6 +46,13 @@ import {
   DialogTrigger,
   DialogFooter
 } from "@/components/ui/dialog"
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { useBusinessData } from "@/hooks/use-business-data"
@@ -73,14 +80,14 @@ export default function DashboardPage() {
 
   // Calculate Product-wise Deep Profit
   const productProfitData = useMemo(() => {
-    const dataMap: Record<string, { id: string, name: string, profit: number, qty: number, revenue: number, cost: number }> = {}
+    const dataMap: Record<string, { id: string, name: string, profit: number, qty: number, revenue: number, cost: number, unit?: string }> = {}
     
     sales.forEach(sale => {
       if (!sale.isBakiPayment && sale.items) {
         sale.items.forEach((item: any) => {
           const itemId = item.id || item.name;
           if (!dataMap[itemId]) {
-            dataMap[itemId] = { id: itemId, name: item.name, profit: 0, qty: 0, revenue: 0, cost: 0 }
+            dataMap[itemId] = { id: itemId, name: item.name, profit: 0, qty: 0, revenue: 0, cost: 0, unit: item.unit }
           }
           const itemRevenue = item.sellingPrice * item.quantity;
           const itemCost = (item.purchasePrice || 0) * item.quantity;
@@ -109,7 +116,7 @@ export default function DashboardPage() {
     if (existing) {
       toast({ title: language === 'en' ? "Already in cart" : "ইতিমধ্যেই কার্টে আছে" })
     } else {
-      setCart([...cart, { ...product, quantity: 1 }])
+      setCart([...cart, { ...product, quantity: 1, selectedUnit: product.unit }])
       toast({ title: language === 'en' ? "Added" : "যোগ করা হয়েছে" })
     }
   }
@@ -124,21 +131,59 @@ export default function DashboardPage() {
     setCart(cart.map(c => c.id === id ? { ...c, sellingPrice: num } : c))
   }
 
+  const updateSelectedUnit = (id: string, unit: string) => {
+    setCart(cart.map(c => {
+      if (c.id === id) {
+        // If switching from KG to GM, multiply quantity by 1000 for convenience
+        let newQty = c.quantity;
+        if (c.selectedUnit === 'kg' && unit === 'gm') newQty = c.quantity * 1000;
+        if (c.selectedUnit === 'gm' && unit === 'kg') newQty = c.quantity / 1000;
+        return { ...c, selectedUnit: unit, quantity: newQty };
+      }
+      return c;
+    }))
+  }
+
   const removeFromCart = (id: string) => {
     setCart(cart.filter(c => c.id !== id))
   }
 
-  const subtotal = cart.reduce((acc, item) => acc + (item.sellingPrice * item.quantity), 0)
-  const totalProfit = cart.reduce((acc, item) => acc + ((item.sellingPrice - (item.purchasePrice || 0)) * item.quantity), 0)
-  const grandTotal = subtotal
+  // Calculate totals with conversion logic
+  const cartSummary = useMemo(() => {
+    let subtotal = 0;
+    let totalProfit = 0;
+    
+    const normalizedItems = cart.map(item => {
+      let factor = 1;
+      if (item.unit === 'kg' && item.selectedUnit === 'gm') factor = 0.001;
+      if (item.unit === 'gm' && item.selectedUnit === 'kg') factor = 1000;
+      
+      const effectiveQty = item.quantity * factor;
+      const currentPrice = item.sellingPrice;
+      const buyPrice = item.purchasePrice || 0;
+      
+      const itemTotal = currentPrice * effectiveQty;
+      const itemProfit = (currentPrice - buyPrice) * effectiveQty;
+      
+      subtotal += itemTotal;
+      totalProfit += itemProfit;
+      
+      return { ...item, quantity: effectiveQty }; // Normalized for backend
+    });
+
+    return { subtotal, totalProfit, normalizedItems };
+  }, [cart]);
 
   const handleCheckout = () => {
     actions.addSale({
-      total: grandTotal,
-      profit: totalProfit,
-      items: cart,
+      total: cartSummary.subtotal,
+      profit: cartSummary.totalProfit,
+      items: cartSummary.normalizedItems,
     })
-    toast({ title: language === 'en' ? "Sale Successful" : "বিক্রয় সম্পন্ন হয়েছে", description: `${t.finalTotal}: ${currency}${grandTotal.toLocaleString()}` })
+    toast({ 
+      title: language === 'en' ? "Sale Successful" : "বিক্রয় সম্পন্ন হয়েছে", 
+      description: `${t.finalTotal}: ${currency}${cartSummary.subtotal.toLocaleString()}` 
+    })
     setCart([])
     setIsSummaryOpen(false)
     setIsSaleDialogOpen(false)
@@ -341,7 +386,7 @@ export default function DashboardPage() {
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-black text-primary truncate group-hover:text-accent transition-colors">{item.name}</p>
-                            <p className="text-[9px] font-bold text-muted-foreground uppercase">{language === 'en' ? 'Units Sold' : 'বিক্রিত সংখ্যা'}: {item.qty}</p>
+                            <p className="text-[9px] font-bold text-muted-foreground uppercase">{language === 'en' ? 'Units Sold' : 'বিক্রিত সংখ্যা'}: {item.qty} {item.unit}</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -458,16 +503,85 @@ export default function DashboardPage() {
           </DialogHeader>
           
           <ScrollArea className="max-h-[50vh]">
-            <div className="p-6 space-y-6">
-              {cart.map((item) => (
-                <div key={item.id} className="flex justify-between items-center gap-4 p-3 bg-muted/20 rounded-2xl">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-black text-primary truncate leading-tight">{item.name}</p>
-                    <p className="text-[10px] font-bold text-muted-foreground">{item.quantity} {item.unit} x {currency}{item.sellingPrice}</p>
+            <div className="p-6 space-y-8">
+              {cart.map((item) => {
+                const isWeightBased = item.unit === 'kg' || item.unit === 'gm';
+                const displayUnit = item.selectedUnit || item.unit;
+                
+                // Calculate item-specific conversions for UI
+                let factor = 1;
+                if (item.unit === 'kg' && displayUnit === 'gm') factor = 0.001;
+                if (item.unit === 'gm' && displayUnit === 'kg') factor = 1000;
+
+                const effectiveQty = item.quantity * factor;
+                const itemTotal = item.sellingPrice * effectiveQty;
+                const itemProfit = (item.sellingPrice - (item.purchasePrice || 0)) * effectiveQty;
+
+                return (
+                  <div key={item.id} className="space-y-4 pb-6 border-b border-black/5 last:border-0 last:pb-0">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-base font-black text-primary leading-tight truncate">{item.name}</h4>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] font-bold uppercase tracking-tight">
+                          <span className="text-blue-600 bg-blue-50 px-1.5 rounded">{t.stock}: {item.stock} {item.unit}</span>
+                          <span className="text-orange-600 bg-orange-50 px-1.5 rounded">{t.buyPrice}: {currency}{item.purchasePrice || 0}</span>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500 shrink-0" onClick={() => removeFromCart(item.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Qty</Label>
+                          {isWeightBased && (
+                            <div className="flex gap-1">
+                              <button 
+                                onClick={() => updateSelectedUnit(item.id, 'kg')}
+                                className={cn("text-[8px] px-1.5 py-0.5 rounded border font-black uppercase", displayUnit === 'kg' ? "bg-accent text-white border-accent" : "bg-white text-accent border-accent/20")}
+                              >KG</button>
+                              <button 
+                                onClick={() => updateSelectedUnit(item.id, 'gm')}
+                                className={cn("text-[8px] px-1.5 py-0.5 rounded border font-black uppercase", displayUnit === 'gm' ? "bg-accent text-white border-accent" : "bg-white text-accent border-accent/20")}
+                              >GM</button>
+                            </div>
+                          )}
+                        </div>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          className="h-11 bg-accent/5 border-accent/10 text-lg font-black" 
+                          value={item.quantity} 
+                          onChange={(e) => updateQuantity(item.id, e.target.value)} 
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground">Unit Price ({currency})</Label>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          className="h-11 bg-accent/5 border-accent/10 text-lg font-black text-accent" 
+                          value={item.sellingPrice} 
+                          onChange={(e) => updateUnitPrice(item.id, e.target.value)} 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="flex-1 px-4 py-2.5 bg-muted/30 rounded-xl border border-muted flex justify-between items-center">
+                        <span className="text-[9px] font-black uppercase text-muted-foreground">Item Total</span>
+                        <span className="text-sm font-black text-primary">{currency}{itemTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex-1 px-4 py-2.5 bg-emerald-50 rounded-xl border border-emerald-100 flex justify-between items-center">
+                        <span className="text-[9px] font-black uppercase text-emerald-600">Lav</span>
+                        <span className="text-sm font-black text-emerald-700">+{currency}{itemProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm font-black text-accent">{currency}{(item.sellingPrice * item.quantity).toLocaleString()}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
 
@@ -475,11 +589,11 @@ export default function DashboardPage() {
             <div className="flex justify-between items-center px-6 py-4 bg-primary text-white rounded-2xl shadow-xl">
               <div>
                 <p className="text-[10px] font-black uppercase opacity-70">Payable Total</p>
-                <p className="text-2xl font-black">{currency}{grandTotal.toLocaleString()}</p>
+                <p className="text-2xl font-black">{currency}{cartSummary.subtotal.toLocaleString()}</p>
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-black uppercase opacity-70">Total Profit</p>
-                <p className="text-sm font-black text-accent-foreground">+{currency}{totalProfit.toLocaleString()}</p>
+                <p className="text-sm font-black text-accent-foreground">+{currency}{cartSummary.totalProfit.toLocaleString()}</p>
               </div>
             </div>
             <div className="flex gap-3">
