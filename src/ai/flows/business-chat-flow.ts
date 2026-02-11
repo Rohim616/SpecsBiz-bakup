@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview SpecsAI - The Ultimate Master Brain Partner for SpecsBiz.
@@ -6,6 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const BusinessChatInputSchema = z.object({
   message: z.string().describe("The user's current message."),
@@ -23,6 +25,7 @@ const BusinessChatInputSchema = z.object({
     currency: z.string(),
     language: z.enum(['en', 'bn']),
     currentDate: z.string(),
+    aiApiKey: z.string().optional(),
   }).describe('Snapshot of the current business state.'),
 });
 
@@ -30,8 +33,13 @@ export type BusinessChatInput = z.infer<typeof BusinessChatInputSchema>;
 
 export async function businessChat(input: BusinessChatInput): Promise<{ reply: string }> {
   try {
+    // Dynamic model configuration
+    const modelInstance = input.businessContext.aiApiKey 
+      ? googleAI.model('gemini-1.5-flash', { apiKey: input.businessContext.aiApiKey })
+      : 'googleai/gemini-1.5-flash';
+
     const response = await ai.generate({
-      model: 'googleai/gemini-1.5-flash',
+      model: modelInstance,
       system: `You are "SpecsAI", the highly intelligent MASTER BUSINESS PARTNER for a shop owner.
       
       CRITICAL IDENTITY:
@@ -72,8 +80,8 @@ export async function businessChat(input: BusinessChatInput): Promise<{ reply: s
     console.error("SpecsAI Connection Error:", error);
     return { 
       reply: input.businessContext.language === 'bn' 
-        ? "দুঃখিত ভাই, সার্ভারের সাথে যোগাযোগ করতে পারছি না। মনে হচ্ছে এপিআই কি অথবা কানেকশনে সমস্যা হচ্ছে।" 
-        : "Sorry Partner, I can't connect to the server. Please check your API key or connection." 
+        ? "দুঃখিত ভাই, সার্ভারের সাথে যোগাযোগ করতে পারছি না। দয়া করে Settings থেকে আপনার API Key চেক করুন।" 
+        : "Sorry Partner, I can't connect to the server. Please check your API key in Settings." 
     };
   }
 }

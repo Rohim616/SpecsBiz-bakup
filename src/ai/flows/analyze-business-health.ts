@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI agent to analyze overall business health and predict future performance.
@@ -5,6 +6,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const AnalyzeBusinessHealthInputSchema = z.object({
   inventoryData: z.string().describe('Summary of current products and stock levels.'),
@@ -12,6 +14,7 @@ const AnalyzeBusinessHealthInputSchema = z.object({
   totalInvestment: z.number().describe('Total money tied up in inventory.'),
   potentialProfit: z.number().describe('Calculated total profit if all stock is sold.'),
   language: z.enum(['en', 'bn']).describe('The language for the report output.'),
+  aiApiKey: z.string().optional().describe('User provided API Key.'),
 });
 export type AnalyzeBusinessHealthInput = z.infer<typeof AnalyzeBusinessHealthInputSchema>;
 
@@ -57,7 +60,12 @@ const analyzeBusinessHealthFlow = ai.defineFlow(
     outputSchema: AnalyzeBusinessHealthOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    // Dynamic model override
+    const modelOverride = input.aiApiKey 
+      ? googleAI.model('gemini-1.5-flash', { apiKey: input.aiApiKey })
+      : undefined;
+
+    const {output} = await prompt(input, { model: modelOverride });
     return output!;
   }
 );

@@ -26,6 +26,7 @@ const LOCAL_KEYS = {
   PROCUREMENTS: 'specsbiz_local_procurements',
   CURRENCY: 'specsbiz_settings_currency',
   LANGUAGE: 'specsbiz_settings_language',
+  AI_API_KEY: 'specsbiz_settings_ai_api_key',
 };
 
 interface BusinessContextType {
@@ -36,6 +37,7 @@ interface BusinessContextType {
   isLoading: boolean;
   currency: string;
   language: 'en' | 'bn';
+  aiApiKey: string;
   actions: {
     addProduct: (product: any) => void;
     updateProduct: (productId: string, data: any) => void;
@@ -53,6 +55,7 @@ interface BusinessContextType {
     syncInventoryToProcurement: () => Promise<void>;
     setCurrency: (val: string) => void;
     setLanguage: (lang: 'en' | 'bn') => void;
+    setAiApiKey: (key: string) => void;
     resetAllData: () => Promise<void>;
   };
 }
@@ -69,6 +72,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const [localProcurements, setLocalProcurements] = useState<any[]>([]);
   const [currency, setCurrencyState] = useState('৳');
   const [language, setLanguageState] = useState<'en' | 'bn'>('bn');
+  const [aiApiKey, setAiApiKeyState] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -79,6 +83,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         const pr = localStorage.getItem(LOCAL_KEYS.PROCUREMENTS);
         const curr = localStorage.getItem(LOCAL_KEYS.CURRENCY);
         const lang = localStorage.getItem(LOCAL_KEYS.LANGUAGE) as 'en' | 'bn';
+        const akey = localStorage.getItem(LOCAL_KEYS.AI_API_KEY);
         
         if (p) setLocalProducts(JSON.parse(p));
         if (s) setLocalSales(JSON.parse(s));
@@ -86,6 +91,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         if (pr) setLocalProcurements(JSON.parse(pr));
         if (curr) setCurrencyState(curr);
         if (lang) setLanguageState(lang);
+        if (akey) setAiApiKeyState(akey);
       } catch (e) {
         console.error("Error loading local data", e);
       }
@@ -547,6 +553,11 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(LOCAL_KEYS.LANGUAGE, lang);
   }, []);
 
+  const setAiApiKey = useCallback((key: string) => {
+    setAiApiKeyState(key);
+    localStorage.setItem(LOCAL_KEYS.AI_API_KEY, key);
+  }, []);
+
   const resetAllData = useCallback(async () => {
     localStorage.removeItem(LOCAL_KEYS.PRODUCTS);
     localStorage.removeItem(LOCAL_KEYS.SALES);
@@ -581,6 +592,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     isLoading,
     currency,
     language,
+    aiApiKey,
     actions: {
       addProduct,
       updateProduct,
@@ -598,6 +610,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       syncInventoryToProcurement,
       setCurrency,
       setLanguage,
+      setAiApiKey,
       resetAllData
     }
   };

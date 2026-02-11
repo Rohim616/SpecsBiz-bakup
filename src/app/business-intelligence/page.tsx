@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo, useState } from "react"
@@ -37,7 +38,7 @@ const chartConfig = {
 
 export default function BusinessIntelligencePage() {
   const { toast } = useToast()
-  const { products, sales, currency, isLoading, language } = useBusinessData()
+  const { products, sales, currency, isLoading, language, aiApiKey } = useBusinessData()
   const t = translations[language]
   
   const [isAuditing, setIsAuditing] = useState(false)
@@ -93,6 +94,10 @@ export default function BusinessIntelligencePage() {
       toast({ title: t.noData, description: t.manageStock, variant: "destructive" })
       return
     }
+    if (!aiApiKey) {
+      toast({ title: "Activation Required", description: "Please add Gemini API Key in Settings to use AI Health Audit.", variant: "destructive" });
+      return;
+    }
 
     setIsAuditing(true)
     try {
@@ -104,7 +109,8 @@ export default function BusinessIntelligencePage() {
         salesData: salesSummary,
         totalInvestment: metrics.totalInvestment,
         potentialProfit: metrics.potentialProfit,
-        language: language
+        language: language,
+        aiApiKey: aiApiKey
       })
       
       setAuditResult(result)

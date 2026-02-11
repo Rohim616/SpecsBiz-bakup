@@ -30,7 +30,7 @@ export default function SpecsAIAdvisorPage() {
   const { toast } = useToast()
   const { user } = useUser()
   const db = useFirestore()
-  const { products, sales, currency, language } = useBusinessData()
+  const { products, sales, currency, language, aiApiKey } = useBusinessData()
   const t = translations[language]
   
   const [input, setInput] = useState("")
@@ -95,7 +95,8 @@ export default function SpecsAIAdvisorPage() {
           salesPerformance,
           topProducts,
           currentLanguage: language,
-          currency
+          currency,
+          aiApiKey: aiApiKey // Pass user key
         }
       })
 
@@ -135,6 +136,19 @@ export default function SpecsAIAdvisorPage() {
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>
+
+      {!aiApiKey && (
+        <Card className="bg-amber-50 border-amber-200 p-4 rounded-2xl mb-4 animate-in slide-in-from-top-4">
+          <div className="flex items-center gap-3">
+            <Target className="w-5 h-5 text-amber-600" />
+            <div className="flex-1">
+              <p className="text-xs font-bold text-amber-800">
+                AI Is Inactive! Please go to <span className="underline cursor-pointer" onClick={() => window.location.href='/settings'}>Settings</span> and add your Gemini API Key to activate.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card className="flex-1 flex flex-col min-h-0 border-none bg-white shadow-2xl rounded-[3rem] overflow-hidden">
         <CardContent className="flex-1 min-h-0 p-0">

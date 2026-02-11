@@ -7,6 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const GrowthExpertInputSchema = z.object({
   message: z.string().describe("User's query."),
@@ -20,6 +21,7 @@ const GrowthExpertInputSchema = z.object({
     topProducts: z.string(),
     currentLanguage: z.enum(['en', 'bn']),
     currency: z.string(),
+    aiApiKey: z.string().optional(),
   }),
 });
 
@@ -35,8 +37,13 @@ const advisorFlow = ai.defineFlow(
     outputSchema: GrowthExpertOutputSchema,
   },
   async (input) => {
+    // Dynamic model configuration based on user-provided API key
+    const modelInstance = input.context.aiApiKey 
+      ? googleAI.model('gemini-1.5-flash', { apiKey: input.context.aiApiKey })
+      : 'googleai/gemini-1.5-flash';
+
     const response = await ai.generate({
-      model: 'googleai/gemini-1.5-flash',
+      model: modelInstance,
       system: `You are "SpecsAI Advisor", a world-class Strategic Business Growth Expert for shop owners.
       
       YOUR PERSONALITY:
@@ -77,8 +84,8 @@ export async function growthExpertChat(input: z.infer<typeof GrowthExpertInputSc
     console.error("Advisor AI Error:", error);
     return { 
       reply: input.context.currentLanguage === 'bn' 
-        ? "দুঃখিত ভাই, অ্যাডভাইজর ব্রেইনের সাথে সংযোগ করতে পারছি না। দয়া করে আপনার GEMINI_API_KEY সেটিংস চেক করুন।" 
-        : "Sorry Partner, I'm having trouble connecting to the Advisor brain. Please check your GEMINI_API_KEY settings." 
+        ? "দুঃখিত ভাই, অ্যাডভাইজর ব্রেইনের সাথে সংযোগ করতে পারছি না। দয়া করে আপনার Settings থেকে GEMINI_API_KEY টি চেক করুন।" 
+        : "Sorry Partner, I'm having trouble connecting to the Advisor brain. Please check your GEMINI_API_KEY in Settings." 
     };
   }
 }

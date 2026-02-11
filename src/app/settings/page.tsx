@@ -18,7 +18,10 @@ import {
   Users,
   Package,
   ShoppingCart,
-  Printer
+  Printer,
+  Sparkles,
+  Key,
+  Info
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -61,7 +64,7 @@ const LANGUAGES = [
 ];
 
 export default function SettingsPage() {
-  const { products, sales, customers, currency, language, actions } = useBusinessData();
+  const { products, sales, customers, currency, language, aiApiKey, actions } = useBusinessData();
   const { toast } = useToast();
   const t = translations[language];
   
@@ -70,10 +73,13 @@ export default function SettingsPage() {
   const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportDate, setExportDate] = useState("");
+  
+  const [newAiKey, setNewAiKey] = useState(aiApiKey);
 
   useEffect(() => {
     setExportDate(new Date().toLocaleString());
-  }, []);
+    setNewAiKey(aiApiKey);
+  }, [aiApiKey]);
 
   const handleCurrencyChange = (val: string) => {
     actions.setCurrency(val);
@@ -88,6 +94,14 @@ export default function SettingsPage() {
     toast({
       title: val === 'en' ? "Language Changed" : "ভাষা পরিবর্তন করা হয়েছে",
       description: val === 'en' ? "System language is now English" : "সিস্টেমের ভাষা এখন বাংলা",
+    });
+  };
+
+  const handleSaveAiKey = () => {
+    actions.setAiApiKey(newAiKey);
+    toast({
+      title: language === 'en' ? "AI Configuration Saved" : "এআই কনফিগারেশন সেভ হয়েছে",
+      description: language === 'en' ? "Your Gemini API Key has been updated." : "আপনার জেমিনি এপিআই কি আপডেট করা হয়েছে।",
     });
   };
 
@@ -302,6 +316,62 @@ export default function SettingsPage() {
 
       <div className="grid gap-6 print:hidden">
         
+        {/* SpecsAI Master Activation Card */}
+        <Card className="border-primary/20 shadow-lg bg-white overflow-hidden">
+          <div className="bg-primary/5 p-4 border-b border-primary/10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary text-white p-2 rounded-lg">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">SpecsAI Master Activation</CardTitle>
+                <CardDescription>Setup your business intelligence engine.</CardDescription>
+              </div>
+            </div>
+            <Badge className={cn("border-none", aiApiKey ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700")}>
+              {aiApiKey ? "Active" : "Not Configured"}
+            </Badge>
+          </div>
+          <CardContent className="p-6 space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-bold flex items-center gap-2">
+                  <Key className="w-4 h-4 text-primary" /> Gemini API Key
+                </Label>
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="text-[10px] text-accent font-black uppercase hover:underline flex items-center gap-1"
+                >
+                  Get Key <Download className="w-2.5 h-2.5" />
+                </a>
+              </div>
+              <div className="flex gap-2">
+                <Input 
+                  type="password" 
+                  placeholder="Enter your Gemini API Key here..."
+                  value={newAiKey}
+                  onChange={(e) => setNewAiKey(e.target.value)}
+                  className="h-12 bg-muted/20 focus:ring-primary font-mono text-xs"
+                />
+                <Button 
+                  className="bg-primary h-12 px-6 font-black uppercase"
+                  onClick={handleSaveAiKey}
+                >
+                  Save Key
+                </Button>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex gap-3">
+                <Info className="w-5 h-5 text-blue-600 shrink-0" />
+                <p className="text-[10px] text-blue-700 leading-relaxed italic">
+                  <strong>Important:</strong> আপনার ব্যবসার ডাটা এনালাইসিস করার জন্য এই কী (Key) টি প্রয়োজন। আপনার কী টি লোকালভাবে সংরক্ষিত থাকে এবং নিরাপদ। কী যোগ করার সাথে সাথেই SpecsAI সক্রিয় হয়ে যাবে।
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Full Data Export Card */}
         <Card className="border-accent/20 shadow-lg bg-white overflow-hidden">
           <div className="bg-accent/5 p-4 border-b border-accent/10 flex items-center justify-between">

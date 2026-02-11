@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -54,7 +55,7 @@ const chartConfig = {
 
 export default function AnalyticsPage() {
   const { toast } = useToast()
-  const { sales, products, isLoading, currency, actions, language } = useBusinessData()
+  const { sales, products, isLoading, currency, actions, language, aiApiKey } = useBusinessData()
   const t = translations[language]
   
   const [timeRange, setTimeRange] = useState<"day" | "week" | "month" | "year">("week")
@@ -102,8 +103,8 @@ export default function AnalyticsPage() {
         const hourSales = filteredSales.filter(s => new Date(s.saleDate).getHours() === i)
         return {
           name: `${i}:00`,
-          revenue: hourSales.reduce((sum, s) => sum + (s.total || 0), 0),
-          profit: hourSales.reduce((sum, s) => sum + (s.profit || 0), 0)
+          revenue: hourSales.reduce((sum, s) => sum + (sum.total || 0), 0),
+          profit: hourSales.reduce((sum, s) => sum + (sum.profit || 0), 0)
         }
       })
     }
@@ -113,7 +114,7 @@ export default function AnalyticsPage() {
     else if (timeRange === "month") steps = eachDayOfInterval({ start: startOfMonth(now), end: endOfMonth(now) })
     else return eachMonthOfInterval({ start: startOfYear(now), end: endOfYear(now) }).map(m => {
       const monthSales = filteredSales.filter(s => isSameMonth(new Date(s.saleDate), m))
-      return { name: format(m, "MMM"), revenue: monthSales.reduce((sum, s) => sum + (sum || 0), 0), profit: monthSales.reduce((sum, s) => sum + (s.profit || 0), 0) }
+      return { name: format(m, "MMM"), revenue: monthSales.reduce((sum, s) => sum + (s.total || 0), 0), profit: monthSales.reduce((sum, s) => sum + (s.profit || 0), 0) }
     })
 
     return steps.map(d => {
@@ -127,6 +128,10 @@ export default function AnalyticsPage() {
       toast({ title: t.noData, variant: "destructive" })
       return
     }
+    if (!aiApiKey) {
+      toast({ title: "Setup Required", description: "Please add Gemini API Key in Settings to run AI Audit.", variant: "destructive" });
+      return;
+    }
     setIsAuditing(true)
     try {
       const result = await analyzeBusinessHealth({
@@ -134,7 +139,8 @@ export default function AnalyticsPage() {
         salesData: filteredSales.slice(0, 10).map(s => `Sale: ${currency}${s.total}`).join(", "),
         totalInvestment: products.reduce((acc, p) => acc + ((p.purchasePrice || 0) * (p.stock || 0)), 0),
         potentialProfit: products.reduce((acc, p) => acc + (((p.sellingPrice || 0) - (p.purchasePrice || 0)) * (p.stock || 0)), 0),
-        language: language
+        language: language,
+        aiApiKey: aiApiKey
       })
       setAuditResult(result)
       toast({ title: t.auditComplete })
