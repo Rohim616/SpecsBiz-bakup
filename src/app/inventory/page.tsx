@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -107,15 +106,11 @@ export default function InventoryPage() {
     unit: "pcs"
   })
 
-  // --- REAL-TIME DUPLICATE WARNING (DOES NOT BLOCK SAVE) ---
+  // --- REAL-TIME DUPLICATE WARNING (NON-BLOCKING) ---
   const duplicateWarning = useMemo(() => {
     if (!newProduct.name.trim()) return null;
     const currentName = newProduct.name.toLowerCase().trim();
-    const match = products.find(p => {
-      const pName = p.name.toLowerCase().trim();
-      // Only warn if name exactly matches or is very similar
-      return pName === currentName;
-    });
+    const match = products.find(p => p.name.toLowerCase().trim() === currentName);
     if (match) {
       return language === 'bn' 
         ? `'${match.name}' নামে একটি পণ্য ইতিমধ্যে আছে।` 
@@ -129,8 +124,7 @@ export default function InventoryPage() {
     const currentName = editingProduct.name.toLowerCase().trim();
     const match = products.find(p => {
       if (p.id === editingProduct.id) return false;
-      const pName = p.name.toLowerCase().trim();
-      return pName === currentName;
+      return p.name.toLowerCase().trim() === currentName;
     });
     if (match) {
       return language === 'bn' 
