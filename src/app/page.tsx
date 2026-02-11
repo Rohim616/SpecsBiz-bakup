@@ -209,24 +209,54 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {products
                     .filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
-                    .map((item) => (
-                      <div 
-                        key={item.id} 
-                        className="p-4 border rounded-2xl bg-white flex justify-between items-center hover:border-accent hover:shadow-lg transition-all cursor-pointer group active:scale-[0.98]" 
-                        onClick={() => addToCart(item)}
-                      >
-                        <div className="min-w-0 flex-1 mr-2">
-                          <p className="text-sm font-black text-primary truncate leading-tight">{item.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-[9px] bg-blue-50 border-blue-100 text-blue-700 font-bold">{t.stock}: {item.stock} {item.unit}</Badge>
-                            <span className="text-[10px] font-black text-accent">{currency}{item.sellingPrice}</span>
+                    .map((item) => {
+                      const profitPerUnit = (item.sellingPrice || 0) - (item.purchasePrice || 0);
+                      return (
+                        <div 
+                          key={item.id} 
+                          className="p-4 border rounded-2xl bg-white flex flex-col gap-3 hover:border-accent hover:shadow-lg transition-all cursor-pointer group active:scale-[0.98]" 
+                          onClick={() => addToCart(item)}
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-black text-primary truncate leading-tight">{item.name}</p>
+                              <p className="text-[9px] font-bold text-accent uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                                <Tag className="w-2.5 h-2.5" /> {item.category || 'General'}
+                              </p>
+                            </div>
+                            <Badge variant="outline" className="text-[8px] font-bold bg-blue-50 border-blue-100 text-blue-700 shrink-0">
+                              {t.stock}: {item.stock} {item.unit}
+                            </Badge>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-muted/30 p-2 rounded-xl border border-black/5">
+                              <p className="text-[8px] font-bold text-muted-foreground uppercase mb-0.5">{t.sellPrice}</p>
+                              <p className="text-sm font-black text-primary">{currency}{item.sellingPrice?.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-orange-50/50 p-2 rounded-xl border border-orange-100/50">
+                              <p className="text-[8px] font-bold text-orange-600 uppercase mb-0.5">{t.buyPrice}</p>
+                              <p className="text-sm font-black text-orange-700">{currency}{item.purchasePrice || 0}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <div className="h-6 w-6 rounded-lg bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                                <TrendingUp className="w-3 h-3 text-emerald-600" />
+                              </div>
+                              <div>
+                                <p className="text-[8px] font-bold text-emerald-600 uppercase leading-none">Profit/Unit</p>
+                                <p className="text-[10px] font-black text-emerald-700">+{currency}{profitPerUnit.toLocaleString()}</p>
+                              </div>
+                            </div>
+                            <div className="p-2 rounded-full bg-accent/10 group-hover:bg-accent group-hover:text-white transition-colors">
+                              <Plus className="w-4 h-4" />
+                            </div>
                           </div>
                         </div>
-                        <div className="p-2 rounded-full bg-accent/10 group-hover:bg-accent group-hover:text-white transition-colors">
-                          <Plus className="w-4 h-4" />
-                        </div>
-                      </div>
-                  ))}
+                      );
+                    })}
                 </div>
               </ScrollArea>
 

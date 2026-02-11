@@ -14,7 +14,9 @@ import {
   TrendingUp,
   Inbox,
   X,
-  FileText
+  FileText,
+  Tag,
+  DollarSign
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -115,30 +117,56 @@ export default function SalesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {products
           .filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
-          .map((item) => (
-          <Card 
-            key={item.id} 
-            className="border-accent/5 hover:border-accent hover:shadow-xl transition-all cursor-pointer group active:scale-[0.98] overflow-hidden"
-            onClick={() => addToCart(item)}
-          >
-            <CardContent className="p-4 flex flex-col justify-between h-full min-h-[120px]">
-              <div className="space-y-1">
-                <p className="font-black text-primary text-sm md:text-base leading-tight truncate">{item.name}</p>
-                <div className="flex items-center justify-between">
-                  <p className="text-base font-black text-accent">{currency}{item.sellingPrice?.toLocaleString()}</p>
-                  <Badge variant="outline" className="text-[9px] py-0 px-1 font-bold bg-blue-50 border-blue-100 text-blue-700">
-                    {t.stock}: {item.stock} {item.unit}
-                  </Badge>
-                </div>
-              </div>
-              <div className="mt-3 flex justify-end">
-                <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-all">
-                  <Plus className="w-4 h-4" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+          .map((item) => {
+            const profitPerUnit = (item.sellingPrice || 0) - (item.purchasePrice || 0);
+            return (
+              <Card 
+                key={item.id} 
+                className="border-accent/10 hover:border-accent hover:shadow-xl transition-all cursor-pointer group active:scale-[0.98] overflow-hidden bg-white"
+                onClick={() => addToCart(item)}
+              >
+                <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-start gap-2">
+                      <p className="font-black text-primary text-sm md:text-base leading-tight truncate flex-1">{item.name}</p>
+                      <Badge variant="outline" className="text-[8px] py-0 px-1 font-bold bg-blue-50 border-blue-100 text-blue-700 shrink-0">
+                        {t.stock}: {item.stock} {item.unit}
+                      </Badge>
+                    </div>
+                    <p className="text-[9px] font-bold text-accent uppercase tracking-wider flex items-center gap-1">
+                      <Tag className="w-2.5 h-2.5" /> {item.category || 'General'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-muted/30 p-2 rounded-xl border border-black/5">
+                      <p className="text-[8px] font-bold text-muted-foreground uppercase mb-0.5">{t.sellPrice}</p>
+                      <p className="text-sm font-black text-primary">{currency}{item.sellingPrice?.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-orange-50/50 p-2 rounded-xl border border-orange-100/50">
+                      <p className="text-[8px] font-bold text-orange-600 uppercase mb-0.5">{t.buyPrice}</p>
+                      <p className="text-sm font-black text-orange-700">{currency}{item.purchasePrice || 0}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-6 w-6 rounded-lg bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                        <TrendingUp className="w-3 h-3 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-[8px] font-bold text-emerald-600 uppercase leading-none">Profit/Unit</p>
+                        <p className="text-[10px] font-black text-emerald-700">+{currency}{profitPerUnit.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="h-9 w-9 rounded-2xl bg-accent/10 flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-all shadow-sm">
+                      <Plus className="w-5 h-5" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         {products.length === 0 && (
           <div className="col-span-full py-24 text-center text-muted-foreground opacity-30 italic flex flex-col items-center gap-4">
             <Inbox className="w-16 h-16" />
