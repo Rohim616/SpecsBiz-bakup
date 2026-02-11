@@ -70,14 +70,16 @@ export function FloatingCalculator() {
 
   return (
     <>
-      {/* Floating Toggle Button - Extremely high Z-index and stopPropagation to prevent closing existing dialogs */}
+      {/* Floating Toggle Button - Higher offset (bottom-32) to avoid nav overlap */}
       <div 
-        className="fixed bottom-24 right-6 z-[10000] print:hidden"
+        className="fixed bottom-32 right-6 z-[10000] print:hidden"
         onPointerDown={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <Button
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
@@ -88,12 +90,17 @@ export function FloatingCalculator() {
         </Button>
       </div>
 
-      {/* Custom Calculator Popup - Truly top-level dual popup */}
+      {/* Custom Calculator Popup - Dual Mode Support */}
       {isOpen && (
         <div 
           className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setIsOpen(false)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(false);
+          }}
           onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           <div 
             className="w-full max-w-[340px] p-6 rounded-[2.5rem] bg-white shadow-[0_30px_90px_rgba(0,0,0,0.3)] border-2 border-accent/10 animate-in zoom-in-95 duration-300 relative"
