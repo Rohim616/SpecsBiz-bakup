@@ -10,7 +10,8 @@ import {
   Trash2, 
   ChevronRight, 
   Target, 
-  Cpu 
+  Cpu,
+  X
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,7 +23,7 @@ import { growthExpertChat } from "@/ai/flows/growth-expert-flow"
 import { useToast } from "@/hooks/use-toast"
 import { translations } from "@/lib/translations"
 import { useUser, useFirestore, useMemoFirebase, useCollection } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp, getDocs, writeBatch, limit, doc } from "firebase/firestore"
+import { collection, query, orderBy, addDoc, serverTimestamp, getDocs, writeBatch, limit, doc, deleteDoc } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 
 export default function SpecsAIAdvisorPage() {
@@ -36,6 +37,7 @@ export default function SpecsAIAdvisorPage() {
   const [isLoading, setIsLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Real-time Firestore messages
   const messagesQuery = useMemoFirebase(() => {
     if (!user?.uid || !db) return null;
     return query(collection(db, 'users', user.uid, 'advisorMessages'), orderBy('timestamp', 'asc'), limit(50));
@@ -43,8 +45,13 @@ export default function SpecsAIAdvisorPage() {
 
   const { data: fbMessages } = useCollection(messagesQuery);
 
+  // Local state for offline mode messages
+  const [localMessages, setLocalMessages] = useState<any[]>([])
+
+  // Unified messages
   const messages = useMemo(() => {
-    if (!fbMessages || fbMessages.length === 0) {
+    const currentMsgs = user ? (fbMessages || []) : localMessages;
+    if (currentMsgs.length === 0) {
       return [{ 
         id: 'welcome', 
         role: "assistant" as const, 
@@ -53,18 +60,22 @@ export default function SpecsAIAdvisorPage() {
           : "Greetings Sir! I'm your SpecsAI Advisor. I've analyzed your inventory, sales, and debt records. Ready to discuss growth strategies?" 
       }];
     }
-    return fbMessages;
-  }, [fbMessages, language]);
+    return currentMsgs;
+  }, [fbMessages, localMessages, user, language]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
   const saveMsg = async (role: 'user' | 'assistant', content: string) => {
-    if (!user?.uid || !db) return;
-    await addDoc(collection(db, 'users', user.uid, 'advisorMessages'), {
-      role, content, timestamp: serverTimestamp()
-    });
+    if (user?.uid && db) {
+      await addDoc(collection(db, 'users', user.uid, 'advisorMessages'), {
+        role, content, timestamp: serverTimestamp()
+      });
+    } else {
+      const newMsg = { id: Date.now().toString(), role, content, timestamp: new Date() };
+      setLocalMessages(prev => [...prev, newMsg]);
+    }
   }
 
   const handleSend = async (txt?: string) => {
@@ -77,7 +88,6 @@ export default function SpecsAIAdvisorPage() {
     try {
       await saveMsg('user', message);
 
-      // Construct A to Z context for the AI
       const inventorySummary = products.length > 0
         ? products.map(p => `[Product: ${p.name}, Stock: ${p.stock}${p.unit}, Buy: ${p.purchasePrice}, Sell: ${p.sellingPrice}, Cat: ${p.category}]`).join('\n')
         : "Inventory is empty."
@@ -114,21 +124,37 @@ export default function SpecsAIAdvisorPage() {
 
       await saveMsg('assistant', result.reply);
     } catch (e) {
-      toast({ title: "Advisor Offline", variant: "destructive" });
+      toast({ title: language === 'bn' ? "অ্যাডভাইজর অফলাইন" : "Advisor Offline", variant: "destructive" });
     } finally {
       setIsLoading(false)
     }
   }
 
   const clearMemory = async () => {
-    const ok = confirm("Clear Advisor Memory?");
+    if (messages.length <= 1 && messages[0]?.id === 'welcome') {
+      toast({ title: language === 'bn' ? "মেমোরি অলরেডি খালি স্যার" : "Memory is already empty, Sir" });
+      return;
+    }
+
+    const ok = confirm(language === 'bn' ? "সব চ্যাট ডিলিট করবেন, স্যার?" : "Clear all growth advisor history, Sir?");
     if (ok) {
-      if (!user?.uid || !db) return;
-      const snap = await getDocs(collection(db, 'users', user.uid, 'advisorMessages'));
-      const batch = writeBatch(db);
-      snap.docs.forEach(d => batch.delete(doc(db, 'users', user.uid, 'advisorMessages', d.id)));
-      await batch.commit();
-      toast({ title: "Memory Wiped" });
+      if (user?.uid && db) {
+        setIsLoading(true);
+        try {
+          const snap = await getDocs(collection(db, 'users', user.uid, 'advisorMessages'));
+          const batch = writeBatch(db);
+          snap.docs.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+          toast({ title: language === 'bn' ? "মেমোরি পরিষ্কার করা হয়েছে" : "Memory Wiped" });
+        } catch (e) {
+          toast({ variant: "destructive", title: "Failed to clear cloud memory" });
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setLocalMessages([]);
+        toast({ title: language === 'bn' ? "মেমোরি পরিষ্কার করা হয়েছে" : "Memory Wiped" });
+      }
     }
   }
 
@@ -142,18 +168,25 @@ export default function SpecsAIAdvisorPage() {
           <div>
             <h2 className="text-xl font-black text-primary uppercase tracking-tighter">SpecsAI Advisor</h2>
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em]">Master Business Partner</span>
+              <span className="text-[9px] font-bold text-accent uppercase tracking-[0.3em]">{language === 'bn' ? 'গ্রোথ ও স্ট্র্যাটেজি ইঞ্জিন' : 'Growth & Strategy Engine'}</span>
               {aiModel && <Badge variant="outline" className="text-[8px] h-4 py-0 px-1 border-accent/20 text-accent font-black">{aiModel}</Badge>}
             </div>
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={clearMemory} className="text-muted-foreground hover:text-destructive">
-          <Trash2 className="w-4 h-4" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={clearMemory} 
+          className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+          disabled={isLoading}
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{language === 'bn' ? 'মুছে ফেলুন' : 'Clear'}</span>
         </Button>
       </div>
 
       {!aiApiKey && (
-        <Card className="bg-amber-50 border-amber-200 p-4 rounded-2xl mb-4 animate-in slide-in-from-top-4">
+        <Card className="bg-amber-50 border-amber-200 p-4 rounded-2xl mb-2 animate-in slide-in-from-top-4">
           <div className="flex items-center gap-3">
             <Target className="w-5 h-5 text-amber-600" />
             <div className="flex-1">
@@ -170,9 +203,9 @@ export default function SpecsAIAdvisorPage() {
           <ScrollArea className="h-full">
             <div className="p-6 md:p-10 space-y-10">
               {messages.map((m, i) => (
-                <div key={i} className={cn("flex w-full", m.role === 'user' ? 'justify-end' : 'justify-start')}>
+                <div key={m.id || i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2 duration-500", m.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div className={cn(
-                    "max-w-[85%] md:max-w-[70%] p-6 rounded-[2rem] shadow-sm",
+                    "max-w-[85%] md:max-w-[70%] p-6 rounded-[2rem] shadow-sm transition-all",
                     m.role === 'user' 
                       ? 'bg-primary text-white rounded-tr-none' 
                       : 'bg-accent/5 border border-accent/10 rounded-tl-none text-primary'
@@ -213,7 +246,7 @@ export default function SpecsAIAdvisorPage() {
               <button 
                 onClick={() => handleSend()} 
                 disabled={isLoading || !input.trim()}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-primary text-white hover:bg-primary/90 transition-all active:scale-90"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-primary text-white hover:bg-primary/90 transition-all active:scale-90 disabled:opacity-30"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
@@ -224,7 +257,7 @@ export default function SpecsAIAdvisorPage() {
               <button 
                 key={i} 
                 onClick={() => handleSend(tag)}
-                className="px-4 py-2 rounded-full bg-white border border-primary/10 text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all whitespace-nowrap"
+                className="px-4 py-2 rounded-full bg-white border border-primary/10 text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all whitespace-nowrap shadow-sm"
               >
                 <Zap className="w-3 h-3 inline mr-1 text-amber-500 fill-amber-500" /> {tag}
               </button>
