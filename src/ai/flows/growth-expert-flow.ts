@@ -8,7 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { openai } from 'genkitx-openai';
+import { openAI } from 'genkitx-openai';
 
 const GrowthExpertInputSchema = z.object({
   message: z.string().describe("User's query."),
@@ -48,7 +48,7 @@ const advisorFlow = ai.defineFlow(
     // Detect Provider
     const isOpenAI = userKey.startsWith('sk-');
     const modelInstance = isOpenAI 
-      ? openai.model(userModel, { apiKey: userKey })
+      ? openAI.model(userModel, { apiKey: userKey })
       : googleAI.model(userModel, { apiKey: userKey });
 
     try {

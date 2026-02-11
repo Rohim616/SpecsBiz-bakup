@@ -8,7 +8,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { openai } from 'genkitx-openai';
+import { openAI } from 'genkitx-openai';
 
 const AnalyzeBusinessHealthInputSchema = z.object({
   inventoryData: z.string().describe('Summary of products.'),
@@ -63,7 +63,7 @@ const analyzeBusinessHealthFlow = ai.defineFlow(
     // Detect Provider and initialize model
     const isOpenAI = userKey.startsWith('sk-');
     const modelInstance = isOpenAI 
-      ? openai.model(userModel, { apiKey: userKey })
+      ? openAI.model(userModel, { apiKey: userKey })
       : googleAI.model(userModel, { apiKey: userKey });
 
     const {output} = await prompt(input, { model: modelInstance as any });
