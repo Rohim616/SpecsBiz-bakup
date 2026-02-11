@@ -23,7 +23,12 @@ import {
   ArrowRight,
   Target,
   ArrowDownRight,
-  ArrowUpCircle
+  ArrowUpCircle,
+  Info,
+  Layers,
+  Tag,
+  CreditCard,
+  FileText
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -41,6 +46,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 import { useBusinessData } from "@/hooks/use-business-data"
 import { translations } from "@/lib/translations"
 import { cn } from "@/lib/utils"
@@ -58,18 +64,21 @@ export default function DashboardPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deletePass, setDeletePass] = useState("")
 
+  // View Product Details State
+  const [viewProduct, setViewProduct] = useState<any>(null)
+
   const totalRevenue = sales.reduce((acc, s) => acc + (s.total || 0), 0)
 
   // Calculate Product-wise Deep Profit
   const productProfitData = useMemo(() => {
-    const dataMap: Record<string, { name: string, profit: number, qty: number, revenue: number, cost: number }> = {}
+    const dataMap: Record<string, { id: string, name: string, profit: number, qty: number, revenue: number, cost: number }> = {}
     
     sales.forEach(sale => {
       if (!sale.isBakiPayment && sale.items) {
         sale.items.forEach((item: any) => {
           const itemId = item.id || item.name;
           if (!dataMap[itemId]) {
-            dataMap[itemId] = { name: item.name, profit: 0, qty: 0, revenue: 0, cost: 0 }
+            dataMap[itemId] = { id: itemId, name: item.name, profit: 0, qty: 0, revenue: 0, cost: 0 }
           }
           const itemRevenue = item.sellingPrice * item.quantity;
           const itemCost = (item.purchasePrice || 0) * item.quantity;
@@ -342,7 +351,7 @@ export default function DashboardPage() {
                   {language === 'en' ? 'Top Profitable Products (Details)' : 'পণ্যের বিস্তারিত লাভ বিশ্লেষণ'}
                 </CardTitle>
                 <CardDescription className="text-[10px] uppercase font-bold opacity-60 mt-1">
-                  {language === 'en' ? 'A to Z Business Insight' : 'প্রতিটি পণ্যের লাভ-ক্ষতির আসল রিপোর্ট'}
+                  {language === 'en' ? 'A to Z Business Insight (Tap for details)' : 'প্রতিটি পণ্যের পূর্ণাঙ্গ রিপোর্ট (ট্যাপ করুন)'}
                 </CardDescription>
               </div>
               <Badge className="bg-accent text-white border-none text-[10px] uppercase font-black tracking-widest">{language === 'en' ? 'Live' : 'লাইভ'}</Badge>
@@ -359,7 +368,14 @@ export default function DashboardPage() {
                 {productProfitData.map((item, idx) => {
                   const profitMargin = item.revenue > 0 ? ((item.profit / item.revenue) * 100).toFixed(1) : 0;
                   return (
-                    <div key={idx} className="p-4 hover:bg-accent/5 transition-colors group">
+                    <div 
+                      key={idx} 
+                      className="p-4 hover:bg-accent/5 transition-all group cursor-pointer active:scale-[0.98]"
+                      onClick={() => {
+                        const fullProduct = products.find(p => p.id === item.id || p.name === item.name);
+                        setViewProduct({ ...item, ...fullProduct });
+                      }}
+                    >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs shrink-0">
@@ -467,6 +483,118 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Product Deep Detail Popup */}
+      <Dialog open={!!viewProduct} onOpenChange={(open) => !open && setViewProduct(null)}>
+        <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-3xl p-0 overflow-hidden border-accent/20 shadow-2xl">
+          <div className="bg-primary text-white p-6 md:p-8">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                <Package className="w-8 h-8 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-xl md:text-2xl font-black truncate leading-tight">{viewProduct?.name}</DialogTitle>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge className="bg-accent text-white border-none text-[9px] font-black uppercase tracking-widest h-5">{viewProduct?.category || 'General'}</Badge>
+                  <span className="text-[10px] font-bold opacity-60 uppercase">{viewProduct?.id?.slice(-8)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 md:p-8 space-y-8 bg-white max-h-[70vh] overflow-y-auto">
+            {/* Financial Performance Section */}
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="w-3 h-3 text-accent" /> Financial Performance
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                  <p className="text-[9px] font-bold text-emerald-600 uppercase mb-1">Total Net Profit</p>
+                  <p className="text-2xl font-black text-emerald-700">{currency}{viewProduct?.profit?.toLocaleString()}</p>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                  <p className="text-[9px] font-bold text-blue-600 uppercase mb-1">Profit Margin</p>
+                  <p className="text-2xl font-black text-blue-700">{viewProduct?.revenue > 0 ? ((viewProduct.profit / viewProduct.revenue) * 100).toFixed(1) : 0}%</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-2 rounded-xl bg-muted/30 border border-black/5">
+                  <p className="text-[8px] font-bold text-muted-foreground uppercase">Revenue</p>
+                  <p className="text-xs font-black text-primary">{currency}{viewProduct?.revenue?.toLocaleString()}</p>
+                </div>
+                <div className="text-center p-2 rounded-xl bg-muted/30 border border-black/5">
+                  <p className="text-[8px] font-bold text-muted-foreground uppercase">Cost</p>
+                  <p className="text-xs font-black text-orange-600">{currency}{viewProduct?.cost?.toLocaleString()}</p>
+                </div>
+                <div className="text-center p-2 rounded-xl bg-muted/30 border border-black/5">
+                  <p className="text-[8px] font-bold text-muted-foreground uppercase">Sold Qty</p>
+                  <p className="text-xs font-black text-accent">{viewProduct?.qty} {viewProduct?.unit}</p>
+                </div>
+              </div>
+            </div>
+
+            <Separator className="opacity-50" />
+
+            {/* Inventory Status Section */}
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                <Layers className="w-3 h-3 text-accent" /> Inventory A-to-Z Info
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-accent/5 rounded-lg border border-accent/10"><Tag className="w-4 h-4 text-accent" /></div>
+                    <div>
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase">Unit Pricing</p>
+                      <p className="text-sm font-black text-primary">Buy: {currency}{viewProduct?.purchasePrice || 0}</p>
+                      <p className="text-sm font-black text-accent">Sell: {currency}{viewProduct?.sellingPrice || 0}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-accent/5 rounded-lg border border-accent/10"><Package className="w-4 h-4 text-accent" /></div>
+                    <div>
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase">Current Stock</p>
+                      <p className={cn(
+                        "text-lg font-black",
+                        (viewProduct?.stock || 0) < 5 ? "text-destructive" : "text-green-600"
+                      )}>
+                        {viewProduct?.stock || 0} {viewProduct?.unit || 'Units'} Left
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-accent/5 rounded-lg border border-accent/10"><FileText className="w-4 h-4 text-accent" /></div>
+                    <div>
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase">Detailed Info</p>
+                      <p className="text-xs font-medium text-primary">Unit Type: {viewProduct?.unit || 'N/A'}</p>
+                      <p className="text-xs font-medium text-primary">Alert Min: {viewProduct?.alertThreshold || 5}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-accent/5 rounded-lg border border-accent/10"><CreditCard className="w-4 h-4 text-accent" /></div>
+                    <div>
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase">Warehouse Value</p>
+                      <p className="text-sm font-black text-primary">{currency}{((viewProduct?.stock || 0) * (viewProduct?.purchasePrice || 0)).toLocaleString()}</p>
+                      <p className="text-[8px] font-bold text-muted-foreground italic">(At cost price)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 bg-muted/20 border-t flex-row justify-center gap-4">
+            <Button variant="outline" className="flex-1 h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest border-accent/20 text-accent hover:bg-accent/5" onClick={() => setViewProduct(null)}>
+              Close Audit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation with Password */}
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
