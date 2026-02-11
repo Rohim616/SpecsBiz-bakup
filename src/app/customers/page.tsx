@@ -457,22 +457,48 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Record Edit Dialog */}
+      {/* Record Edit Dialog (Matched styling with provided screenshot) */}
       <Dialog open={isRecordEditOpen} onOpenChange={setIsRecordEditOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem]">
-          <DialogHeader><DialogTitle>Edit Baki Entry</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-4">
-             <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Product</Label><Input value={newRecord.productName} onChange={e => setNewRecord({...newRecord, productName: e.target.value})} className="h-11 rounded-xl" /></div>
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label className="text-[10px] uppercase font-black">Qty</Label><Input type="number" step="0.01" className="h-11 rounded-xl" value={newRecord.quantity} onChange={e => setNewRecord({...newRecord, quantity: e.target.value})} /></div>
-                <div className="space-y-1.5"><Label className="text-[10px] uppercase font-black">Price</Label><Input type="number" step="0.01" className="h-11 rounded-xl" value={newRecord.unitPrice} onChange={e => setNewRecord({...newRecord, unitPrice: e.target.value})} /></div>
-             </div>
-             <div className="bg-accent/5 p-4 rounded-2xl text-center border border-accent/10">
-                <p className="text-[8px] uppercase font-black opacity-50">Adjusted Total</p>
-                <p className="text-2xl font-black text-primary">{currency}{newRecord.amount}</p>
-             </div>
+        <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden border-accent/20 shadow-2xl">
+          <DialogHeader className="p-6 bg-accent/5 border-b shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-accent/10 rounded-xl"><Edit2 className="w-6 h-6 text-accent" /></div>
+                <div>
+                  <DialogTitle className="text-xl font-black text-primary uppercase tracking-tighter">Edit Baki Entry</DialogTitle>
+                  <DialogDescription className="text-[10px] font-bold uppercase opacity-60">Update details for this entry.</DialogDescription>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsRecordEditOpen(false)}><X className="w-4 h-4" /></Button>
+            </div>
+          </DialogHeader>
+          <div className="p-6 space-y-5 bg-white">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase text-muted-foreground">Product</Label>
+              <Input value={newRecord.productName} onChange={e => setNewRecord({...newRecord, productName: e.target.value})} className="h-12 rounded-xl bg-accent/5 border-accent/10 font-bold" />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase font-black text-muted-foreground">Qty</Label>
+                <Input type="number" step="0.01" className="h-12 rounded-xl font-black" value={newRecord.quantity} onChange={e => setNewRecord({...newRecord, quantity: e.target.value})} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase font-black text-muted-foreground">Price ({currency})</Label>
+                <Input type="number" step="0.01" className="h-12 rounded-xl font-black text-accent" value={newRecord.unitPrice} onChange={e => setNewRecord({...newRecord, unitPrice: e.target.value})} />
+              </div>
+            </div>
+
+            <div className="bg-primary/5 p-5 rounded-2xl text-center border-2 border-primary/10 shadow-inner">
+              <p className="text-[9px] uppercase font-black text-primary opacity-60 tracking-[0.2em] mb-1">ADJUSTED TOTAL</p>
+              <p className="text-4xl font-black text-primary">{currency}{newRecord.amount || '0'}</p>
+            </div>
           </div>
-          <DialogFooter><Button className="w-full bg-primary h-14 rounded-2xl font-black" onClick={handleUpdateBakiRecord}>Update Entry</Button></DialogFooter>
+          <DialogFooter className="p-6 bg-muted/20 border-t">
+            <Button className="w-full bg-primary hover:bg-primary/90 h-14 rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95" onClick={handleUpdateBakiRecord}>
+              Update Entry
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -480,12 +506,15 @@ export default function CustomersPage() {
       <Dialog open={isRecordAddOpen} onOpenChange={setIsRecordAddOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden border-accent/20 shadow-2xl">
           <DialogHeader className="p-6 bg-accent/5 border-b shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent/10 rounded-xl"><ShoppingCart className="w-6 h-6 text-accent" /></div>
-              <div>
-                <DialogTitle className="text-xl font-black text-primary uppercase tracking-tighter">Add Baki Record</DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase opacity-60">Detailed product & debt entry.</DialogDescription>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-accent/10 rounded-xl"><ShoppingCart className="w-6 h-6 text-accent" /></div>
+                <div>
+                  <DialogTitle className="text-xl font-black text-primary uppercase tracking-tighter">Add Baki Record</DialogTitle>
+                  <DialogDescription className="text-[10px] font-bold uppercase opacity-60">Detailed product & debt entry.</DialogDescription>
+                </div>
               </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsRecordAddOpen(false)}><X className="w-4 h-4" /></Button>
             </div>
           </DialogHeader>
           <div className="p-6 space-y-5 bg-white max-h-[70vh] overflow-y-auto">
