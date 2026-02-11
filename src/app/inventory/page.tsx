@@ -107,18 +107,19 @@ export default function InventoryPage() {
     unit: "pcs"
   })
 
-  // --- REAL-TIME DUPLICATE WARNING ---
+  // --- REAL-TIME DUPLICATE WARNING (DOES NOT BLOCK SAVE) ---
   const duplicateWarning = useMemo(() => {
     if (!newProduct.name.trim()) return null;
     const currentName = newProduct.name.toLowerCase().trim();
     const match = products.find(p => {
       const pName = p.name.toLowerCase().trim();
-      return pName === currentName || pName.includes(currentName) || currentName.includes(pName);
+      // Only warn if name exactly matches or is very similar
+      return pName === currentName;
     });
     if (match) {
       return language === 'bn' 
-        ? `'${match.name}' নামে মিল পাওয়া গেছে! একই পণ্য দুবার যোগ করবেন না।` 
-        : `A similar product '${match.name}' already exists!`;
+        ? `'${match.name}' নামে একটি পণ্য ইতিমধ্যে আছে।` 
+        : `Product '${match.name}' already exists.`;
     }
     return null;
   }, [newProduct.name, products, language]);
@@ -129,12 +130,12 @@ export default function InventoryPage() {
     const match = products.find(p => {
       if (p.id === editingProduct.id) return false;
       const pName = p.name.toLowerCase().trim();
-      return pName === currentName || pName.includes(currentName) || currentName.includes(pName);
+      return pName === currentName;
     });
     if (match) {
       return language === 'bn' 
-        ? `'${match.name}' নামে মিল পাওয়া গেছে!` 
-        : `A similar product '${match.name}' already exists!`;
+        ? `'${match.name}' নামে অন্য একটি পণ্য আছে!` 
+        : `Another product with name '${match.name}' exists!`;
     }
     return null;
   }, [editingProduct?.name, products, language, editingProduct?.id]);
@@ -147,45 +148,11 @@ export default function InventoryPage() {
     })
   }, [products, search, filterCategory])
 
-  const validateProduct = (prod: any, isUpdate = false, originalId?: string) => {
-    const name = prod.name.trim();
-    const buyPrice = parseFloat(prod.purchasePrice) || 0;
-    const sellPrice = parseFloat(prod.sellingPrice) || 0;
-    const stock = parseFloat(prod.stock) || 0;
-
-    if (!name) {
+  const validateProduct = (prod: any) => {
+    if (!prod.name.trim()) {
       toast({ variant: "destructive", title: language === 'bn' ? "নাম দিন!" : "Name required!" });
       return false;
     }
-
-    // Strict Duplicate Check
-    const normalizedName = name.toLowerCase().trim();
-    const isDuplicate = products.some(p => {
-      const pName = p.name.toLowerCase().trim();
-      const match = pName === normalizedName || pName.includes(normalizedName) || normalizedName.includes(pName);
-      return isUpdate ? (match && p.id !== originalId) : match;
-    });
-
-    if (isDuplicate) {
-      toast({
-        variant: "destructive",
-        title: language === 'bn' ? "ডুপ্লিকেট পণ্য!" : "Duplicate Product!",
-        description: language === 'bn' 
-          ? `'${name}' নামে মিল পাওয়া গেছে। অনুগ্রহ করে আলাদা নাম দিন।` 
-          : `'${name}' is too similar to an existing product.`,
-      });
-      return false;
-    }
-
-    if (sellPrice > 0 && sellPrice < buyPrice) {
-      toast({
-        variant: "destructive",
-        title: language === 'bn' ? "সাবধান: লোকসান হচ্ছে!" : "Warning: Potential Loss!",
-        description: language === 'bn' ? "বিক্রয় মূল্য কেনা দামের চেয়ে কম!" : "Selling price is lower than purchase price.",
-      });
-      return false;
-    }
-
     return true;
   }
 
@@ -200,12 +167,12 @@ export default function InventoryPage() {
     })
     setNewProduct({ name: "", category: "", purchasePrice: "", sellingPrice: "", stock: "", unit: "pcs" })
     setIsAddOpen(false)
-    toast({ title: language === 'en' ? "Product Added Successfully" : "পণ্য সফলভাবে যোগ করা হয়েছে" })
+    toast({ title: language === 'en' ? "Product Added" : "পণ্য যোগ করা হয়েছে" })
   }
 
   const handleUpdateProduct = () => {
     if (!editingProduct) return;
-    if (!validateProduct(editingProduct, true, editingProduct.id)) return;
+    if (!validateProduct(editingProduct)) return;
 
     actions.updateProduct(editingProduct.id, {
       ...editingProduct,
@@ -214,19 +181,19 @@ export default function InventoryPage() {
       sellingPrice: parseFloat(editingProduct.sellingPrice) || 0,
     });
     setEditingProduct(null);
-    toast({ title: language === 'en' ? "Product Updated" : "পণ্যের তথ্য আপডেট করা হয়েছে" });
+    toast({ title: language === 'en' ? "Product Updated" : "আপডেট করা হয়েছে" });
   }
 
   const handleAuthorizedDelete = () => {
     if (deletePass === "specsxr") {
       if (deleteId) {
         actions.deleteProduct(deleteId);
-        toast({ title: "Product Permanently Removed" });
+        toast({ title: "Removed" });
       }
       setDeleteId(null);
       setDeletePass("");
     } else {
-      toast({ variant: "destructive", title: "Access Denied", description: "Wrong secret password." });
+      toast({ variant: "destructive", title: "Access Denied" });
       setDeletePass("");
     }
   }
@@ -236,16 +203,11 @@ export default function InventoryPage() {
     const qtyNum = parseFloat(restockQty);
     const priceNum = parseFloat(restockPrice) || restockProduct.purchasePrice;
 
-    if (qtyNum <= 0) {
-      toast({ variant: "destructive", title: "Invalid quantity" });
-      return;
-    }
-
     actions.addRestock(restockProduct.id, qtyNum, priceNum);
     setRestockProduct(null);
     setRestockQty("");
     setRestockPrice("");
-    toast({ title: "Stock Updated & Recorded" });
+    toast({ title: "Restock Done" });
   }
 
   const startEditing = (p: any) => {
@@ -277,7 +239,10 @@ export default function InventoryPage() {
           </DialogTrigger>
           <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[2.5rem]">
             <DialogHeader>
-              <DialogTitle className="text-primary font-black uppercase tracking-tighter">{t.addProduct}</DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-primary font-black uppercase tracking-tighter">{t.addProduct}</DialogTitle>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsAddOpen(false)}><X className="w-4 h-4" /></Button>
+              </div>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-1.5">
@@ -285,11 +250,11 @@ export default function InventoryPage() {
                 <Input 
                   value={newProduct.name} 
                   onChange={e => setNewProduct({...newProduct, name: e.target.value})} 
-                  className={cn("h-11 rounded-xl", duplicateWarning && "border-red-500 focus-visible:ring-red-500")}
+                  className={cn("h-11 rounded-xl", duplicateWarning && "border-amber-500")}
                   placeholder={language === 'bn' ? "পণ্যের নাম লিখুন..." : "Enter product name..."}
                 />
                 {duplicateWarning && (
-                  <p className="text-[10px] font-bold text-red-600 flex items-center gap-1 mt-1">
+                  <p className="text-[10px] font-bold text-amber-600 flex items-center gap-1 mt-1">
                     <AlertCircle className="w-3 h-3" /> {duplicateWarning}
                   </p>
                 )}
@@ -326,7 +291,7 @@ export default function InventoryPage() {
               <Button 
                 className="bg-accent w-full h-12 rounded-xl font-black uppercase" 
                 onClick={handleAddProduct}
-                disabled={!!duplicateWarning || !newProduct.name.trim()}
+                disabled={!newProduct.name.trim()}
               >
                 {t.saveProduct}
               </Button>
@@ -410,7 +375,10 @@ export default function InventoryPage() {
       <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="text-primary font-black uppercase tracking-tighter">Edit Product Details</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-primary font-black uppercase tracking-tighter">Edit Product Details</DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setEditingProduct(null)}><X className="w-4 h-4" /></Button>
+            </div>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-1.5">
@@ -418,10 +386,10 @@ export default function InventoryPage() {
               <Input 
                 value={editingProduct?.name || ""} 
                 onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} 
-                className={cn("h-11 rounded-xl", editDuplicateWarning && "border-red-500 focus-visible:ring-red-500")} 
+                className={cn("h-11 rounded-xl", editDuplicateWarning && "border-amber-500")} 
               />
               {editDuplicateWarning && (
-                <p className="text-[10px] font-bold text-red-600 flex items-center gap-1 mt-1">
+                <p className="text-[10px] font-bold text-amber-600 flex items-center gap-1 mt-1">
                   <AlertCircle className="w-3 h-3" /> {editDuplicateWarning}
                 </p>
               )}
@@ -458,7 +426,7 @@ export default function InventoryPage() {
             <Button 
               className="w-full bg-primary h-14 rounded-2xl font-black uppercase shadow-xl" 
               onClick={handleUpdateProduct}
-              disabled={!!editDuplicateWarning || !editingProduct?.name?.trim()}
+              disabled={!editingProduct?.name?.trim()}
             >
               Save All Changes
             </Button>
@@ -470,9 +438,12 @@ export default function InventoryPage() {
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent className="sm:max-w-[400px] rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive font-black uppercase">
-              <Lock className="w-5 h-5" /> Permanent Deletion
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-destructive font-black uppercase">
+                <Lock className="w-5 h-5" /> Permanent Deletion
+              </DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setDeleteId(null)}><X className="w-4 h-4" /></Button>
+            </div>
             <DialogDescription>
               Enter secret key 'specsxr' to confirm deletion.
             </DialogDescription>
@@ -499,9 +470,12 @@ export default function InventoryPage() {
       <Dialog open={!!restockProduct} onOpenChange={(open) => !open && setRestockProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[400px] rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-primary font-black uppercase tracking-tighter">
-              <PackagePlus className="w-5 h-5 text-accent" /> {t.newStockEntry}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-primary font-black uppercase tracking-tighter">
+                <PackagePlus className="w-5 h-5 text-accent" /> {t.newStockEntry}
+              </DialogTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setRestockProduct(null)}><X className="w-4 h-4" /></Button>
+            </div>
             <DialogDescription className="font-black text-accent text-xs">{restockProduct?.name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
