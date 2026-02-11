@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Calculator as CalcIcon, Eraser, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -70,11 +71,11 @@ export function FloatingCalculator() {
     </Button>
   )
 
-  return (
+  const calculatorContent = (
     <>
-      {/* Floating Toggle Button - Extremely High Z-Index & Portal Class */}
+      {/* Floating Toggle Button - SUPER HIGH Z-INDEX & PORTAL PROTECTION */}
       <div 
-        className="fixed bottom-32 right-6 z-[10000] print:hidden pointer-events-auto floating-calc-element"
+        className="fixed bottom-36 right-8 z-[10001] print:hidden pointer-events-auto floating-calc-element"
         onPointerDown={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -84,26 +85,26 @@ export function FloatingCalculator() {
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
-          className="h-14 w-14 rounded-full shadow-[0_15px_45px_rgba(0,128,128,0.6)] bg-accent hover:bg-accent/90 border-4 border-white animate-in zoom-in duration-300 floating-calc-element"
+          onPointerDown={(e) => e.stopPropagation()}
+          className="h-16 w-16 rounded-full shadow-[0_20px_50px_rgba(0,128,128,0.6)] bg-accent hover:bg-accent/90 border-4 border-white animate-in zoom-in duration-300 floating-calc-element transition-all active:scale-90"
           size="icon"
         >
-          {isOpen ? <X className="w-7 h-7 text-white" /> : <CalcIcon className="w-7 h-7 text-white" />}
+          {isOpen ? <X className="w-8 h-8 text-white" /> : <CalcIcon className="w-8 h-8 text-white" />}
         </Button>
       </div>
 
-      {/* Custom Calculator Popup - Top Layer Priority & Dual Window Protection */}
+      {/* Calculator Popup - Top Layer Priority */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200 floating-calc-element"
+          className="fixed inset-0 z-[10002] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 floating-calc-element"
           onPointerDown={(e) => {
-            // Only close if clicking the actual backdrop, not the calculator itself
-            if ((e.target as HTMLElement).classList.contains('bg-black/40')) {
+            if ((e.target as HTMLElement).classList.contains('bg-black/60')) {
               setIsOpen(false);
             }
           }}
         >
           <div 
-            className="w-full max-w-[340px] p-6 rounded-[2.5rem] bg-white shadow-[0_30px_90px_rgba(0,0,0,0.3)] border-2 border-accent/10 animate-in zoom-in-95 duration-300 relative pointer-events-auto floating-calc-element"
+            className="w-full max-w-[340px] p-6 rounded-[3rem] bg-white shadow-[0_40px_100px_rgba(0,0,0,0.5)] border-2 border-accent/20 animate-in zoom-in-95 duration-300 relative pointer-events-auto floating-calc-element"
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -113,59 +114,61 @@ export function FloatingCalculator() {
                 <div className="p-2 bg-accent/10 rounded-xl">
                   <CalcIcon className="w-5 h-5 text-accent" />
                 </div>
-                <h3 className="text-base font-black uppercase tracking-tight text-primary">SpecsBiz Calc</h3>
+                <h3 className="text-base font-black uppercase tracking-tight text-primary">SpecsBiz Master Calc</h3>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="rounded-full h-8 w-8 hover:bg-red-50 hover:text-red-500" 
+                className="rounded-full h-10 w-10 hover:bg-red-50 hover:text-red-500 transition-colors" 
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsOpen(false);
                 }}
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </Button>
             </div>
 
             <div className="space-y-5">
-              <div className="bg-muted/30 p-5 rounded-2xl border-2 border-accent/5 text-right overflow-hidden shadow-inner">
-                <p className="text-[11px] font-bold text-accent uppercase tracking-widest h-5 truncate opacity-60">
-                  {equation || "Ready"}
+              <div className="bg-muted/40 p-6 rounded-2xl border-2 border-accent/10 text-right overflow-hidden shadow-inner">
+                <p className="text-[12px] font-bold text-accent uppercase tracking-widest h-5 truncate opacity-70">
+                  {equation || "Ready to calculate"}
                 </p>
-                <p className="text-4xl font-black text-primary truncate tracking-tighter mt-1">
+                <p className="text-5xl font-black text-primary truncate tracking-tighter mt-2">
                   {display}
                 </p>
               </div>
 
-              <div className="grid grid-cols-4 gap-2.5">
-                <CalcButton onClick={handleClear} variant="ghost" className="text-destructive bg-red-50 hover:bg-red-100 border-none">C</CalcButton>
+              <div className="grid grid-cols-4 gap-3">
+                <CalcButton onClick={handleClear} variant="ghost" className="text-destructive bg-red-50 hover:bg-red-100 border-none font-black">C</CalcButton>
                 <CalcButton onClick={handleBackspace} variant="ghost" className="bg-muted/50 border-none"><Eraser className="w-5 h-5" /></CalcButton>
-                <CalcButton onClick={() => handleOperator("/")} className="bg-accent text-white hover:bg-accent/90 border-none">÷</CalcButton>
-                <CalcButton onClick={() => handleOperator("*")} className="bg-accent text-white hover:bg-accent/90 border-none">×</CalcButton>
+                <CalcButton onClick={() => handleOperator("/")} className="bg-accent text-white hover:bg-accent/90 border-none text-2xl">÷</CalcButton>
+                <CalcButton onClick={() => handleOperator("*")} className="bg-accent text-white hover:bg-accent/90 border-none text-2xl">×</CalcButton>
 
                 {[7, 8, 9].map(n => (
-                  <CalcButton key={n} onClick={() => handleNumber(n.toString())} className="bg-white border-2 border-muted/20 text-primary shadow-sm">{n}</CalcButton>
+                  <CalcButton key={n} onClick={() => handleNumber(n.toString())} className="bg-white border-2 border-muted/30 text-primary shadow-sm">{n}</CalcButton>
                 ))}
-                <CalcButton onClick={() => handleOperator("-")} className="bg-accent text-white hover:bg-accent/90 border-none">−</CalcButton>
+                <CalcButton onClick={() => handleOperator("-")} className="bg-accent text-white hover:bg-accent/90 border-none text-2xl">−</CalcButton>
 
                 {[4, 5, 6].map(n => (
-                  <CalcButton key={n} onClick={() => handleNumber(n.toString())} className="bg-white border-2 border-muted/20 text-primary shadow-sm">{n}</CalcButton>
+                  <CalcButton key={n} onClick={() => handleNumber(n.toString())} className="bg-white border-2 border-muted/30 text-primary shadow-sm">{n}</CalcButton>
                 ))}
-                <CalcButton onClick={() => handleOperator("+")} className="bg-accent text-white hover:bg-accent/90 border-none">+</CalcButton>
+                <CalcButton onClick={() => handleOperator("+")} className="bg-accent text-white hover:bg-accent/90 border-none text-2xl">+</CalcButton>
 
                 {[1, 2, 3].map(n => (
-                  <CalcButton key={n} onClick={() => handleNumber(n.toString())} className="bg-white border-2 border-muted/20 text-primary shadow-sm">{n}</CalcButton>
+                  <CalcButton key={n} onClick={() => handleNumber(n.toString())} className="bg-white border-2 border-muted/30 text-primary shadow-sm">{n}</CalcButton>
                 ))}
-                <CalcButton onClick={calculate} className="bg-primary hover:bg-primary/90 text-white row-span-2 h-full text-2xl border-none">=</CalcButton>
+                <CalcButton onClick={calculate} className="bg-primary hover:bg-primary/90 text-white row-span-2 h-full text-3xl border-none">=</CalcButton>
 
-                <CalcButton onClick={() => handleNumber("0")} className="col-span-2 bg-white border-2 border-muted/20 text-primary shadow-sm">0</CalcButton>
-                <CalcButton onClick={() => handleNumber(".")} className="bg-white border-2 border-muted/20 text-primary shadow-sm">.</CalcButton>
+                <CalcButton onClick={() => handleNumber("0")} className="col-span-2 bg-white border-2 border-muted/30 text-primary shadow-sm">0</CalcButton>
+                <CalcButton onClick={() => handleNumber(".")} className="bg-white border-2 border-muted/30 text-primary shadow-sm">.</CalcButton>
               </div>
             </div>
           </div>
         </div>
       )}
     </>
-  )
+  );
+
+  return typeof document !== 'undefined' ? createPortal(calculatorContent, document.body) : null;
 }
