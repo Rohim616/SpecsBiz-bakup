@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { 
   ShoppingCart, 
   Search, 
@@ -53,15 +53,20 @@ export default function SalesPage() {
   const [cart, setCart] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [isSummaryOpen, setIsSummaryOpen] = useState(false)
+  const [isAnimate, setIsAnimate] = useState(false)
 
   const addToCart = (item: any) => {
     const existing = cart.find(c => c.id === item.id)
     if (existing) {
-      toast({ title: t.language === 'en' ? "Already in cart" : "ইতিমধ্যেই কার্টে আছে" })
+      toast({ title: language === 'en' ? "Already in cart" : "ইতিমধ্যেই কার্টে আছে" })
     } else {
       // Initialize with base unit
       setCart([...cart, { ...item, quantity: 1, selectedUnit: item.unit }])
-      toast({ title: t.language === 'en' ? "Added to list" : "তালিকায় যোগ করা হয়েছে" })
+      toast({ title: language === 'en' ? "Added to list" : "তালিকায় যোগ করা হয়েছে" })
+      
+      // Trigger animation for the floating button
+      setIsAnimate(true)
+      setTimeout(() => setIsAnimate(false), 600)
     }
   }
 
@@ -130,7 +135,7 @@ export default function SalesPage() {
       items: cartSummary.normalizedItems,
     })
     toast({
-      title: t.language === 'en' ? "Sale Recorded" : "বিক্রয় সম্পন্ন হয়েছে",
+      title: language === 'en' ? "Sale Recorded" : "বিক্রয় সম্পন্ন হয়েছে",
       description: `${t.finalTotal}: ${currency}${cartSummary.subtotal.toLocaleString()}`,
     })
     setCart([])
@@ -145,7 +150,7 @@ export default function SalesPage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black font-headline text-primary flex items-center gap-2">
-            <Receipt className="w-6 h-6 text-accent" /> {t.language === 'en' ? 'Quick Sale' : 'দ্রুত বিক্রয়'}
+            <Receipt className="w-6 h-6 text-accent" /> {language === 'en' ? 'Quick Sale' : 'দ্রুত বিক্রয়'}
           </h2>
           <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">Select products to generate bill</p>
         </div>
@@ -175,7 +180,16 @@ export default function SalesPage() {
                 <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
                   <div className="space-y-1">
                     <div className="flex justify-between items-start gap-2">
-                      <p className="font-black text-primary text-sm md:text-base leading-tight truncate flex-1">{item.name}</p>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden border shrink-0">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Tag className="w-5 h-5 opacity-20" />
+                          )}
+                        </div>
+                        <p className="font-black text-primary text-sm md:text-base leading-tight truncate">{item.name}</p>
+                      </div>
                       <Badge variant="outline" className="text-[8px] py-0 px-1 font-bold bg-blue-50 border-blue-100 text-blue-700 shrink-0">
                         {t.stock}: {item.stock} {item.unit}
                       </Badge>
@@ -224,18 +238,23 @@ export default function SalesPage() {
 
       {/* Floating Checkout Button */}
       {cart.length > 0 && (
-        <div className="fixed bottom-20 right-6 z-50 animate-in slide-in-from-bottom-10 duration-500">
+        <div className={cn(
+          "fixed bottom-20 right-6 z-50 transition-all duration-300",
+          isAnimate ? "scale-110" : "scale-100"
+        )}>
           <Button 
             onClick={() => setIsSummaryOpen(true)}
-            className="h-16 px-6 rounded-2xl shadow-[0_15px_40px_rgba(0,128,128,0.4)] bg-accent hover:bg-accent/90 border-4 border-white gap-3 group"
+            className={cn(
+              "h-20 w-20 rounded-full shadow-[0_20px_50px_rgba(0,128,128,0.5)] bg-accent hover:bg-accent/90 border-4 border-white flex items-center justify-center p-0 transition-all active:scale-95 shadow-xl",
+              isAnimate && "animate-tada"
+            )}
           >
             <div className="relative">
-              <ShoppingCart className="w-7 h-7 text-white" />
-              <Badge className="absolute -top-3 -right-3 h-6 w-6 flex items-center justify-center bg-red-500 border-2 border-white font-black text-[10px] rounded-full">
+              <ShoppingCart className="w-9 h-9 text-white" />
+              <Badge className="absolute -top-4 -right-4 h-8 w-8 flex items-center justify-center bg-red-500 border-2 border-white font-black text-[11px] rounded-full shadow-lg">
                 {cart.length}
               </Badge>
             </div>
-            <span className="font-black uppercase tracking-tighter text-sm hidden sm:inline">Review Bill & Checkout</span>
           </Button>
         </div>
       )}
@@ -257,7 +276,7 @@ export default function SalesPage() {
                 </div>
               </div>
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/50 hover:bg-destructive hover:text-white transition-all shadow-sm" onClick={() => setIsSummaryOpen(false)}>
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </Button>
             </div>
           </DialogHeader>
@@ -332,7 +351,7 @@ export default function SalesPage() {
 
                     <div className="flex justify-between items-center gap-2">
                       <div className="flex-1 px-4 py-2.5 bg-muted/30 rounded-xl border border-muted flex justify-between items-center">
-                        <span className="text-[9px] font-black uppercase text-muted-foreground">{t.language === 'en' ? 'Item Total' : 'মোট বিল'}</span>
+                        <span className="text-[9px] font-black uppercase text-muted-foreground">{language === 'en' ? 'Item Total' : 'মোট বিল'}</span>
                         <span className="text-sm font-black text-primary">{currency}{itemTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div className={cn(
@@ -359,7 +378,7 @@ export default function SalesPage() {
                  "p-4 text-white rounded-2xl shadow-lg flex flex-col justify-between",
                  cartSummary.totalProfit < 0 ? "bg-destructive" : "bg-emerald-600"
                )}>
-                  <p className="text-[8px] font-black uppercase opacity-80 tracking-widest">{cartSummary.totalProfit < 0 ? (t.language === 'en' ? 'Total Loss' : 'মোট লস') : t.totalLav}</p>
+                  <p className="text-[8px] font-black uppercase opacity-80 tracking-widest">{cartSummary.totalProfit < 0 ? (language === 'en' ? 'Total Loss' : 'মোট লস') : language === 'bn' ? 'মোট লাভ' : 'Total Profit'}</p>
                   <div className="flex items-center gap-1 mt-1">
                     <TrendingUp className="w-4 h-4 opacity-70" />
                     <span className="text-2xl font-black">{currency}{cartSummary.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
