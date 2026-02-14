@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -17,7 +18,8 @@ import {
   PackageSearch,
   ShoppingCart,
   Tag,
-  FileText
+  FileText,
+  DollarSign
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -73,6 +75,12 @@ export default function CustomersPage() {
   const [isRecordEditOpen, setIsRecordEditOpen] = useState(false)
   const [isCustomerEditOpen, setIsCustomerEditOpen] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const [deletePass, setDeletePass] = useState("")
+
+  // Payment State
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState("")
+  const [paymentRecord, setPaymentRecord] = useState<any>(null)
   
   const detailsCustomer = useMemo(() => {
     return customers.find(c => c.id === activeCustomerId) || null
@@ -156,6 +164,7 @@ export default function CustomersPage() {
   
   const currentBakiRecords = useMemo(() => {
     const rawRecords = activeCustomerId ? (user ? (fbBakiRecords || []) : (detailsCustomer?.bakiRecords || [])) : [];
+    // Show all unpaid or partially paid records
     return rawRecords.filter((r: any) => r.status !== 'paid');
   }, [fbBakiRecords, detailsCustomer, user, activeCustomerId]);
 
@@ -194,11 +203,16 @@ export default function CustomersPage() {
 
   const handleDeleteCustomer = () => {
     if (!activeCustomerId) return;
-    actions.deleteCustomer(activeCustomerId);
-    setActiveCustomerId(null);
-    setIsDeleteConfirmOpen(false);
-    setIsCustomerEditOpen(false);
-    toast({ title: "Customer Wiped" });
+    if (deletePass === "specsxr") {
+      actions.deleteCustomer(activeCustomerId);
+      setActiveCustomerId(null);
+      setIsDeleteConfirmOpen(false);
+      setIsCustomerEditOpen(false);
+      setDeletePass("");
+      toast({ title: "Customer Account Wiped" });
+    } else {
+      toast({ variant: "destructive", title: "Access Denied", description: "Incorrect master key." });
+    }
   }
 
   const handleAddBakiRecordOnly = () => {
@@ -236,6 +250,18 @@ export default function CustomersPage() {
     const remaining = record.amount - (record.paidAmount || 0);
     actions.deleteBakiRecord(activeCustomerId, record.id, remaining, record.productId, record.quantity);
     toast({ title: "Record Removed" });
+  }
+
+  const handlePayment = () => {
+    if (!activeCustomerId || !paymentRecord || !paymentAmount) return;
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) return;
+
+    actions.payBakiRecord(activeCustomerId, paymentRecord.id, amount, paymentRecord);
+    setIsPaymentDialogOpen(false);
+    setPaymentRecord(null);
+    setPaymentAmount("");
+    toast({ title: "Payment Recorded" });
   }
 
   const startEditingRecord = (record: any) => {
@@ -279,8 +305,8 @@ export default function CustomersPage() {
     return customers
       .filter(c => {
         const fullName = `${c.firstName || ''} ${c.lastName || ''} ${c.phone || ''}`.toLowerCase();
-        const matchesSearch = fullName.includes(search.toLowerCase());
-        return search.trim() === "" ? (c.totalDue || 0) > 0 : matchesSearch;
+        // Always show everyone by default (Profiles stay permanent)
+        return fullName.includes(search.toLowerCase());
       })
       .sort((a, b) => (b.totalDue || 0) - (a.totalDue || 0));
   }, [customers, search]);
@@ -324,7 +350,7 @@ export default function CustomersPage() {
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground italic gap-2">
               <Inbox className="w-8 h-8 opacity-10" />
               <p className="text-xs font-bold uppercase tracking-widest opacity-20">
-                {search ? "No matches" : "All debts cleared!"}
+                {search ? "No matches" : "No customers registered"}
               </p>
             </div>
           ) : (
@@ -443,9 +469,13 @@ export default function CustomersPage() {
                          <Button 
                            variant="outline" 
                            className="h-9 text-[10px] font-black uppercase text-accent border-accent hover:bg-accent hover:text-white px-5 rounded-xl transition-all shadow-sm" 
-                           onClick={() => actions.payBakiRecord(activeCustomerId!, record.id, record.amount - (record.paidAmount || 0), record)}
+                           onClick={() => {
+                             setPaymentRecord(record);
+                             setPaymentAmount((record.amount - (record.paidAmount || 0)).toString());
+                             setIsPaymentDialogOpen(true);
+                           }}
                          >
-                           <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Mark Paid
+                           <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Pay Baki
                          </Button>
                       </div>
                     </CardContent>
@@ -456,6 +486,42 @@ export default function CustomersPage() {
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      {/* Partial Payment Dialog */}
+      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-[2rem]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-50 rounded-xl"><DollarSign className="w-6 h-6 text-green-600" /></div>
+              <div>
+                <DialogTitle className="text-xl font-black text-primary">Receive Payment</DialogTitle>
+                <DialogDescription className="text-xs">Enter amount being paid for {paymentRecord?.productName}.</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="py-6 space-y-4">
+            <div className="bg-muted/30 p-4 rounded-xl text-center border">
+              <p className="text-[10px] font-black uppercase opacity-50 mb-1">Remaining Due</p>
+              <p className="text-2xl font-black text-destructive">{currency}{(paymentRecord?.amount - (paymentRecord?.paidAmount || 0)).toLocaleString()}</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase">Amount Paying Now</Label>
+              <Input 
+                type="number" 
+                step="0.01" 
+                className="h-14 text-2xl font-black text-center bg-accent/5 border-accent/20 rounded-2xl" 
+                value={paymentAmount} 
+                onChange={e => setPaymentAmount(e.target.value)} 
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full bg-accent hover:bg-accent/90 h-14 rounded-2xl font-black uppercase shadow-xl" onClick={handlePayment}>
+              Confirm Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Record Dialog */}
       <Dialog open={isRecordEditOpen} onOpenChange={setIsRecordEditOpen}>
@@ -769,6 +835,16 @@ export default function CustomersPage() {
             <DialogTitle className="flex items-center gap-2 text-destructive"><Lock className="w-5 h-5" /> Master Delete</DialogTitle>
             <DialogDescription>Enter secret key 'specsxr' to permanently wipe this customer.</DialogDescription>
           </DialogHeader>
+          <div className="py-4 space-y-2">
+            <Label className="text-[10px] font-black uppercase">Master Access Key</Label>
+            <Input 
+              type="password" 
+              placeholder="••••••••" 
+              className="h-12 rounded-xl" 
+              value={deletePass} 
+              onChange={e => setDeletePass(e.target.value)} 
+            />
+          </div>
           <DialogFooter><Button variant="destructive" className="w-full h-12 rounded-xl font-bold" onClick={handleDeleteCustomer}>Confirm Wipe</Button></DialogFooter>
         </DialogContent>
       </Dialog>
