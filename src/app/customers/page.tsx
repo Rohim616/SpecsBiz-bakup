@@ -19,7 +19,8 @@ import {
   ShoppingCart,
   Tag,
   FileText,
-  DollarSign
+  DollarSign,
+  Clock
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -164,8 +165,8 @@ export default function CustomersPage() {
   
   const currentBakiRecords = useMemo(() => {
     const rawRecords = activeCustomerId ? (user ? (fbBakiRecords || []) : (detailsCustomer?.bakiRecords || [])) : [];
-    // Show all unpaid or partially paid records
-    return rawRecords.filter((r: any) => r.status !== 'paid');
+    // Now returning ALL records to maintain history
+    return [...rawRecords].sort((a, b) => new Date(b.takenDate).getTime() - new Date(a.takenDate).getTime());
   }, [fbBakiRecords, detailsCustomer, user, activeCustomerId]);
 
   const handleAddCustomerAndBaki = () => {
@@ -305,7 +306,6 @@ export default function CustomersPage() {
     return customers
       .filter(c => {
         const fullName = `${c.firstName || ''} ${c.lastName || ''} ${c.phone || ''}`.toLowerCase();
-        // Always show everyone by default (Profiles stay permanent)
         return fullName.includes(search.toLowerCase());
       })
       .sort((a, b) => (b.totalDue || 0) - (a.totalDue || 0));
@@ -405,29 +405,45 @@ export default function CustomersPage() {
             </div>
             <div className="mt-4 flex gap-3">
               <div className="flex-1 bg-white p-3 rounded-xl border-2 border-accent/10 shadow-inner">
-                <p className="text-[8px] font-black uppercase opacity-50">Total Debt</p>
+                <p className="text-[8px] font-black uppercase opacity-50">Current Outstanding</p>
                 <p className="text-xl font-black text-destructive">{currency}{detailsCustomer?.totalDue?.toLocaleString()}</p>
               </div>
               <Button className="bg-accent h-auto font-black uppercase text-[10px] px-4 shadow-xl" onClick={() => setIsRecordAddOpen(true)}>
-                <Plus className="w-4 h-4 mr-1" /> Add Baki
+                <Plus className="w-4 h-4 mr-1" /> Add New Baki
               </Button>
             </div>
           </SheetHeader>
           
+          <div className="bg-muted/30 px-4 py-2 border-b">
+            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Clock className="w-3 h-3" /> History of all transactions
+            </p>
+          </div>
+
           <ScrollArea className="flex-1 p-4 bg-muted/5">
             <div className="space-y-4">
               {currentBakiRecords.length === 0 ? (
                 <div className="py-20 text-center opacity-30 italic flex flex-col items-center gap-3">
                   <CheckCircle2 className="w-10 h-10" />
-                  <p className="text-xs font-black uppercase tracking-widest">ALL DEBTS CLEARED!</p>
+                  <p className="text-xs font-black uppercase tracking-widest">NO HISTORY YET</p>
                 </div>
               ) : (
                 currentBakiRecords.map((record: any) => (
-                  <Card key={record.id} className="border border-accent/10 shadow-sm bg-white hover:shadow-md transition-all rounded-[1.5rem] overflow-hidden">
+                  <Card key={record.id} className={cn(
+                    "border border-accent/10 shadow-sm bg-white hover:shadow-md transition-all rounded-[1.5rem] overflow-hidden",
+                    record.status === 'paid' && "opacity-60 bg-muted/5"
+                  )}>
                     <CardContent className="p-5">
                       <div className="flex justify-between items-start mb-4">
                         <div className="space-y-2 flex-1 min-w-0">
-                          <h4 className="font-black text-sm text-primary leading-tight truncate">{record.productName}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-black text-sm text-primary leading-tight truncate">{record.productName}</h4>
+                            {record.status === 'paid' && (
+                              <Badge className="bg-green-100 text-green-700 border-none text-[8px] font-black px-2 h-5 rounded-lg uppercase">
+                                Full Paid
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge className="bg-accent text-white border-none text-[10px] font-black px-2.5 h-6 rounded-lg uppercase">
                               Qty: {record.quantity} {record.unit || ''}
@@ -444,7 +460,7 @@ export default function CustomersPage() {
                                 <p className="text-[10px] text-muted-foreground italic leading-tight">{record.note}</p>
                               </div>
                             )}
-                            {record.promiseDate && (
+                            {record.promiseDate && record.status !== 'paid' && (
                               <div className="flex items-center gap-2 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg w-fit border border-amber-100">
                                 <Calendar className="w-3 h-3 shrink-0" />
                                 <span>Promise: {new Date(record.promiseDate).toLocaleDateString()}</span>
@@ -454,6 +470,9 @@ export default function CustomersPage() {
                         </div>
                         <div className="text-right shrink-0 ml-4">
                           <p className="font-black text-xl text-primary">{currency}{record.amount.toLocaleString()}</p>
+                          {record.status !== 'paid' && record.paidAmount > 0 && (
+                            <p className="text-[9px] font-bold text-green-600">Already Paid: {currency}{record.paidAmount}</p>
+                          )}
                           <div className="flex items-center gap-1 justify-end mt-2">
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-accent hover:bg-accent/10 rounded-full" onClick={() => startEditingRecord(record)}>
                               <Edit2 className="w-4 h-4" />
@@ -465,19 +484,21 @@ export default function CustomersPage() {
                         </div>
                       </div>
                       
-                      <div className="flex justify-end pt-3 border-t border-accent/5">
-                         <Button 
-                           variant="outline" 
-                           className="h-9 text-[10px] font-black uppercase text-accent border-accent hover:bg-accent hover:text-white px-5 rounded-xl transition-all shadow-sm" 
-                           onClick={() => {
-                             setPaymentRecord(record);
-                             setPaymentAmount((record.amount - (record.paidAmount || 0)).toString());
-                             setIsPaymentDialogOpen(true);
-                           }}
-                         >
-                           <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Pay Baki
-                         </Button>
-                      </div>
+                      {record.status !== 'paid' && (
+                        <div className="flex justify-end pt-3 border-t border-accent/5">
+                           <Button 
+                             variant="outline" 
+                             className="h-9 text-[10px] font-black uppercase text-accent border-accent hover:bg-accent hover:text-white px-5 rounded-xl transition-all shadow-sm" 
+                             onClick={() => {
+                               setPaymentRecord(record);
+                               setPaymentAmount((record.amount - (record.paidAmount || 0)).toString());
+                               setIsPaymentDialogOpen(true);
+                             }}
+                           >
+                             <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Pay Now
+                           </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))
