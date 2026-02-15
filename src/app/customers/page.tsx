@@ -336,7 +336,7 @@ export default function CustomersPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
         <Card className="bg-destructive/10 border-destructive/20 p-3">
           <p className="text-[8px] uppercase font-black opacity-60 tracking-widest">{t.totalUnpaidBaki}</p>
           <p className="text-lg md:text-2xl font-black text-destructive mt-1">{currency}{totalMarketBaki.toLocaleString()}</p>
@@ -345,12 +345,6 @@ export default function CustomersPage() {
           <p className="text-[8px] uppercase font-black opacity-70 tracking-widest">{t.activeDebtors}</p>
           <p className="text-lg md:text-2xl font-black mt-1">{customers.filter(c => (c.totalDue || 0) > 0).length}</p>
         </Card>
-        <div className="col-span-2 lg:col-span-1 flex items-center justify-center p-2 bg-white/30 rounded-2xl border border-accent/5">
-          <div id="frame" style={{ width: '320px', margin: 'auto', zIndex: 99998, height: 'auto' }}>
-            <iframe data-aa='2427578' src='//ad.a-ads.com/2427578/?size=320x50&background_color=transparent'
-                              style={{ border: 0, padding: 0, width: '320px', height: '50px', overflow: 'hidden', display: 'block', margin: 'auto' }}></iframe>
-          </div>
-        </div>
       </div>
 
       <Card className="border-accent/10 shadow-lg bg-white/50 backdrop-blur-sm">
