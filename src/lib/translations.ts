@@ -95,6 +95,13 @@ export const translations = {
     unpaid: "Unpaid",
     status: "Status",
 
+    // Procurement
+    totalProcurementCost: "Total Procurement Cost",
+    procurementDesc: "History of stock purchasing cost.",
+    stockEntryHistory: "Stock Entry History",
+    totalCostSpent: "Total Cost",
+    buyQty: "Buy Qty",
+
     // Common
     loading: "Loading...",
     noData: "No data found.",
@@ -180,7 +187,7 @@ export const translations = {
     // BI Analytics
     biInsights: "আপনার ব্যবসার কৌশলগত উন্নয়নের তথ্য।",
     runAudit: "এআই হেলথ অডিট শুরু করুন",
-    totalInvestment: "মোট বিনিয়োগ (Investment)",
+    totalInvestment: "মোট বিনিয়োগ",
     investmentDesc: "বর্তমানে স্টকে থাকা মালের কেনা দাম",
     potentialProfit: "সম্ভাব্য নিট লাভ",
     marginDesc: "সব মাল বিক্রি শেষে সম্ভাব্য মুনাফা",
@@ -206,6 +213,13 @@ export const translations = {
     paid: "পরিশোধিত",
     unpaid: "বাকি",
     status: "অবস্থা",
+
+    // Procurement
+    totalProcurementCost: "মোট ক্রয় ব্যয়",
+    procurementDesc: "মাল ক্রয়ের খরচের ইতিহাস।",
+    stockEntryHistory: "স্টক এন্ট্রি হিস্ট্রি",
+    totalCostSpent: "মোট খরচ",
+    buyQty: "ক্রয় পরিমাণ",
 
     // Common
     loading: "লোড হচ্ছে...",
