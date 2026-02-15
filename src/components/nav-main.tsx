@@ -25,7 +25,6 @@ import { useUser } from "@/firebase"
 import { useBusinessData } from "@/hooks/use-business-data"
 import { translations } from "@/lib/translations"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
-import { CryptoAd } from "@/components/crypto-ad"
 
 import {
   Sidebar,
@@ -137,9 +136,7 @@ export function NavMain() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4 space-y-4">
-        <div className="group-data-[collapsible=icon]:hidden px-2">
-          <CryptoAd />
-        </div>
+        {/* Ad removed from sidebar temporarily to fix duplication error during A-Ads verification */}
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton 

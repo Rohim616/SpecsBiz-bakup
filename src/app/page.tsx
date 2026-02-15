@@ -363,9 +363,9 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Ad Section */}
-      <div className="px-1">
-        <CryptoAd className="max-w-md mx-auto" />
+      {/* Primary Ad Section - Consolidated for single-placement verification */}
+      <div className="px-1 py-4 bg-white/30 rounded-3xl border border-accent/5">
+        <CryptoAd />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -519,10 +519,8 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Sale Dialogs OMITTED for space - they remain unchanged */}
       <Dialog open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[550px] p-0 overflow-hidden border-accent/20 shadow-2xl rounded-3xl">
-          {/* ... Content same as before ... */}
           <DialogHeader className="p-6 bg-accent/5 border-b">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -662,7 +660,6 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete/View Dialogs OMITTED for space */}
       <Dialog open={!!viewProduct} onOpenChange={(open) => !open && setViewProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-3xl p-0 overflow-hidden border-accent/20 shadow-2xl">
           <div className="bg-primary text-white p-6 md:p-8">

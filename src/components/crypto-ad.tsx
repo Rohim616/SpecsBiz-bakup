@@ -10,7 +10,7 @@ interface CryptoAdProps {
 
 /**
  * @fileOverview Dedicated component to display Crypto Ads.
- * Integrated with user's A-Ads unit 2427567 for monetization.
+ * Optimized for A-Ads Unit 2427567 verification.
  */
 export function CryptoAd({ className }: CryptoAdProps) {
   const [mounted, setMounted] = useState(false)
@@ -19,22 +19,32 @@ export function CryptoAd({ className }: CryptoAdProps) {
     setMounted(true)
   }, [])
 
-  if (!mounted) return null
-
+  // Always render the container div with a fixed height to prevent "hidden" detection
+  // during the initial load or SSR phase.
   return (
-    <div className={cn("w-full flex flex-col items-center gap-1", className)}>
-      <div className="text-[8px] font-black uppercase text-muted-foreground/40 tracking-[0.2em] mb-1">
+    <div className={cn("w-full flex flex-col items-center py-4 my-2", className)}>
+      <div className="text-[8px] font-black uppercase text-muted-foreground/30 tracking-[0.3em] mb-2">
         SpecsBiz Partner Ad
       </div>
-      <div className="w-full min-h-[50px] bg-transparent flex items-center justify-center overflow-hidden">
-        {/* A-Ads Unit 2427567 Integration with explicit HTTPS */}
-        <div id="frame" style={{ width: '320px', margin: 'auto', zIndex: 99998, height: 'auto' }}>
-          <iframe 
-            data-aa='2427567' 
-            src='https://ad.a-ads.com/2427567/?size=320x50&background_color=transparent'
-            style={{ border: 0, padding: 0, width: '320px', height: '50px', overflow: 'hidden', display: 'block', margin: 'auto' }}
-          ></iframe>
-        </div>
+      <div className="w-full min-h-[60px] flex items-center justify-center">
+        {mounted ? (
+          <div id="ad-container" style={{ width: '320px', height: '50px', position: 'relative', zIndex: 10 }}>
+            <iframe 
+              data-aa='2427567' 
+              src='https://ad.a-ads.com/2427567/?size=320x50&background_color=transparent'
+              style={{ 
+                border: 0, 
+                padding: 0, 
+                width: '320px', 
+                height: '50px', 
+                overflow: 'hidden', 
+                display: 'block' 
+              }}
+            ></iframe>
+          </div>
+        ) : (
+          <div className="w-[320px] h-[50px] bg-muted/5 rounded animate-pulse border border-dashed border-accent/10" />
+        )}
       </div>
     </div>
   )
