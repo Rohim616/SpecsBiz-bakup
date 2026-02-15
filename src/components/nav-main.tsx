@@ -136,7 +136,6 @@ export function NavMain() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4 space-y-4">
-        {/* Ad removed from sidebar temporarily to fix duplication error during A-Ads verification */}
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton 

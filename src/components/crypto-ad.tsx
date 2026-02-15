@@ -19,16 +19,14 @@ export function CryptoAd({ className }: CryptoAdProps) {
     setMounted(true)
   }, [])
 
-  // Always render the container div with a fixed height to prevent "hidden" detection
-  // during the initial load or SSR phase.
   return (
-    <div className={cn("w-full flex flex-col items-center py-4 my-2", className)}>
-      <div className="text-[8px] font-black uppercase text-muted-foreground/30 tracking-[0.3em] mb-2">
-        SpecsBiz Partner Ad
+    <div className={cn("w-full flex flex-col items-center py-6 my-4 bg-white/50 rounded-3xl border border-accent/10 shadow-sm", className)}>
+      <div className="text-[8px] font-black uppercase text-muted-foreground/40 tracking-[0.4em] mb-3">
+        SpecsBiz Official Partner
       </div>
-      <div className="w-full min-h-[60px] flex items-center justify-center">
+      <div className="w-full min-h-[60px] flex items-center justify-center overflow-hidden">
         {mounted ? (
-          <div id="ad-container" style={{ width: '320px', height: '50px', position: 'relative', zIndex: 10 }}>
+          <div id="frame" style={{ width: '320px', margin: 'auto', zIndex: 99998, height: 'auto' }}>
             <iframe 
               data-aa='2427567' 
               src='https://ad.a-ads.com/2427567/?size=320x50&background_color=transparent'
@@ -38,12 +36,13 @@ export function CryptoAd({ className }: CryptoAdProps) {
                 width: '320px', 
                 height: '50px', 
                 overflow: 'hidden', 
-                display: 'block' 
+                display: 'block', 
+                margin: 'auto' 
               }}
             ></iframe>
           </div>
         ) : (
-          <div className="w-[320px] h-[50px] bg-muted/5 rounded animate-pulse border border-dashed border-accent/10" />
+          <div className="w-[320px] h-[50px] bg-muted/10 rounded animate-pulse" />
         )}
       </div>
     </div>
