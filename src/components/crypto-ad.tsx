@@ -27,7 +27,7 @@ export function CryptoAd({ className }: CryptoAdProps) {
         SpecsBiz Partner Ad
       </div>
       <div className="w-full min-h-[50px] bg-transparent flex items-center justify-center overflow-hidden">
-        {/* A-Ads Unit 2427567 Integration */}
+        {/* A-Ads Unit 2427567 Integration with explicit HTTPS */}
         <div id="frame" style={{ width: '320px', margin: 'auto', zIndex: 99998, height: 'auto' }}>
           <iframe 
             data-aa='2427567' 
