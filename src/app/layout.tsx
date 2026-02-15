@@ -7,7 +7,6 @@ import { BottomNav } from "@/components/bottom-nav";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { BusinessProvider } from '@/hooks/use-business-data';
-import { SplashScreen } from '@/components/splash-screen';
 import { NotificationBell } from '@/components/notification-bell';
 import { FloatingCalculator } from '@/components/floating-calculator';
 import Script from 'next/script';
@@ -58,8 +57,6 @@ export default function RootLayout({
         }} />
       </head>
       <body className="font-body antialiased bg-background text-foreground overflow-x-hidden">
-        <SplashScreen />
-        
         <FirebaseClientProvider>
           <BusinessProvider>
             <SidebarProvider defaultOpen={true}>
