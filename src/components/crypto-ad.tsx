@@ -10,6 +10,7 @@ interface CryptoAdProps {
 /**
  * @fileOverview Dedicated component to display Crypto Ads.
  * Updated to A-Ads Unit 2427583 as per user request.
+ * Removed high z-index to prevent overlapping with system dialogs.
  */
 export function CryptoAd({ className }: CryptoAdProps) {
   return (
@@ -17,7 +18,7 @@ export function CryptoAd({ className }: CryptoAdProps) {
       <div className="text-[8px] font-black uppercase text-muted-foreground/30 tracking-[0.4em] mb-2">
         SpecsBiz Official Partner
       </div>
-      <div id="frame" style={{ width: '320px', margin: 'auto', zIndex: 99998, height: 'auto' }}>
+      <div id="frame" style={{ width: '320px', margin: 'auto', height: 'auto', position: 'relative' }}>
         <iframe 
           data-aa='2427583' 
           src='//ad.a-ads.com/2427583/?size=320x50&background_color=transparent'
