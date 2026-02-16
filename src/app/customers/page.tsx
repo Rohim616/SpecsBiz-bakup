@@ -109,16 +109,32 @@ function CustomersPageContent() {
     segment: "Baki User"
   })
 
+  // Calculation Helper: Factor based on selected unit vs product base unit
+  const getUnitFactor = (prodId: string, currentDisplayUnit: string) => {
+    const p = products.find(p => p.id === prodId);
+    if (!p) return 1;
+    const base = (p.unit || '').toLowerCase();
+    const current = currentDisplayUnit.toLowerCase();
+    if (base === 'kg' && current === 'gm') return 0.001;
+    if (base === 'gm' && current === 'kg') return 1000;
+    return 1;
+  };
+
   // Calculations for current item being added/edited
   const currentItemCalc = useMemo(() => {
     const p = products.find(p => p.id === newRecord.productId);
+    const factor = getUnitFactor(newRecord.productId, newRecord.unit);
     const buyPrice = p?.purchasePrice || 0;
     const qty = parseFloat(newRecord.quantity) || 0;
     const sellPrice = parseFloat(newRecord.unitPrice) || 0;
-    const itemTotal = qty * sellPrice;
-    const itemProfit = (sellPrice - buyPrice) * qty;
+    
+    // Amount = Display Qty * Base Price * Factor
+    const itemTotal = qty * sellPrice * factor;
+    // Profit based on effective qty (in base unit)
+    const itemProfit = (sellPrice - buyPrice) * (qty * factor);
+    
     return { itemTotal, itemProfit, buyPrice, baseUnit: p?.unit || '' };
-  }, [newRecord.productId, newRecord.quantity, newRecord.unitPrice, products]);
+  }, [newRecord.productId, newRecord.quantity, newRecord.unitPrice, newRecord.unit, products]);
 
   const handleUnitSwitch = (targetUnit: string) => {
     const current = newRecord.unit.toLowerCase();
@@ -126,22 +142,18 @@ function CustomersPageContent() {
     if (current === target) return;
 
     let qty = parseFloat(newRecord.quantity) || 0;
-    let price = parseFloat(newRecord.unitPrice) || 0;
 
+    // Like Sales page: Only update Qty number, keep Unit Price fixed
     if (current === 'kg' && target === 'gm') {
       qty = qty * 1000;
-      price = price / 1000;
     } else if (current === 'gm' && target === 'kg') {
       qty = qty / 1000;
-      price = price * 1000;
     }
 
     setNewRecord(prev => ({
       ...prev,
       unit: targetUnit,
-      quantity: qty.toString(),
-      unitPrice: price.toString(),
-      amount: (qty * price).toFixed(2)
+      quantity: qty.toString()
     }));
   }
 
@@ -177,15 +189,17 @@ function CustomersPageContent() {
     return null;
   }, [newCustomer.phone, customers, language, activeCustomerId]);
 
-  // Sync amount when quantity or unitPrice changes (for standard manual inputs)
+  // Sync amount when quantity, unitPrice or unit changes
   useEffect(() => {
     const qty = parseFloat(newRecord.quantity) || 0;
     const price = parseFloat(newRecord.unitPrice) || 0;
-    const total = (qty * price).toFixed(2);
+    const factor = getUnitFactor(newRecord.productId, newRecord.unit);
+    
+    const total = (qty * price * factor).toFixed(2);
     if (total !== newRecord.amount) {
       setNewRecord(prev => ({ ...prev, amount: total }));
     }
-  }, [newRecord.quantity, newRecord.unitPrice]);
+  }, [newRecord.quantity, newRecord.unitPrice, newRecord.unit, newRecord.productId]);
 
   const selectProduct = (p: any) => {
     setNewRecord(prev => ({
@@ -193,7 +207,7 @@ function CustomersPageContent() {
       productId: p.id,
       productName: p.name,
       unitPrice: p.sellingPrice.toString(),
-      unit: p.unit || "",
+      unit: p.unit || "pcs",
       quantity: "1"
     }))
     setProductSearch("")
@@ -222,11 +236,15 @@ function CustomersPageContent() {
     actions.addCustomer({ ...newCustomer, id: customerId, totalDue: 0 })
     
     if (bakiAmount > 0) {
+      const factor = getUnitFactor(newRecord.productId, newRecord.unit);
+      const normalizedQty = (parseFloat(newRecord.quantity) || 1) * factor;
+      const product = products.find(p => p.id === newRecord.productId);
+
       actions.addBakiRecord(customerId, {
         productId: newRecord.productId,
         productName: newRecord.productName || (language === 'bn' ? "নতুন বাকি" : "New Debt"),
-        quantity: parseFloat(newRecord.quantity) || 1,
-        unit: newRecord.unit,
+        quantity: normalizedQty,
+        unit: product?.unit || newRecord.unit,
         amount: bakiAmount,
         promiseDate: new Date(newRecord.promiseDate).toISOString(),
         note: newRecord.note
@@ -263,11 +281,16 @@ function CustomersPageContent() {
 
   const handleAddBakiRecordOnly = () => {
     if (!activeCustomerId || (!newRecord.productName && !newRecord.amount)) return;
+    
+    const factor = getUnitFactor(newRecord.productId, newRecord.unit);
+    const normalizedQty = (parseFloat(newRecord.quantity) || 1) * factor;
+    const product = products.find(p => p.id === newRecord.productId);
+
     actions.addBakiRecord(activeCustomerId, {
       productId: newRecord.productId,
       productName: newRecord.productName || (language === 'bn' ? "নতুন বাকি" : "New Debt"),
-      quantity: parseFloat(newRecord.quantity) || 1,
-      unit: newRecord.unit,
+      quantity: normalizedQty,
+      unit: product?.unit || newRecord.unit,
       amount: parseFloat(newRecord.amount) || 0,
       promiseDate: new Date(newRecord.promiseDate).toISOString(),
       note: newRecord.note
@@ -278,10 +301,15 @@ function CustomersPageContent() {
 
   const handleUpdateBakiRecord = () => {
     if (!activeCustomerId || !editingRecord) return;
+    
+    const factor = getUnitFactor(newRecord.productId, newRecord.unit);
+    const normalizedQty = (parseFloat(newRecord.quantity) || 1) * factor;
+    const product = products.find(p => p.id === newRecord.productId);
+
     actions.updateBakiRecord(activeCustomerId, editingRecord.id, {
       productName: newRecord.productName,
-      quantity: parseFloat(newRecord.quantity) || 1,
-      unit: newRecord.unit,
+      quantity: normalizedQty,
+      unit: product?.unit || newRecord.unit,
       amount: parseFloat(newRecord.amount) || 0,
       note: newRecord.note,
       promiseDate: newRecord.promiseDate ? new Date(newRecord.promiseDate).toISOString() : null
@@ -325,13 +353,13 @@ function CustomersPageContent() {
 
   const startEditingRecord = (record: any) => {
     setEditingRecord(record);
-    const unitPrice = record.quantity > 0 ? (record.amount / record.quantity) : record.amount;
+    // When editing, we treat the stored unit as base unit
     setNewRecord({
       productId: record.productId || "",
       productName: record.productName,
       quantity: record.quantity.toString(),
-      unit: record.unit || "",
-      unitPrice: unitPrice.toFixed(2),
+      unit: record.unit || "pcs",
+      unitPrice: (record.quantity > 0 ? record.amount / record.quantity : record.amount).toString(),
       amount: record.amount.toString(),
       promiseDate: record.promiseDate ? new Date(record.promiseDate).toISOString().split('T')[0] : "",
       note: record.note || ""
@@ -677,10 +705,6 @@ function CustomersPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* RE-USABLE CALCULATION FORM PART */}
-      {/* Used in Edit Baki, Add Baki, and New User Wizard Step 2 */}
-      {/* Pass props to render calculation logic */}
-      
       <Dialog open={isRecordEditOpen} onOpenChange={setIsRecordEditOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[550px] rounded-[2.5rem] p-0 overflow-hidden border-accent/20 shadow-2xl">
           <DialogHeader className="p-6 bg-accent/5 border-b shrink-0">
@@ -729,7 +753,8 @@ function CustomersPageContent() {
                   onChange={(e) => {
                     const amt = parseFloat(e.target.value) || 0;
                     const price = parseFloat(newRecord.unitPrice) || 1;
-                    setNewRecord({...newRecord, amount: e.target.value, quantity: (amt / price).toFixed(2)});
+                    const factor = getUnitFactor(newRecord.productId, newRecord.unit);
+                    setNewRecord({...newRecord, amount: e.target.value, quantity: (amt / (price * factor)).toFixed(2)});
                   }}
                 />
               </div>
@@ -833,7 +858,8 @@ function CustomersPageContent() {
                   onChange={(e) => {
                     const amt = parseFloat(e.target.value) || 0;
                     const price = parseFloat(newRecord.unitPrice) || 1;
-                    setNewRecord({...newRecord, amount: e.target.value, quantity: (amt / price).toFixed(2)});
+                    const factor = getUnitFactor(newRecord.productId, newRecord.unit);
+                    setNewRecord({...newRecord, amount: e.target.value, quantity: (amt / (price * factor)).toFixed(2)});
                   }}
                 />
               </div>
@@ -984,7 +1010,8 @@ function CustomersPageContent() {
                       onChange={(e) => {
                         const amt = parseFloat(e.target.value) || 0;
                         const price = parseFloat(newRecord.unitPrice) || 1;
-                        setNewRecord({...newRecord, amount: e.target.value, quantity: (amt / price).toFixed(2)});
+                        const factor = getUnitFactor(newRecord.productId, newRecord.unit);
+                        setNewRecord({...newRecord, amount: e.target.value, quantity: (amt / (price * factor)).toFixed(2)});
                       }}
                     />
                   </div>
