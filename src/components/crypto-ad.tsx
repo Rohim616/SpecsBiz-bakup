@@ -2,7 +2,6 @@
 "use client"
 
 import { useEffect, useRef } from 'react'
-import Script from 'next/script'
 import { cn } from "@/lib/utils"
 
 interface CryptoAdProps {
@@ -11,7 +10,7 @@ interface CryptoAdProps {
 
 /**
  * @fileOverview Ad container component.
- * Optimized for React to ensure Banner ads render correctly inside specific slots.
+ * Optimized for Banner ads only. Removed floating social bar.
  */
 export function CryptoAd({ className }: CryptoAdProps) {
   const bannerRef = useRef<HTMLDivElement>(null)
@@ -45,17 +44,8 @@ export function CryptoAd({ className }: CryptoAdProps) {
       </div>
       
       {/* 
-        1. ADSTERRA SOCIAL BAR (Floating Ad)
-        This continues to work as an overlay.
-      */}
-      <Script 
-        src="https://pl28723496.effectivegatecpm.com/d6/33/01/d6330149d0bc87e70e5ea439b64ec493.js" 
-        strategy="afterInteractive"
-      />
-
-      {/* 
-        2. ADSTERRA 320x50 BANNER (Fixed Ad)
-        Injected manually into this div via the useEffect hook above.
+        ADSTERRA 320x50 BANNER (Fixed Ad)
+        Injected manually into this div via the useEffect hook.
       */}
       <div ref={bannerRef} className="flex items-center justify-center min-h-[50px] w-full" />
       
