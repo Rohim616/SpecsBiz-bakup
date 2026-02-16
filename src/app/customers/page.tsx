@@ -53,6 +53,7 @@ import { useUser, useFirestore, useMemoFirebase, useCollection } from "@/firebas
 import { collection, query, orderBy } from "firebase/firestore"
 import { translations } from "@/lib/translations"
 import { cn } from "@/lib/utils"
+import { CustomersAd } from "@/components/customers-ad"
 
 const COMMON_UNITS = ["KG", "PCS", "GM", "LTR", "BOX", "PKT", "DZ"]
 
@@ -1059,7 +1060,7 @@ function CustomersPageContent() {
       </Dialog>
 
       <Dialog open={isCustomerEditOpen} onOpenChange={setIsCustomerEditOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem]">
+        <DialogContent className="w-[95vw] sm:max-w-[550px] rounded-[2rem]">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
             <DialogDescription className="text-xs">Update info or wipe profile.</DialogDescription>
@@ -1104,6 +1105,8 @@ function CustomersPageContent() {
           <DialogFooter><Button variant="destructive" className="w-full h-12 rounded-xl font-bold" onClick={handleDeleteCustomer}>Confirm Wipe</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CustomersAd />
     </div>
   )
 }
