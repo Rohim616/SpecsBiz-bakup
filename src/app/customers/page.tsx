@@ -1,6 +1,8 @@
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { 
   Users, 
   Search, 
@@ -62,6 +64,7 @@ export default function CustomersPage() {
   const { toast } = useToast()
   const { user } = useUser()
   const db = useFirestore()
+  const searchParams = useSearchParams()
   const { customers, products, actions, isLoading, currency, language } = useBusinessData()
   const t = translations[language]
   
@@ -109,6 +112,15 @@ export default function CustomersPage() {
     totalDue: 0,
     segment: "Baki User"
   })
+
+  // Handle auto-open profile from URL
+  useEffect(() => {
+    const id = searchParams.get('id')
+    if (id && customers.length > 0) {
+      const exists = customers.find(c => c.id === id)
+      if (exists) setActiveCustomerId(id)
+    }
+  }, [searchParams, customers])
 
   const nameWarning = useMemo(() => {
     if (!newCustomer.firstName.trim()) return null;

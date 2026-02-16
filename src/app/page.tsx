@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { 
   TrendingUp, 
   Package, 
@@ -62,6 +63,7 @@ import { CryptoAd } from "@/components/crypto-ad"
 
 export default function DashboardPage() {
   const { toast } = useToast()
+  const router = useRouter()
   const { products, sales, customers, procurements, actions, currency, language } = useBusinessData()
   const t = translations[language]
   
@@ -220,6 +222,18 @@ export default function DashboardPage() {
     } else {
       toast({ variant: "destructive", title: "Wrong Password", description: "Access denied." })
       setDeletePass("")
+    }
+  }
+
+  const handleActivityClick = (activity: any) => {
+    if (activity.activityType === 'sale') {
+      if (activity.isBakiPayment && activity.customerId) {
+        router.push(`/customers?id=${activity.customerId}`)
+      } else {
+        router.push('/reports')
+      }
+    } else if (activity.activityType === 'procurement') {
+      router.push('/procurement')
     }
   }
 
@@ -466,7 +480,11 @@ export default function DashboardPage() {
               ) : (
                 <div className="divide-y">
                   {allActivities.map((activity, i) => (
-                    <div key={activity.id || i} className="flex items-center justify-between p-4 hover:bg-muted/5 transition-all group">
+                    <div 
+                      key={activity.id || i} 
+                      className="flex items-center justify-between p-4 hover:bg-muted/10 transition-all group cursor-pointer active:scale-[0.98]"
+                      onClick={() => handleActivityClick(activity)}
+                    >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={cn(
                           "p-2 rounded-full shrink-0",
@@ -502,7 +520,8 @@ export default function DashboardPage() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setDeleteId(activity.id);
                             setDeleteType(activity.activityType);
                           }}
