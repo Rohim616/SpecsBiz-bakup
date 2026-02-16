@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { 
   Users, 
@@ -55,7 +55,7 @@ import { cn } from "@/lib/utils"
 
 const COMMON_UNITS = ["KG", "PCS", "GM", "LTR", "BOX", "PKT", "DZ"]
 
-export default function CustomersPage() {
+function CustomersPageContent() {
   const { toast } = useToast()
   const { user } = useUser()
   const db = useFirestore()
@@ -980,5 +980,13 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center animate-pulse text-accent font-bold">Loading...</div>}>
+      <CustomersPageContent />
+    </Suspense>
   )
 }
