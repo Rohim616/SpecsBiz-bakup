@@ -18,7 +18,8 @@ import {
   DollarSign,
   Inbox,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  Lock
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -66,6 +67,10 @@ export default function InventoryPage() {
   const [restockPrice, setRestockPrice] = useState("")
   const [restockSellPrice, setRestockSellPrice] = useState("")
   const [restockNote, setRestockNote] = useState("")
+
+  // Delete State
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deletePass, setDeletePass] = useState("")
 
   const units = ["pcs", "kg", "gm", "ltr", "meter", "box", "dozen"]
 
@@ -159,6 +164,19 @@ export default function InventoryPage() {
     setRestockSellPrice("");
     setRestockNote("");
     toast({ title: "Stock Updated Successfully" });
+  }
+
+  const handleDeleteConfirm = () => {
+    if (deletePass === "specsxr") {
+      if (deleteId) {
+        actions.deleteProduct(deleteId);
+        setDeleteId(null);
+        setDeletePass("");
+        toast({ title: "Product Removed" });
+      }
+    } else {
+      toast({ variant: "destructive", title: "Invalid Key" });
+    }
   }
 
   const startEditing = (p: any) => {
@@ -360,8 +378,8 @@ export default function InventoryPage() {
                               <Edit2 className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/5 rounded-xl border border-black/5" onClick={() => {
-                              const pass = prompt("Enter 'specsxr' to delete:");
-                              if (pass === 'specsxr') actions.deleteProduct(p.id);
+                              setDeleteId(p.id);
+                              setDeletePass("");
                             }}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -548,6 +566,39 @@ export default function InventoryPage() {
           <DialogFooter>
             <Button className="w-full bg-primary h-14 rounded-2xl font-black uppercase shadow-xl" onClick={handleUpdateProduct}>
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Styled Delete Authorization Dialog */}
+      <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent className="sm:max-w-[400px] rounded-[2rem]">
+          <DialogHeader>
+            <div className="flex items-center gap-3 text-destructive mb-2">
+              <div className="p-2 bg-red-50 rounded-xl"><Lock className="w-6 h-6" /></div>
+              <div>
+                <DialogTitle className="font-black uppercase tracking-tighter">Authorized Deletion</DialogTitle>
+                <DialogDescription className="text-xs">Master key required to remove product.</DialogDescription>
+              </div>
+            </div>
+            <p className="text-xs font-medium text-muted-foreground mt-2">
+              {language === 'bn' ? 'এই পণ্যটি চিরতরে মুছে যাবে। নিশ্চিত করতে সিক্রেট কী দিন।' : 'This product will be permanently removed. Enter key to confirm.'}
+            </p>
+          </DialogHeader>
+          <div className="py-4 space-y-2">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground opacity-70 tracking-widest">Secret Access Key</Label>
+            <Input 
+              type="password" 
+              placeholder="••••••••" 
+              className="h-14 rounded-2xl text-2xl font-black text-center bg-accent/5 border-accent/10" 
+              value={deletePass} 
+              onChange={e => setDeletePass(e.target.value)} 
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="destructive" className="w-full h-14 rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95" onClick={handleDeleteConfirm}>
+              Authorize & Wipe Product
             </Button>
           </DialogFooter>
         </DialogContent>
