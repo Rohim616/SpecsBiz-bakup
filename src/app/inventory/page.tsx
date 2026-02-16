@@ -15,20 +15,15 @@ import {
   AlertCircle,
   TrendingUp,
   FileText,
-  DollarSign
+  DollarSign,
+  Inbox,
+  Layers,
+  ArrowUpRight
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table"
 import { 
   Dialog, 
   DialogContent, 
@@ -298,81 +293,87 @@ export default function InventoryPage() {
           </Select>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="w-full">
-            <div className="min-w-[850px]">
-              <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow>
-                    <TableHead className="text-[9px] md:text-[10px] uppercase font-black pl-4">{t.productNameCat}</TableHead>
-                    <TableHead className="text-[9px] md:text-[10px] uppercase font-black">{t.pricing}</TableHead>
-                    <TableHead className="text-[9px] md:text-[10px] uppercase font-black text-center">{t.stockLevel}</TableHead>
-                    <TableHead className="text-right pr-4 font-black text-[9px] md:text-[10px] uppercase">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProducts.map((p) => {
-                    const threshold = p.alertThreshold || 5;
-                    const isLowStock = p.stock <= threshold;
-                    return (
-                      <TableRow key={p.id} className="hover:bg-accent/5 transition-all group">
-                        <TableCell className="p-3 pl-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden border">
-                              {p.imageUrl ? (
-                                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <Package className="w-5 h-5 opacity-20" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-xs font-black text-primary leading-tight">{p.name}</p>
-                              <p className="text-[8px] md:text-[9px] text-accent font-bold uppercase mt-0.5">{p.category || 'N/A'}</p>
+          {filteredProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
+              <Inbox className="w-12 h-12 opacity-10" />
+              <p className="text-sm italic">{t.noData}</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 p-4 md:p-6 bg-muted/5">
+              {filteredProducts.map((p) => {
+                const threshold = p.alertThreshold || 5;
+                const isLowStock = p.stock <= threshold;
+                return (
+                  <Card key={p.id} className="overflow-hidden border-accent/10 shadow-sm hover:shadow-md transition-all rounded-[1.5rem] bg-white group">
+                    <div className="p-4 md:p-6">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="h-12 w-12 md:h-16 md:w-16 rounded-2xl bg-accent/10 flex items-center justify-center overflow-hidden border border-accent/5 shrink-0">
+                            {p.imageUrl ? (
+                              <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Package className="w-6 h-6 md:w-8 md:h-8 opacity-20" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-sm md:text-lg font-black text-primary leading-tight truncate group-hover:text-accent transition-colors">
+                              {p.name}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-[8px] md:text-[9px] font-black uppercase border-accent/20 text-accent bg-accent/5">
+                                {p.category || 'General'}
+                              </Badge>
+                              <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-50">Unit: {p.unit || 'pcs'}</span>
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <p className="text-xs font-black text-primary leading-tight">{currency}{p.sellingPrice?.toLocaleString()}</p>
-                          <p className="text-[9px] text-muted-foreground font-bold mt-0.5">Buy Price: {currency}{p.purchasePrice?.toLocaleString()}</p>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter w-fit border", 
-                              isLowStock ? "bg-red-50 text-red-600 border-red-100" : "bg-green-50 text-green-700 border-green-100"
-                            )}>
-                              {p.stock} {p.unit?.toUpperCase() || 'PCS'}
-                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 flex-1 md:flex-initial">
+                          <div className="bg-primary/5 p-3 rounded-2xl border border-primary/10 shadow-inner text-center md:min-w-[120px]">
+                            <p className="text-[8px] font-black uppercase opacity-50 mb-1 tracking-widest">{t.sellPrice}</p>
+                            <p className="text-sm md:text-base font-black text-primary">{currency}{p.sellingPrice?.toLocaleString()}</p>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right pr-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="h-8 bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-600 hover:text-white font-black text-[9px] uppercase px-3 gap-1.5 transition-all"
-                              onClick={() => startRestocking(p)}
-                            >
-                              <PackagePlus className="w-3.5 h-3.5" /> RESTOCK
+                          <div className="bg-orange-50/50 p-3 rounded-2xl border border-orange-100/50 text-center md:min-w-[120px]">
+                            <p className="text-[8px] font-black uppercase text-orange-600 opacity-60 mb-1 tracking-widest">{t.buyPrice}</p>
+                            <p className="text-sm md:text-base font-black text-orange-700">{currency}{p.purchasePrice?.toLocaleString()}</p>
+                          </div>
+                          <div className={cn(
+                            "p-3 rounded-2xl border shadow-inner text-center md:min-w-[120px]",
+                            isLowStock ? "bg-red-50 border-red-100" : "bg-green-50 border-green-100"
+                          )}>
+                            <p className={cn("text-[8px] font-black uppercase mb-1 tracking-widest", isLowStock ? "text-red-600" : "text-green-600")}>{t.stock}</p>
+                            <p className={cn("text-sm md:text-base font-black", isLowStock ? "text-red-700" : "text-green-700")}>{p.stock} {p.unit?.toUpperCase() || 'PCS'}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 shrink-0 border-t md:border-t-0 pt-4 md:pt-0">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-10 bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-600 hover:text-white font-black text-[9px] md:text-[10px] uppercase px-4 gap-2 transition-all rounded-xl shadow-sm"
+                            onClick={() => startRestocking(p)}
+                          >
+                            <PackagePlus className="w-4 h-4" /> {t.restock}
+                          </Button>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-10 w-10 text-primary hover:bg-primary/5 rounded-xl border border-black/5" onClick={() => startEditing(p)}>
+                              <Edit2 className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => startEditing(p)}>
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/5 rounded-lg" onClick={() => {
+                            <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/5 rounded-xl border border-black/5" onClick={() => {
                               const pass = prompt("Enter 'specsxr' to delete:");
                               if (pass === 'specsxr') actions.deleteProduct(p.id);
                             }}>
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          )}
         </CardContent>
       </Card>
 
