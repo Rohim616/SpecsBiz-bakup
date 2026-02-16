@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -40,6 +41,7 @@ import { useBusinessData } from "@/hooks/use-business-data"
 import { translations } from "@/lib/translations"
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, eachDayOfInterval, eachMonthOfInterval, isSameDay, isSameMonth } from "date-fns"
 import { cn } from "@/lib/utils"
+import { AnalyticsAd } from "@/components/analytics-ad"
 
 const chartConfig = {
   revenue: {
@@ -261,6 +263,8 @@ export default function AnalyticsPage() {
           )}
         </div>
       </Card>
+
+      <AnalyticsAd />
 
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent className="sm:max-w-[400px]">
