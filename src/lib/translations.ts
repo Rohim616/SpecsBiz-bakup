@@ -14,6 +14,7 @@ export const translations = {
     specsAiNew: "SpecsAI Advisor",
     productReviews: "Product Photos",
     notebook: "Smart Notebook",
+    onlineShop: "Online Shop",
     settings: "Settings",
     cloudSync: "Cloud Sync",
     offlineMode: "Offline Mode",
@@ -21,6 +22,21 @@ export const translations = {
     revenue: "Revenue",
     products: "Products",
     netProfit: "Net Profit",
+
+    // Shop
+    shopManager: "Shop Manager",
+    shopSettings: "Shop Settings",
+    shopName: "Shop Name",
+    shopCode: "Access Code",
+    shopStatus: "Shop Status",
+    active: "Active",
+    inactive: "Inactive",
+    shareLink: "Share Link",
+    enterCode: "Enter Access Code",
+    welcome: "Welcome to our shop!",
+    unlockShop: "Unlock Shop",
+    invalidCode: "Invalid Code",
+    copyLink: "Copy Link",
 
     // Inventory
     manageStock: "Manage your stock and profit margins.",
@@ -133,6 +149,7 @@ export const translations = {
     specsAiNew: "SpecsAI অ্যাডভাইজর",
     productReviews: "পণ্যের ছবি ও রিভিউ",
     notebook: "স্মার্ট নোটবুক",
+    onlineShop: "অনলাইন শপ",
     settings: "সেটিংস",
     cloudSync: "ক্লাউড সিঙ্ক",
     offlineMode: "অফলাইন মোড",
@@ -140,6 +157,21 @@ export const translations = {
     revenue: "মোট বিক্রি",
     products: "মোট পণ্য",
     netProfit: "নিট লাভ",
+
+    // Shop
+    shopManager: "শপ ম্যানেজার",
+    shopSettings: "শপ সেটিংস",
+    shopName: "দোকানের নাম",
+    shopCode: "অ্যাক্সেস কোড",
+    shopStatus: "শপ অবস্থা",
+    active: "চালু",
+    inactive: "বন্ধ",
+    shareLink: "শেয়ার লিঙ্ক",
+    enterCode: "কোড দিন",
+    welcome: "আমাদের শপে স্বাগতম!",
+    unlockShop: "শপ ওপেন করুন",
+    invalidCode: "ভুল কোড",
+    copyLink: "লিঙ্ক কপি",
 
     // Inventory
     manageStock: "আপনার স্টক এবং লাভের হিসাব পরিচালনা করুন।",

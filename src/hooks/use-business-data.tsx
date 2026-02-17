@@ -12,7 +12,7 @@ import {
   writeBatch,
   increment
 } from 'firebase/firestore';
-import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { 
   setDocumentNonBlocking, 
   updateDocumentNonBlocking, 
@@ -24,6 +24,7 @@ const LOCAL_KEYS = {
   SALES: 'specsbiz_local_sales',
   CUSTOMERS: 'specsbiz_local_customers',
   PROCUREMENTS: 'specsbiz_local_procurements',
+  SHOP_CONFIG: 'specsbiz_local_shop_config',
   CURRENCY: 'specsbiz_settings_currency',
   LANGUAGE: 'specsbiz_settings_language',
   AI_API_KEY: 'specsbiz_settings_ai_api_key',
@@ -35,6 +36,7 @@ interface BusinessContextType {
   sales: any[];
   customers: any[];
   procurements: any[];
+  shopConfig: any | null;
   isLoading: boolean;
   currency: string;
   language: 'en' | 'bn';
@@ -56,6 +58,7 @@ interface BusinessContextType {
     addRestock: (productId: string, qty: number, buyPrice: number, sellPrice: number, note?: string) => void;
     deleteProcurement: (procId: string) => void;
     syncInventoryToProcurement: () => Promise<void>;
+    updateShopConfig: (data: any) => void;
     setCurrency: (val: string) => void;
     setLanguage: (lang: 'en' | 'bn') => void;
     setAiConfig: (key: string, model: string) => void;
@@ -73,6 +76,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const [localSales, setLocalSales] = useState<any[]>([]);
   const [localCustomers, setLocalCustomers] = useState<any[]>([]);
   const [localProcurements, setLocalProcurements] = useState<any[]>([]);
+  const [localShopConfig, setLocalShopConfig] = useState<any>(null);
   const [currency, setCurrencyState] = useState('৳');
   const [language, setLanguageState] = useState<'en' | 'bn'>('bn');
   const [aiApiKey, setAiApiKeyState] = useState('');
@@ -85,6 +89,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         const s = localStorage.getItem(LOCAL_KEYS.SALES);
         const c = localStorage.getItem(LOCAL_KEYS.CUSTOMERS);
         const pr = localStorage.getItem(LOCAL_KEYS.PROCUREMENTS);
+        const sc = localStorage.getItem(LOCAL_KEYS.SHOP_CONFIG);
         const curr = localStorage.getItem(LOCAL_KEYS.CURRENCY);
         const lang = localStorage.getItem(LOCAL_KEYS.LANGUAGE) as 'en' | 'bn';
         const akey = localStorage.getItem(LOCAL_KEYS.AI_API_KEY);
@@ -94,6 +99,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         if (s) setLocalSales(JSON.parse(s));
         if (c) setLocalCustomers(JSON.parse(c));
         if (pr) setLocalProcurements(JSON.parse(pr));
+        if (sc) setLocalShopConfig(JSON.parse(sc));
         if (curr) setCurrencyState(curr);
         if (lang) setLanguageState(lang);
         if (akey) setAiApiKeyState(akey);
@@ -124,156 +130,37 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     return query(collection(db, 'users', user.uid, 'procurements'), orderBy('date', 'desc'));
   }, [user?.uid, db]);
 
+  const shopConfigRef = useMemoFirebase(() => {
+    if (!user?.uid || !db) return null;
+    return doc(db, 'users', user.uid, 'shopConfig', 'default');
+  }, [user?.uid, db]);
+
   const { data: fbProducts, isLoading: pLoading } = useCollection(productsQuery);
   const { data: fbSales, isLoading: sLoading } = useCollection(salesQuery);
   const { data: fbCustomers, isLoading: cLoading } = useCollection(customersQuery);
   const { data: fbProc, isLoading: prLoading } = useCollection(procQuery);
+  const { data: fbShopConfig } = useDoc(shopConfigRef);
 
   const products = user ? (fbProducts || []) : localProducts;
   const sales = user ? (fbSales || []) : localSales;
   const customers = user ? (fbCustomers || []) : localCustomers;
   const procurements = user ? (fbProc || []) : localProcurements;
+  const shopConfig = user ? fbShopConfig : localShopConfig;
   const isLoading = isUserLoading || (user && (pLoading || sLoading || cLoading || prLoading));
 
   const addProduct = useCallback((product: any) => {
     const id = product.id || Date.now().toString();
     const data = { ...product, id };
-    
-    const procId = 'init-' + id;
-    const qty = parseFloat(product.stock) || 0;
-    const bPrice = parseFloat(product.purchasePrice) || 0;
-    const procData = {
-      id: procId,
-      productId: id,
-      productName: product.name,
-      quantity: qty,
-      buyPrice: bPrice,
-      totalCost: qty * bPrice,
-      date: new Date().toISOString(),
-      type: 'initial'
-    };
-
     if (user?.uid && db) {
       setDocumentNonBlocking(doc(db, 'users', user.uid, 'products', id), data, { merge: true });
-      if (qty > 0) {
-        setDocumentNonBlocking(doc(db, 'users', user.uid, 'procurements', procId), procData, { merge: true });
-      }
     } else {
       setLocalProducts(prev => {
         const updated = [data, ...prev];
         localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
         return updated;
       });
-      if (qty > 0) {
-        setLocalProcurements(prev => {
-          const updated = [procData, ...prev];
-          localStorage.setItem(LOCAL_KEYS.PROCUREMENTS, JSON.stringify(updated));
-          return updated;
-        });
-      }
     }
   }, [user?.uid, db]);
-
-  const addRestock = useCallback((productId: string, qty: number, buyPrice: number, sellPrice: number, note?: string) => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-
-    const procId = Date.now().toString();
-    const procData = {
-      id: procId,
-      productId,
-      productName: product.name,
-      quantity: qty,
-      buyPrice: buyPrice,
-      totalCost: qty * buyPrice,
-      date: new Date().toISOString(),
-      type: 'restock',
-      note: note || ''
-    };
-
-    if (user?.uid && db) {
-      setDocumentNonBlocking(doc(db, 'users', user.uid, 'procurements', procId), procData, { merge: true });
-      updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
-        stock: increment(qty),
-        purchasePrice: buyPrice,
-        sellingPrice: sellPrice
-      });
-    } else {
-      setLocalProcurements(prev => {
-        const updated = [procData, ...prev];
-        localStorage.setItem(LOCAL_KEYS.PROCUREMENTS, JSON.stringify(updated));
-        return updated;
-      });
-      setLocalProducts(prev => {
-        const updated = prev.map(p => p.id === productId ? { ...p, stock: (p.stock || 0) + qty, purchasePrice: buyPrice, sellingPrice: sellPrice } : p);
-        localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
-        return updated;
-      });
-    }
-  }, [user?.uid, db, products]);
-
-  const deleteProcurement = useCallback((procId: string) => {
-    const proc = procurements.find(p => p.id === procId);
-    if (!proc) return;
-
-    if (user?.uid && db) {
-      deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'procurements', procId));
-      if (proc.productId) {
-        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', proc.productId), {
-          stock: increment(-proc.quantity)
-        });
-      }
-    } else {
-      setLocalProcurements(prev => {
-        const updated = prev.filter(p => p.id !== procId);
-        localStorage.setItem(LOCAL_KEYS.PROCUREMENTS, JSON.stringify(updated));
-        return updated;
-      });
-      if (proc.productId) {
-        setLocalProducts(prev => {
-          const updated = prev.map(p => p.id === proc.productId ? { ...p, stock: Math.max(0, (p.stock || 0) - proc.quantity) } : p);
-          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
-          return updated;
-        });
-      }
-    }
-  }, [user?.uid, db, procurements]);
-
-  const syncInventoryToProcurement = useCallback(async () => {
-    const batchData: any[] = [];
-    products.forEach(p => {
-      const exists = procurements.find(pr => pr.productId === p.id);
-      if (!exists && p.stock > 0) {
-        batchData.push({
-          id: 'sync-' + p.id,
-          productId: p.id,
-          productName: p.name,
-          quantity: p.stock,
-          buyPrice: p.purchasePrice || 0,
-          totalCost: (p.stock * (p.purchasePrice || 0)),
-          date: new Date().toISOString(),
-          type: 'sync'
-        });
-      }
-    });
-
-    if (batchData.length === 0) return;
-
-    if (user?.uid && db) {
-      const batch = writeBatch(db);
-      batchData.forEach(item => {
-        const ref = doc(db, 'users', user.uid, 'procurements', item.id);
-        batch.set(ref, item);
-      });
-      await batch.commit();
-    } else {
-      setLocalProcurements(prev => {
-        const updated = [...batchData, ...prev];
-        localStorage.setItem(LOCAL_KEYS.PROCUREMENTS, JSON.stringify(updated));
-        return updated;
-      });
-    }
-  }, [user?.uid, db, products, procurements]);
 
   const updateProduct = useCallback((productId: string, data: any) => {
     if (user?.uid && db) {
@@ -348,10 +235,6 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
             stock: increment(item.quantity)
           });
         });
-      } else if (saleToDelete.isBakiPayment && saleToDelete.customerId) {
-        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', saleToDelete.customerId), {
-          totalDue: increment(saleToDelete.total)
-        });
       }
     } else {
       setLocalSales(prev => {
@@ -359,25 +242,6 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(LOCAL_KEYS.SALES, JSON.stringify(updated));
         return updated;
       });
-      if (!saleToDelete.isBakiPayment && saleToDelete.items) {
-        setLocalProducts(prev => {
-          const updatedProducts = prev.map(p => {
-            const saleItem = saleToDelete.items?.find((i: any) => i.id === p.id);
-            if (saleItem) {
-              return { ...p, stock: (p.stock || 0) + saleItem.quantity };
-            }
-            return p;
-          });
-          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updatedProducts));
-          return updatedProducts;
-        });
-      } else if (saleToDelete.isBakiPayment && saleToDelete.customerId) {
-        setLocalCustomers(prev => {
-          const updated = prev.map(c => c.id === saleToDelete.customerId ? { ...c, totalDue: (c.totalDue || 0) + saleToDelete.total } : c);
-          localStorage.setItem(LOCAL_KEYS.CUSTOMERS, JSON.stringify(updated));
-          return updated;
-        });
-      }
     }
   }, [user?.uid, db, sales]);
 
@@ -428,11 +292,6 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
         totalDue: increment(data.amount)
       });
-      if (record.productId) {
-        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', record.productId), {
-          stock: increment(-(record.quantity || 1))
-        });
-      }
     } else {
       const updatedCustomers = localCustomers.map(c => {
         if (c.id === customerId) {
@@ -447,72 +306,40 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       });
       setLocalCustomers(updatedCustomers);
       localStorage.setItem(LOCAL_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
-      if (record.productId) {
-        setLocalProducts(prev => {
-          const updated = prev.map(p => p.id === record.productId ? { ...p, stock: Math.max(0, (p.stock || 0) - (record.quantity || 1)) } : p);
-          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
-          return updated;
-        });
-      }
     }
   }, [user?.uid, db, localCustomers]);
 
   const updateBakiRecord = useCallback((customerId: string, recordId: string, updates: any, oldAmount: number, productId?: string, oldQty?: number) => {
     if (user?.uid && db) {
       updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId, 'bakiRecords', recordId), updates);
-      
       if (updates.amount !== undefined && updates.amount !== oldAmount) {
-        const diff = updates.amount - oldAmount;
         updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
-          totalDue: increment(diff)
-        });
-      }
-
-      if (productId && updates.quantity !== undefined && oldQty !== undefined) {
-        const qtyDiff = updates.quantity - oldQty;
-        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
-          stock: increment(-qtyDiff)
+          totalDue: increment(updates.amount - oldAmount)
         });
       }
     } else {
       const updatedCustomers = localCustomers.map(c => {
         if (c.id === customerId) {
           const records = (c.bakiRecords || []).map((r: any) => r.id === recordId ? { ...r, ...updates } : r);
-          let newTotal = c.totalDue || 0;
-          if (updates.amount !== undefined) {
-            newTotal = newTotal - oldAmount + updates.amount;
-          }
-          return { ...c, totalDue: Math.max(0, newTotal), bakiRecords: records };
+          return { ...c, totalDue: Math.max(0, (c.totalDue || 0) - oldAmount + (updates.amount || oldAmount)), bakiRecords: records };
         }
         return c;
       });
       setLocalCustomers(updatedCustomers);
       localStorage.setItem(LOCAL_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
-
-      if (productId && updates.quantity !== undefined && oldQty !== undefined) {
-        setLocalProducts(prev => {
-          const qtyDiff = updates.quantity - oldQty;
-          const updated = prev.map(p => p.id === productId ? { ...p, stock: Math.max(0, (p.stock || 0) - qtyDiff) } : p);
-          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
-          return updated;
-        });
-      }
     }
   }, [user?.uid, db, localCustomers]);
 
   const payBakiRecord = useCallback((customerId: string, recordId: string, amountToPay: number, currentRecord: any) => {
     const newPaidAmount = (currentRecord.paidAmount || 0) + amountToPay;
     const isFullyPaid = newPaidAmount >= currentRecord.amount;
-    const remaining = Math.max(0, currentRecord.amount - newPaidAmount);
     
     const saleData = {
       total: amountToPay,
       profit: 0, 
       items: [{ name: `Baki Payment: ${currentRecord.productName}`, quantity: 1, sellingPrice: amountToPay }],
       isBakiPayment: true,
-      bakiRecordId: recordId,
       bakiProductName: currentRecord.productName,
-      remainingAmount: remaining,
       customerId: customerId,
       saleDate: new Date().toISOString()
     };
@@ -523,28 +350,14 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         paidAmount: newPaidAmount,
         status: isFullyPaid ? 'paid' : 'pending'
       });
-      
       updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
         totalDue: increment(-amountToPay)
       });
     } else {
       const updatedCustomers = localCustomers.map(c => {
         if (c.id === customerId) {
-          const records = (c.bakiRecords || []).map((r: any) => {
-            if (r.id === recordId) {
-              return { 
-                ...r, 
-                paidAmount: newPaidAmount, 
-                status: isFullyPaid ? 'paid' : 'pending' 
-              };
-            }
-            return r;
-          });
-          return { 
-            ...c, 
-            totalDue: Math.max(0, (c.totalDue || 0) - amountToPay),
-            bakiRecords: records
-          };
+          const records = (c.bakiRecords || []).map((r: any) => r.id === recordId ? { ...r, paidAmount: newPaidAmount, status: isFullyPaid ? 'paid' : 'pending' } : r);
+          return { ...c, totalDue: Math.max(0, (c.totalDue || 0) - amountToPay), bakiRecords: records };
         }
         return c;
       });
@@ -553,40 +366,122 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.uid, db, localCustomers, addSale]);
 
-  const deleteBakiRecord = useCallback((customerId: string, recordId: string, remainingAmount: number, productId?: string, qty?: number) => {
+  const deleteBakiRecord = useCallback((customerId: string, recordId: string, remainingAmount: number) => {
     if (user?.uid && db) {
       deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId, 'bakiRecords', recordId));
       updateDocumentNonBlocking(doc(db, 'users', user.uid, 'customers', customerId), {
         totalDue: increment(-remainingAmount)
       });
-      if (productId && qty) {
-        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
-          stock: increment(qty)
-        });
-      }
     } else {
       const updatedCustomers = localCustomers.map(c => {
         if (c.id === customerId) {
           const records = (c.bakiRecords || []).filter((r: any) => r.id !== recordId);
-          return { 
-            ...c, 
-            totalDue: Math.max(0, (c.totalDue || 0) - remainingAmount),
-            bakiRecords: records
-          };
+          return { ...c, totalDue: Math.max(0, (c.totalDue || 0) - remainingAmount), bakiRecords: records };
         }
         return c;
       });
       setLocalCustomers(updatedCustomers);
       localStorage.setItem(LOCAL_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
-      if (productId && qty) {
-        setLocalProducts(prev => {
-          const updated = prev.map(p => p.id === productId ? { ...p, stock: (p.stock || 0) + qty } : p);
-          localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
-          return updated;
-        });
-      }
     }
   }, [user?.uid, db, localCustomers]);
+
+  const addRestock = useCallback((productId: string, qty: number, buyPrice: number, sellPrice: number, note?: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    const procId = Date.now().toString();
+    const procData = {
+      id: procId,
+      productId,
+      productName: product.name,
+      quantity: qty,
+      buyPrice: buyPrice,
+      totalCost: qty * buyPrice,
+      date: new Date().toISOString(),
+      type: 'restock',
+      note: note || ''
+    };
+    if (user?.uid && db) {
+      setDocumentNonBlocking(doc(db, 'users', user.uid, 'procurements', procId), procData, { merge: true });
+      updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', productId), {
+        stock: increment(qty),
+        purchasePrice: buyPrice,
+        sellingPrice: sellPrice
+      });
+    } else {
+      setLocalProcurements(prev => {
+        const updated = [procData, ...prev];
+        localStorage.setItem(LOCAL_KEYS.PROCUREMENTS, JSON.stringify(updated));
+        return updated;
+      });
+      setLocalProducts(prev => {
+        const updated = prev.map(p => p.id === productId ? { ...p, stock: (p.stock || 0) + qty, purchasePrice: buyPrice, sellingPrice: sellPrice } : p);
+        localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [user?.uid, db, products]);
+
+  const deleteProcurement = useCallback((procId: string) => {
+    const proc = procurements.find(p => p.id === procId);
+    if (!proc) return;
+    if (user?.uid && db) {
+      deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'procurements', procId));
+      if (proc.productId) {
+        updateDocumentNonBlocking(doc(db, 'users', user.uid, 'products', proc.productId), {
+          stock: increment(-proc.quantity)
+        });
+      }
+    } else {
+      setLocalProcurements(prev => {
+        const updated = prev.filter(p => p.id !== procId);
+        localStorage.setItem(LOCAL_KEYS.PROCUREMENTS, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [user?.uid, db, procurements]);
+
+  const syncInventoryToProcurement = useCallback(async () => {
+    const batchData: any[] = [];
+    products.forEach(p => {
+      const exists = procurements.find(pr => pr.productId === p.id);
+      if (!exists && p.stock > 0) {
+        batchData.push({
+          id: 'sync-' + p.id,
+          productId: p.id,
+          productName: p.name,
+          quantity: p.stock,
+          buyPrice: p.purchasePrice || 0,
+          totalCost: (p.stock * (p.purchasePrice || 0)),
+          date: new Date().toISOString(),
+          type: 'sync'
+        });
+      }
+    });
+    if (batchData.length === 0) return;
+    if (user?.uid && db) {
+      const batch = writeBatch(db);
+      batchData.forEach(item => {
+        const ref = doc(db, 'users', user.uid, 'procurements', item.id);
+        batch.set(ref, item);
+      });
+      await batch.commit();
+    } else {
+      setLocalProcurements(prev => {
+        const updated = [...batchData, ...prev];
+        localStorage.setItem(LOCAL_KEYS.PROCUREMENTS, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [user?.uid, db, products, procurements]);
+
+  const updateShopConfig = useCallback((data: any) => {
+    if (user?.uid && db) {
+      setDocumentNonBlocking(doc(db, 'users', user.uid, 'shopConfig', 'default'), data, { merge: true });
+    } else {
+      setLocalShopConfig(data);
+      localStorage.setItem(LOCAL_KEYS.SHOP_CONFIG, JSON.stringify(data));
+    }
+  }, [user?.uid, db]);
 
   const setCurrency = useCallback((val: string) => {
     setCurrencyState(val);
@@ -606,28 +501,17 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetAllData = useCallback(async () => {
-    localStorage.removeItem(LOCAL_KEYS.PRODUCTS);
-    localStorage.removeItem(LOCAL_KEYS.SALES);
-    localStorage.removeItem(LOCAL_KEYS.CUSTOMERS);
-    localStorage.removeItem(LOCAL_KEYS.PROCUREMENTS);
-    setLocalProducts([]);
-    setLocalSales([]);
-    setLocalCustomers([]);
-    setLocalProcurements([]);
-
+    localStorage.clear();
     if (user?.uid && db) {
-      const collections = ['products', 'sales', 'customers', 'procurements'];
+      const collections = ['products', 'sales', 'customers', 'procurements', 'shopConfig'];
       for (const collName of collections) {
         const collRef = collection(db, 'users', user.uid, collName);
         const snapshot = await getDocs(collRef);
         const batch = writeBatch(db);
-        snapshot.docs.forEach(docSnap => {
-          batch.delete(docSnap.ref);
-        });
+        snapshot.docs.forEach(docSnap => { batch.delete(docSnap.ref); });
         await batch.commit();
       }
     }
-    
     window.location.reload();
   }, [user?.uid, db]);
 
@@ -636,6 +520,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     sales,
     customers,
     procurements,
+    shopConfig,
     isLoading,
     currency,
     language,
@@ -657,6 +542,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       addRestock,
       deleteProcurement,
       syncInventoryToProcurement,
+      updateShopConfig,
       setCurrency,
       setLanguage,
       setAiConfig,

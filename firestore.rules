@@ -21,10 +21,16 @@ service cloud.firestore {
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
 
+      // Public access for Shop feature (with code entry UI protection)
       match /products/{productId} {
-        allow get, list: if isOwner(userId);
+        allow get, list: if true; // Products are publicly viewable for the shop
         allow create: if isOwner(userId);
         allow update, delete: if isExistingOwner(userId);
+      }
+
+      match /shopConfig/{configId} {
+        allow get: if true; // Public needs to check if shop is active
+        allow write: if isOwner(userId);
       }
 
       match /sales/{saleId} {

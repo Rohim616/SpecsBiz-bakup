@@ -76,6 +76,18 @@
       },
       "required": ["id", "firstName"]
     },
+    "ShopConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ShopConfig",
+      "type": "object",
+      "description": "Settings for the user's public online shop.",
+      "properties": {
+        "isActive": { "type": "boolean" },
+        "accessCode": { "type": "string" },
+        "shopName": { "type": "string" },
+        "welcomeMsg": { "type": "string" }
+      }
+    },
     "AIMessage": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "AIMessage",
@@ -113,6 +125,10 @@
       {
         "path": "/users/{userId}/products/{productId}",
         "definition": { "entityName": "Product", "schema": { "$ref": "#/backend/entities/Product" } }
+      },
+      {
+        "path": "/users/{userId}/shopConfig/default",
+        "definition": { "entityName": "ShopConfig", "schema": { "$ref": "#/backend/entities/ShopConfig" } }
       },
       {
         "path": "/users/{userId}/procurements/{procurementId}",

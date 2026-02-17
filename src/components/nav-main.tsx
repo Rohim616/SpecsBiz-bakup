@@ -19,7 +19,8 @@ import {
   BookOpen,
   PackageSearch,
   Sparkles,
-  Camera
+  Camera,
+  Globe
 } from "lucide-react"
 import { useUser } from "@/firebase"
 import { useBusinessData } from "@/hooks/use-business-data"
@@ -60,6 +61,7 @@ export function NavMain() {
     { title: t.sales, icon: ShoppingCart, href: "/sales" },
     { title: t.customers, icon: Users, href: "/customers" },
     { title: t.productReviews, icon: Camera, href: "/product-reviews" },
+    { title: t.onlineShop, icon: Globe, href: "/shop-manager" },
     { title: t.notebook, icon: BookOpen, href: "/notebook" },
     { title: t.masterLedger, icon: FileSpreadsheet, href: "/reports" },
     { title: t.biAnalytics, icon: PieChart, href: "/business-intelligence" },
