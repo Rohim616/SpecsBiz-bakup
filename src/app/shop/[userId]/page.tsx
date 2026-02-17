@@ -40,6 +40,7 @@ import {
   DialogDescription, 
   DialogFooter
 } from "@/components/ui/dialog"
+import { PlaceHolderImages } from "@/lib/placeholder-images"
 
 /**
  * @fileOverview Top banner ad component for Adsterra integration.
@@ -90,6 +91,8 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl
 
   // Load Popunder Ad
   useEffect(() => {
@@ -192,7 +195,11 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
       <div className="w-full max-w-sm space-y-8 relative z-10">
         <div className="text-center space-y-4">
           <div className="mx-auto w-24 h-24 bg-white p-5 rounded-[2.5rem] shadow-2xl flex items-center justify-center border border-accent/20">
-            <Store className="w-12 h-12 text-primary" />
+            {logoUrl ? (
+              <img src={logoUrl} alt="SpecsBiz Logo" className="w-12 h-12 object-contain" />
+            ) : (
+              <Store className="w-12 h-12 text-primary" />
+            )}
           </div>
           <h1 className="text-4xl font-black text-white uppercase tracking-tighter">{config.shopName || "Our Shop"}</h1>
         </div>
@@ -216,12 +223,26 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent rounded-xl shadow-lg"><Store className="w-6 h-6 text-white" /></div>
-              <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter">{config.shopName || "Our Shop"}</h1>
+              <div className="p-2 bg-white rounded-xl shadow-lg">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="SpecsBiz Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                ) : (
+                  <Store className="w-6 h-6 text-primary" />
+                )}
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none">{config.shopName || "Our Shop"}</h1>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] font-bold text-accent uppercase tracking-[0.3em] opacity-80">Digital Shop Gallery</span>
+                  <div className="h-3 w-px bg-white/20 mx-1" />
+                  <span className="text-[9px] font-black text-white uppercase tracking-widest bg-accent/20 px-2 py-0.5 rounded flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" /> SpecsBiz
+                  </span>
+                </div>
+              </div>
             </div>
-            <p className="text-sm font-bold text-accent uppercase tracking-[0.3em] opacity-80">Digital Shop Gallery</p>
           </div>
-          <Badge className="bg-white/10 backdrop-blur-md border border-white/20 h-10 px-6 text-xs font-black uppercase tracking-widest rounded-full">{allShopProducts?.length || 0} Items Available</Badge>
+          <Badge className="bg-white/10 backdrop-blur-md border border-white/20 h-10 px-6 text-xs font-black uppercase tracking-widest rounded-full self-start md:self-center">{allShopProducts?.length || 0} Items Available</Badge>
         </div>
       </div>
 
@@ -438,7 +459,17 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
       </Dialog>
 
       <footer className="mt-20 py-12 px-6 text-center space-y-4">
-        <div className="flex items-center justify-center gap-3"><span className="h-px w-8 bg-primary/10" /><div className="p-2 bg-primary/5 rounded-xl"><Sparkles className="w-4 h-4 text-accent" /></div><span className="h-px w-8 bg-primary/10" /></div>
+        <div className="flex items-center justify-center gap-3">
+          <span className="h-px w-8 bg-primary/10" />
+          <div className="p-2 bg-primary/5 rounded-xl border border-primary/5">
+            {logoUrl ? (
+              <img src={logoUrl} alt="SpecsBiz Logo" className="w-6 h-6 object-contain" />
+            ) : (
+              <Sparkles className="w-4 h-4 text-accent" />
+            )}
+          </div>
+          <span className="h-px w-8 bg-primary/10" />
+        </div>
         <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em] opacity-40">Digital Shop Powered by SpecsBiz</p>
       </footer>
     </div>
