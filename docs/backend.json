@@ -110,7 +110,11 @@
         "isActive": { "type": "boolean" },
         "accessCode": { "type": "string" },
         "shopName": { "type": "string" },
-        "welcomeMsg": { "type": "string" }
+        "welcomeMsg": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "coverImageUrl": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "address": { "type": "string" }
       }
     },
     "AIMessage": {

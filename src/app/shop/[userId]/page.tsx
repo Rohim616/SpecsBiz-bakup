@@ -22,7 +22,8 @@ import {
   Maximize2,
   MessageCircle,
   Search,
-  Inbox
+  Inbox,
+  MapPin
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -92,13 +93,13 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
-  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl
+  const defaultLogoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl
 
   // Load Popunder Ad
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const script = document.createElement('script');
-      script.src = "https://pl28730615.effectivegatecpm.com/52/c3/f7/52c3f78501c6a5e4f66885863b6715df.js";
+      script.src = "https://pl28726334.effectivegatecpm.com/52/c3/f7/52c3f78501c6a5e4f66885863b6715df.js";
       script.async = true;
       document.body.appendChild(script);
     }
@@ -189,14 +190,16 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
     </div>
   )
 
+  const logoToUse = config.logoUrl || defaultLogoUrl;
+
   if (!isUnlocked) return (
     <div className="h-screen flex flex-col items-center justify-center bg-[#191970] p-6 overflow-hidden relative">
       <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary to-transparent opacity-50" />
       <div className="w-full max-w-sm space-y-8 relative z-10">
         <div className="text-center space-y-4">
           <div className="mx-auto w-24 h-24 bg-white p-5 rounded-[2.5rem] shadow-2xl flex items-center justify-center border border-accent/20">
-            {logoUrl ? (
-              <img src={logoUrl} alt="SpecsBiz Logo" className="w-12 h-12 object-contain" />
+            {logoToUse ? (
+              <img src={logoToUse} alt="Shop Logo" className="w-12 h-12 object-contain" />
             ) : (
               <Store className="w-12 h-12 text-primary" />
             )}
@@ -225,28 +228,33 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
           backgroundImage: config.coverImageUrl ? `url(${config.coverImageUrl})` : 'none'
         }}
       >
-        {/* Dark Overlay for readability when an image is set */}
         {config.coverImageUrl && <div className="absolute inset-0 bg-black/40" />}
         
         <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12 z-0"><ShoppingBag className="w-40 h-40" /></div>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white rounded-xl shadow-lg">
-                {logoUrl ? (
-                  <img src={logoUrl} alt="SpecsBiz Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+              <div className="p-2 bg-white rounded-xl shadow-lg shrink-0">
+                {logoToUse ? (
+                  <img src={logoToUse} alt="Shop Logo" className="w-10 h-10 md:w-14 md:h-14 object-contain rounded-lg" />
                 ) : (
-                  <Store className="w-6 h-6 text-primary" />
+                  <Store className="w-8 h-8 text-primary" />
                 )}
               </div>
-              <div className="flex flex-col">
-                <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none">{config.shopName || "Our Shop"}</h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] font-bold text-accent uppercase tracking-[0.3em] opacity-80">Digital Shop Gallery</span>
-                  <div className="h-3 w-px bg-white/20 mx-1" />
+              <div className="flex flex-col min-w-0">
+                <h1 className="text-2xl md:text-5xl font-black uppercase tracking-tighter leading-tight truncate">{config.shopName || "Our Shop"}</h1>
+                <div className="flex flex-wrap items-center gap-3 mt-1">
+                  <span className="text-[9px] font-bold text-accent uppercase tracking-widest opacity-80">Digital Store</span>
+                  <div className="h-3 w-px bg-white/20 mx-1 hidden sm:block" />
                   <span className="text-[9px] font-black text-white uppercase tracking-widest bg-accent/20 px-2 py-0.5 rounded flex items-center gap-1">
                     <Sparkles className="w-2.5 h-2.5" /> SpecsBiz
                   </span>
+                  {config.address && (
+                    <div className="flex items-center gap-1 text-[9px] font-bold text-white/70 bg-black/20 px-2 py-0.5 rounded backdrop-blur-sm">
+                      <MapPin className="w-3 h-3 text-accent" />
+                      {config.address}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -265,7 +273,6 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
           </Card>
         )}
 
-        {/* Adsterra Banner Ad above search box */}
         <ShopTopBannerAd />
 
         <div className="relative group/search max-w-2xl mx-auto">
@@ -273,7 +280,7 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
             <Search className="w-5 h-5 text-primary opacity-40 group-focus-within/search:opacity-100 group-focus-within/search:text-accent transition-all" />
           </div>
           <Input 
-            placeholder="Search products by name, category, or details..."
+            placeholder="Search products..."
             className="h-14 pl-12 pr-4 rounded-2xl border-none bg-white shadow-lg text-lg font-medium text-primary placeholder:text-primary/30 focus-visible:ring-2 focus-visible:ring-accent transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -300,17 +307,8 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
             </div>
             <div className="space-y-1">
               <h3 className="text-xl font-black text-primary uppercase tracking-tighter">No Products Found</h3>
-              <p className="text-sm text-primary/40 font-medium">Try adjusting your search query or clear filters.</p>
+              <p className="text-sm text-primary/40 font-medium">Try adjusting your search query.</p>
             </div>
-            {searchQuery && (
-              <Button 
-                variant="outline" 
-                onClick={() => setSearchQuery("")}
-                className="rounded-xl border-accent text-accent hover:bg-accent hover:text-white"
-              >
-                Clear Search
-              </Button>
-            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -471,8 +469,8 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
         <div className="flex items-center justify-center gap-3">
           <span className="h-px w-8 bg-primary/10" />
           <div className="p-2 bg-primary/5 rounded-xl border border-primary/5">
-            {logoUrl ? (
-              <img src={logoUrl} alt="SpecsBiz Logo" className="w-6 h-6 object-contain" />
+            {logoToUse ? (
+              <img src={logoToUse} alt="Shop Logo" className="w-6 h-6 object-contain rounded" />
             ) : (
               <Sparkles className="w-4 h-4 text-accent" />
             )}

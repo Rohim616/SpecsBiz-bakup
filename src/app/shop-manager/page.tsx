@@ -33,7 +33,8 @@ import {
   Percent,
   PlusCircle,
   FileText,
-  Phone
+  Phone,
+  MapPin
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -76,7 +77,9 @@ export default function ShopManagerPage() {
   const [accessCode, setAccessCode] = useState("")
   const [welcomeMsg, setWelcomeMsg] = useState("")
   const [whatsappNumber, setWhatsappNumber] = useState("")
+  const [address, setAddress] = useState("")
   const [coverImageUrl, setCoverImageUrl] = useState("")
+  const [logoUrl, setLogoUrl] = useState("")
   const [isActive, setIsActive] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -108,7 +111,9 @@ export default function ShopManagerPage() {
       setAccessCode(shopConfig.accessCode || "")
       setWelcomeMsg(shopConfig.welcomeMsg || "")
       setWhatsappNumber(shopConfig.whatsappNumber || "")
+      setAddress(shopConfig.address || "")
       setCoverImageUrl(shopConfig.coverImageUrl || "")
+      setLogoUrl(shopConfig.logoUrl || "")
       setIsActive(shopConfig.isActive || false)
     }
   }, [shopConfig])
@@ -123,7 +128,9 @@ export default function ShopManagerPage() {
       accessCode,
       welcomeMsg,
       whatsappNumber,
+      address,
       coverImageUrl,
+      logoUrl,
       isActive
     })
     toast({ title: "Shop Configuration Updated" })
@@ -135,7 +142,7 @@ export default function ShopManagerPage() {
     toast({ title: currentStatus ? "Hidden from Shop" : "Visible in Shop" })
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'new' | 'edit' | 'gallery-new' | 'gallery-edit' | 'cover') => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'new' | 'edit' | 'gallery-new' | 'gallery-edit' | 'cover' | 'logo') => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -150,6 +157,7 @@ export default function ShopManagerPage() {
       if (type === 'new') setNewProduct(prev => ({ ...prev, imageUrl: base64 }))
       else if (type === 'edit') setEditingProduct((prev: any) => ({ ...prev, imageUrl: base64 }))
       else if (type === 'cover') setCoverImageUrl(base64)
+      else if (type === 'logo') setLogoUrl(base64)
       else if (type === 'gallery-new') {
         setNewProduct(prev => ({ ...prev, galleryImages: [...prev.galleryImages, base64].slice(0, 5) }))
       }
@@ -302,7 +310,7 @@ export default function ShopManagerPage() {
             </DialogTrigger>
             <DialogContent className="w-[95vw] sm:max-w-[850px] rounded-[2.5rem] p-0 overflow-hidden border-accent/20 shadow-2xl">
               <DialogHeader className="p-6 bg-accent/5 border-b shrink-0">
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-white rounded-xl border border-accent/10 shadow-sm"><Settings2 className="w-6 h-6 text-accent" /></div>
                     <div>
@@ -339,17 +347,29 @@ export default function ShopManagerPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
-                        <Phone className="w-3.5 h-3.5 text-green-600" /> WhatsApp Number (Contact)
-                      </Label>
-                      <input 
-                        placeholder="88017xxxxxxxx" 
-                        value={whatsappNumber} 
-                        onChange={e => setWhatsappNumber(e.target.value)} 
-                        className="w-full h-14 px-4 rounded-2xl bg-muted/20 border-none font-bold text-primary outline-none focus:ring-2 focus:ring-accent" 
-                      />
-                      <p className="text-[9px] font-medium text-muted-foreground ml-1 italic">* Enter with country code, no "+" sign. Example: 8801712345678</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
+                          <Phone className="w-3.5 h-3.5 text-green-600" /> WhatsApp Number
+                        </Label>
+                        <input 
+                          placeholder="88017xxxxxxxx" 
+                          value={whatsappNumber} 
+                          onChange={e => setWhatsappNumber(e.target.value)} 
+                          className="w-full h-14 px-4 rounded-2xl bg-muted/20 border-none font-bold text-primary outline-none focus:ring-2 focus:ring-accent" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-accent" /> Shop Address
+                        </Label>
+                        <input 
+                          placeholder="e.g. Dhaka, Bangladesh" 
+                          value={address} 
+                          onChange={e => setAddress(e.target.value)} 
+                          className="w-full h-14 px-4 rounded-2xl bg-muted/20 border-none font-bold text-primary outline-none focus:ring-2 focus:ring-accent" 
+                        />
+                      </div>
                     </div>
 
                     <div className="bg-emerald-50/50 border border-emerald-100 p-6 rounded-[1.5rem] space-y-4">
@@ -375,7 +395,32 @@ export default function ShopManagerPage() {
                   </TabsContent>
 
                   <TabsContent value="content" className="space-y-6 mt-0">
-                    <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
+                          <ImageIcon className="w-3.5 h-3.5 text-accent" /> Shop Logo
+                        </Label>
+                        <div className="relative w-32 h-32 rounded-full bg-muted flex items-center justify-center border-2 border-dashed overflow-hidden group mx-auto">
+                          {logoUrl ? (
+                            <img src={logoUrl} className="w-full h-full object-cover" />
+                          ) : (
+                            <Store className="w-10 h-10 opacity-20" />
+                          )}
+                          <Label htmlFor="logo-upload" className="absolute inset-0 cursor-pointer bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white">
+                            <Upload className="w-5 h-5 mb-1" />
+                            <span className="text-[8px] font-black uppercase">Change Logo</span>
+                          </Label>
+                          <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'logo')} />
+                        </div>
+                        {logoUrl && (
+                          <div className="text-center">
+                            <Button variant="ghost" size="sm" className="h-6 text-[8px] font-black uppercase text-destructive" onClick={() => setLogoUrl("")}>
+                              <Trash2 className="w-3 h-3 mr-1" /> Remove Logo
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
                           <ImageIcon className="w-3.5 h-3.5 text-accent" /> Shop Cover Photo
@@ -401,18 +446,18 @@ export default function ShopManagerPage() {
                           </Button>
                         )}
                       </div>
+                    </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
-                          <MessageSquareText className="w-3.5 h-3.5 text-accent" /> Custom Welcome Message
-                        </Label>
-                        <textarea 
-                          value={welcomeMsg} 
-                          onChange={e => setWelcomeMsg(e.target.value)}
-                          placeholder="Welcome to our shop! Feel free to explore our collection..."
-                          className="w-full min-h-[120px] p-4 rounded-2xl bg-muted/20 border-none font-medium text-sm text-primary focus:ring-2 focus:ring-accent outline-none"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
+                        <MessageSquareText className="w-3.5 h-3.5 text-accent" /> Custom Welcome Message
+                      </Label>
+                      <textarea 
+                        value={welcomeMsg} 
+                        onChange={e => setWelcomeMsg(e.target.value)}
+                        placeholder="Welcome to our shop! Feel free to explore our collection..."
+                        className="w-full min-h-[120px] p-4 rounded-2xl bg-muted/20 border-none font-medium text-sm text-primary focus:ring-2 focus:ring-accent outline-none"
+                      />
                     </div>
                   </TabsContent>
 
@@ -541,7 +586,7 @@ export default function ShopManagerPage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem] p-0 overflow-hidden">
+        <DialogContent className="w-[95vw] sm:max-w-[550px] rounded-[2rem] p-0 overflow-hidden">
           <DialogHeader className="p-6 bg-accent/5 border-b">
             <DialogTitle className="text-primary font-black uppercase flex items-center gap-2">
               <Import className="w-5 h-5" /> Import from Inventory
