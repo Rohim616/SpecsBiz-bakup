@@ -32,7 +32,8 @@ import {
   Import,
   Percent,
   PlusCircle,
-  FileText
+  FileText,
+  Phone
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -74,6 +75,7 @@ export default function ShopManagerPage() {
   const [shopName, setShopName] = useState("")
   const [accessCode, setAccessCode] = useState("")
   const [welcomeMsg, setWelcomeMsg] = useState("")
+  const [whatsappNumber, setWhatsappNumber] = useState("")
   const [isActive, setIsActive] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -104,6 +106,7 @@ export default function ShopManagerPage() {
       setShopName(shopConfig.shopName || "")
       setAccessCode(shopConfig.accessCode || "")
       setWelcomeMsg(shopConfig.welcomeMsg || "")
+      setWhatsappNumber(shopConfig.whatsappNumber || "")
       setIsActive(shopConfig.isActive || false)
     }
   }, [shopConfig])
@@ -117,6 +120,7 @@ export default function ShopManagerPage() {
       shopName,
       accessCode,
       welcomeMsg,
+      whatsappNumber,
       isActive
     })
     toast({ title: "Shop Configuration Updated" })
@@ -307,6 +311,19 @@ export default function ShopManagerPage() {
                         <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">{t.shopCode}</Label>
                         <Input value={accessCode} onChange={e => setAccessCode(e.target.value)} className="h-14 rounded-2xl bg-muted/20 border-none font-bold text-primary" />
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-green-600" /> WhatsApp Number (Contact)
+                      </Label>
+                      <Input 
+                        placeholder="e.g. 88017xxxxxxxx" 
+                        value={whatsappNumber} 
+                        onChange={e => setWhatsappNumber(e.target.value)} 
+                        className="h-14 rounded-2xl bg-muted/20 border-none font-bold text-primary" 
+                      />
+                      <p className="text-[9px] font-medium text-muted-foreground ml-1 italic">* Enter with country code, no "+" sign. Example: 8801712345678</p>
                     </div>
 
                     <div className="bg-emerald-50/50 border border-emerald-100 p-6 rounded-[1.5rem] space-y-4">

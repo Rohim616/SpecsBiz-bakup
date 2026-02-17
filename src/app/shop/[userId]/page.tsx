@@ -19,7 +19,8 @@ import {
   ShoppingCart,
   Percent,
   FileText,
-  Maximize2
+  Maximize2,
+  MessageCircle
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -76,6 +77,26 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
     } else {
       setError("Invalid access code. Please check with the owner.")
     }
+  }
+
+  const handleWhatsAppOrder = (product: any) => {
+    if (!config?.whatsappNumber) {
+      alert("Store owner has not set a WhatsApp number yet.");
+      return;
+    }
+
+    const shopName = config.shopName || "Our Shop";
+    const message = `Hello ${shopName}, I'm interested in the following product:\n\n` +
+                    `🛍️ Product: ${product.name}\n` +
+                    `🏷️ Category: ${product.category || 'General'}\n` +
+                    `💰 Price: ৳${product.sellingPrice}\n` +
+                    `📦 Unit: ${product.unit || 'pcs'}\n\n` +
+                    `Please let me know the availability and ordering process.`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${config.whatsappNumber}?text=${encodedMessage}`;
+    
+    window.open(whatsappUrl, '_blank');
   }
 
   if (configLoading) return (
@@ -159,7 +180,7 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
                 <Card key={p.id} className="overflow-hidden border-none shadow-xl rounded-[2.5rem] bg-white hover:shadow-2xl transition-all group active:scale-[0.98] flex flex-col h-full">
                   <div className="relative aspect-square overflow-hidden bg-muted">
                     {p.imageUrl ? (
-                      <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="flex items-center justify-center h-full text-muted-foreground opacity-20"><Package className="w-16 h-16" /></div>
                     )}
@@ -254,13 +275,21 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
                   <p className="text-sm font-medium text-primary/70 leading-relaxed">{selectedProduct?.description || "High-quality original product verified by SpecsBiz. Contact owner for more details."}</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-3">
                   <div className={cn(
-                    "flex-1 h-14 rounded-2xl flex items-center justify-center font-black uppercase text-[10px] tracking-[0.2em] shadow-lg",
-                    selectedProduct?.stockStatus === 'in_stock' ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
+                    "w-full h-12 rounded-2xl flex items-center justify-center font-black uppercase text-[10px] tracking-[0.2em] shadow-sm border",
+                    selectedProduct?.stockStatus === 'in_stock' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"
                   )}>
                     {selectedProduct?.stockStatus === 'in_stock' ? 'In Stock Now' : 'Currently Unavailable'}
                   </div>
+                  
+                  <Button 
+                    onClick={() => handleWhatsAppOrder(selectedProduct)}
+                    className="w-full h-16 bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-3 font-black uppercase text-sm shadow-xl transition-all active:scale-95"
+                  >
+                    <MessageCircle className="w-6 h-6 fill-white text-green-600" />
+                    Order via WhatsApp
+                  </Button>
                 </div>
               </div>
             </div>
