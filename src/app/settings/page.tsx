@@ -25,7 +25,9 @@ import {
   Plus,
   Users,
   Power,
-  Copy
+  Copy,
+  Edit2,
+  Save
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -66,7 +68,9 @@ function MasterDeveloperPanel() {
   const db = useFirestore();
   const { toast } = useToast();
   
-  // Fix: Only trigger the query if the user is the master admin to avoid permission errors
+  const [editingCodeId, setEditingCodeId] = useState<string | null>(null);
+  const [assignName, setAssignName] = useState("");
+
   const codesQuery = useMemoFirebase(() => {
     if (!db || user?.email !== 'specsxr@gmail.com') return null;
     return query(collection(db, 'registrationCodes'), orderBy('createdAt', 'desc'));
@@ -81,9 +85,10 @@ function MasterDeveloperPanel() {
         code: newCode,
         isUsed: false,
         status: 'active',
+        assignedTo: '',
         createdAt: serverTimestamp()
       });
-      toast({ title: "New Access Code Generated", description: `Code: ${newCode}` });
+      toast({ title: "New Code Generated", description: `Code: ${newCode}` });
     } catch (e) {
       toast({ variant: "destructive", title: "Failed to generate code" });
     }
@@ -96,6 +101,17 @@ function MasterDeveloperPanel() {
       toast({ title: `Status changed to ${newStatus}` });
     } catch (e) {
       toast({ variant: "destructive", title: "Failed to update status" });
+    }
+  };
+
+  const handleUpdateAssignedTo = async (code: string) => {
+    try {
+      await updateDoc(doc(db, 'registrationCodes', code), { assignedTo: assignName });
+      setEditingCodeId(null);
+      setAssignName("");
+      toast({ title: "Info Updated" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Update failed" });
     }
   };
 
@@ -123,46 +139,84 @@ function MasterDeveloperPanel() {
         </Button>
       </div>
       <CardContent className="p-0">
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[450px]">
           {isLoading ? (
             <div className="p-10 text-center animate-pulse text-red-600 font-bold">Fetching codes...</div>
           ) : (
             <div className="divide-y">
-              {codes?.map((c) => (
-                <div key={c.id} className="p-4 flex items-center justify-between hover:bg-red-50/30 transition-all">
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "h-10 w-10 rounded-xl flex items-center justify-center font-black text-xs border shadow-sm",
-                      c.isUsed ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"
-                    )}>
-                      {c.code.slice(0, 2)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-black text-primary font-mono">{c.code}</p>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(c.code)}><Copy className="w-3 h-3" /></Button>
+              {codes?.map((c) => {
+                const isInactive = c.status === 'inactive';
+                const isPending = !c.isUsed && !isInactive;
+                const isActive = c.isUsed && !isInactive;
+
+                return (
+                  <div key={c.id} className="p-4 space-y-3 hover:bg-red-50/30 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "h-10 w-10 rounded-xl flex items-center justify-center font-black text-xs border shadow-sm",
+                          isActive ? "bg-green-50 text-green-700 border-green-100" : 
+                          isInactive ? "bg-red-50 text-red-700 border-red-100" :
+                          "bg-amber-50 text-amber-700 border-amber-100"
+                        )}>
+                          {c.code.slice(0, 2)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-black text-primary font-mono">{c.code}</p>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(c.code)}><Copy className="w-3 h-3" /></Button>
+                          </div>
+                          {editingCodeId === c.id ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Input 
+                                size={1} 
+                                className="h-7 text-[10px] w-32" 
+                                placeholder="Assign to name..." 
+                                value={assignName} 
+                                onChange={e => setAssignName(e.target.value)} 
+                              />
+                              <Button size="icon" className="h-7 w-7 bg-green-600" onClick={() => handleUpdateAssignedTo(c.code)}><Save className="w-3 h-3" /></Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingCodeId(null)}><X className="w-3 h-3" /></Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <p className="text-[9px] font-bold text-muted-foreground uppercase">
+                                {c.assignedTo ? `For: ${c.assignedTo}` : 'No assignment'}
+                              </p>
+                              <Button variant="ghost" className="h-4 p-0 text-accent hover:bg-transparent" onClick={() => { setEditingCodeId(c.id); setAssignName(c.assignedTo || ""); }}>
+                                <Edit2 className="w-2.5 h-2.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-[9px] font-bold text-muted-foreground uppercase">
-                        {c.isUsed ? `User: ${c.userEmail}` : 'Unused Code'}
-                      </p>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className="text-right mr-2">
+                          <p className="text-[8px] font-black uppercase opacity-40">Status</p>
+                          <Badge className={cn(
+                            "border-none text-[8px] font-black h-5", 
+                            isActive ? "bg-green-500" : isInactive ? "bg-red-500" : "bg-amber-500"
+                          )}>
+                            {isInactive ? 'INACTIVE' : (isActive ? 'ACTIVE' : 'PENDING')}
+                          </Badge>
+                        </div>
+                        <Switch 
+                          checked={!isInactive} 
+                          onCheckedChange={() => toggleUserStatus(c.code, c.status)} 
+                        />
+                      </div>
                     </div>
+                    {c.isUsed && (
+                      <div className="pl-14">
+                        <p className="text-[9px] font-medium text-primary/60 flex items-center gap-1.5">
+                          <UserCheck className="w-3 h-3" /> Used by: <span className="font-bold text-primary">{c.userEmail}</span>
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="text-right mr-2">
-                      <p className="text-[8px] font-black uppercase opacity-40">Status</p>
-                      <Badge className={cn("border-none text-[8px] font-black h-5", c.status === 'active' ? "bg-green-500" : "bg-red-500")}>
-                        {c.status?.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <Switch 
-                      checked={c.status === 'active'} 
-                      onCheckedChange={() => toggleUserStatus(c.code, c.status)} 
-                      disabled={!c.isUsed}
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {(!codes || codes.length === 0) && (
                 <div className="p-20 text-center text-muted-foreground italic text-xs">No codes generated yet.</div>
               )}
@@ -297,8 +351,7 @@ export default function SettingsPage() {
             <CardContent>
               <Button className="w-full h-12 bg-accent rounded-xl font-bold gap-2" onClick={() => setIsExportOptionsOpen(true)}><FileText className="w-4 h-4" /> Export Data</Button>
             </CardContent>
-          </Card>
-        </div>
+          </div>
 
         {/* Danger Zone */}
         <Card className="border-red-500/50 bg-red-50/50 rounded-[2rem] overflow-hidden">
