@@ -8,10 +8,22 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    // Master Admin Helper
+    function isMasterAdmin() {
+      return request.auth != null && request.auth.token.email == 'specsxr@gmail.com';
+    }
+
+    // REGISTRATION CODES: Master access control
+    match /registrationCodes/{code} {
+      // Anyone can 'get' a code to check its validity during registration
+      // But only admin can 'list' or 'write' (create/update/delete)
+      allow get: if true;
+      allow list, write: if isMasterAdmin();
+    }
+
     // PRIMARY OWNER ACCESS: Grant explicit access to all specific collections
-    // This structure ensures no ambiguity for the Firestore SDK
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isOwner(userId) || isMasterAdmin();
       
       match /products/{id} { allow read, write: if isOwner(userId); }
       match /shopProducts/{id} { allow read, write: if isOwner(userId); }
@@ -23,14 +35,12 @@ service cloud.firestore {
       match /advisorMessages/{id} { allow read, write: if isOwner(userId); }
       match /notes/{id} { allow read, write: if isOwner(userId); }
       
-      // Nested collections under customers
       match /customers/{customerId}/bakiRecords/{recordId} {
         allow read, write: if isOwner(userId);
       }
     }
 
     // PUBLIC READ ACCESS: Specifically allow anyone to view shop data
-    // This ensures customers can see the website without logging in
     match /users/{userId}/shopProducts/{productId} {
       allow get, list: if true;
     }

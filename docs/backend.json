@@ -117,6 +117,20 @@
         "address": { "type": "string" }
       }
     },
+    "RegistrationCode": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RegistrationCode",
+      "type": "object",
+      "description": "Master access codes for account creation.",
+      "properties": {
+        "code": { "type": "string" },
+        "isUsed": { "type": "boolean" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
     "AIMessage": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "AIMessage",
@@ -137,7 +151,8 @@
         "id": { "type": "string" },
         "username": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "role": { "type": "string" }
+        "role": { "type": "string" },
+        "usedCode": { "type": "string" }
       },
       "required": ["id", "username", "email", "role"]
     }
@@ -150,6 +165,10 @@
       {
         "path": "/users/{userId}",
         "definition": { "entityName": "User", "schema": { "$ref": "#/backend/entities/User" } }
+      },
+      {
+        "path": "/registrationCodes/{code}",
+        "definition": { "entityName": "RegistrationCode", "schema": { "$ref": "#/backend/entities/RegistrationCode" } }
       },
       {
         "path": "/users/{userId}/products/{productId}",

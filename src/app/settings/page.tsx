@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Languages,
   Download,
-  Printer,
   Sparkles,
   Key,
   Info,
@@ -20,7 +19,13 @@ import {
   FileText,
   AlertCircle,
   X,
-  Cpu
+  Cpu,
+  UserCheck,
+  ShieldAlert,
+  Plus,
+  Users,
+  Power,
+  Copy
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -42,16 +47,127 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBusinessData } from "@/hooks/use-business-data";
 import { useToast } from "@/hooks/use-toast";
 import { translations } from "@/lib/translations";
 import { verifyAiKey } from "@/ai/flows/verify-ai-key";
 import { cn } from "@/lib/utils";
+import { useUser, useFirestore, useCollection } from "@/firebase";
+import { collection, doc, setDoc, updateDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
 
-const LANGUAGES = [
-  { label: 'বাংলা (Bengali)', value: 'bn' },
-  { label: 'English', value: 'en' },
-];
+/**
+ * MASTER ADMIN PANEL
+ * Only visible to specsxr@gmail.com
+ */
+function MasterDeveloperPanel() {
+  const { user } = useUser();
+  const db = useFirestore();
+  const { toast } = useToast();
+  
+  const codesQuery = query(collection(db, 'registrationCodes'), orderBy('createdAt', 'desc'));
+  const { data: codes, isLoading } = useCollection(codesQuery);
+
+  const generateNewCode = async () => {
+    const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    try {
+      await setDoc(doc(db, 'registrationCodes', newCode), {
+        code: newCode,
+        isUsed: false,
+        status: 'active',
+        createdAt: serverTimestamp()
+      });
+      toast({ title: "New Access Code Generated", description: `Code: ${newCode}` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Failed to generate code" });
+    }
+  };
+
+  const toggleUserStatus = async (code: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    try {
+      await updateDoc(doc(db, 'registrationCodes', code), { status: newStatus });
+      toast({ title: `Status changed to ${newStatus}` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Failed to update status" });
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied to clipboard" });
+  };
+
+  if (user?.email !== 'specsxr@gmail.com') return null;
+
+  return (
+    <Card className="border-red-500/30 shadow-2xl bg-white overflow-hidden ring-4 ring-red-500/5 rounded-[2.5rem]">
+      <div className="bg-red-600 text-white p-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md border border-white/30">
+            <ShieldAlert className="w-7 h-7" />
+          </div>
+          <div>
+            <CardTitle className="text-xl font-black uppercase tracking-tighter">Master Developer Control</CardTitle>
+            <CardDescription className="text-red-100 text-xs">Managing registration access & users.</CardDescription>
+          </div>
+        </div>
+        <Button onClick={generateNewCode} className="bg-white text-red-600 hover:bg-red-50 rounded-xl font-black uppercase text-[10px] h-10 gap-2">
+          <Plus className="w-4 h-4" /> Generate Code
+        </Button>
+      </div>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[400px]">
+          {isLoading ? (
+            <div className="p-10 text-center animate-pulse text-red-600 font-bold">Fetching codes...</div>
+          ) : (
+            <div className="divide-y">
+              {codes?.map((c) => (
+                <div key={c.id} className="p-4 flex items-center justify-between hover:bg-red-50/30 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "h-10 w-10 rounded-xl flex items-center justify-center font-black text-xs border shadow-sm",
+                      c.isUsed ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"
+                    )}>
+                      {c.code.slice(0, 2)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-black text-primary font-mono">{c.code}</p>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(c.code)}><Copy className="w-3 h-3" /></Button>
+                      </div>
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase">
+                        {c.isUsed ? `User: ${c.userEmail}` : 'Unused Code'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="text-right mr-2">
+                      <p className="text-[8px] font-black uppercase opacity-40">Status</p>
+                      <Badge className={cn("border-none text-[8px] font-black h-5", c.status === 'active' ? "bg-green-500" : "bg-red-500")}>
+                        {c.status?.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <Switch 
+                      checked={c.status === 'active'} 
+                      onCheckedChange={() => toggleUserStatus(c.code, c.status)} 
+                      disabled={!c.isUsed}
+                    />
+                  </div>
+                </div>
+              ))}
+              {(!codes || codes.length === 0) && (
+                <div className="p-20 text-center text-muted-foreground italic text-xs">No codes generated yet.</div>
+              )}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function SettingsPage() {
   const { products, sales, aiApiKey, aiModel, language, actions } = useBusinessData();
@@ -63,7 +179,6 @@ export default function SettingsPage() {
   const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // AI State
   const [newAiKey, setNewAiKey] = useState(aiApiKey || "");
   const [isVerifying, setIsVerifying] = useState(false);
   const [detectedModel, setDetectedModel] = useState<string | null>(aiModel || null);
@@ -80,37 +195,20 @@ export default function SettingsPage() {
 
   const handleVerifyAndSaveKey = async () => {
     const cleanedKey = newAiKey.trim().replace(/^["']|["']$/g, '');
-    
-    if (!cleanedKey) {
-      toast({ variant: "destructive", title: "Key Required" });
-      return;
-    }
-
+    if (!cleanedKey) return;
     setIsVerifying(true);
-    setDetectedModel(null);
-    setVerifyError(null);
-
     try {
       const result = await verifyAiKey({ apiKey: cleanedKey });
-      
       if (result.success) {
         const modelName = result.detectedModel || "gemini-1.5-flash";
         setDetectedModel(modelName);
-        // Save both Key and Detected Model
         actions.setAiConfig(cleanedKey, modelName);
-        toast({
-          title: language === 'en' ? "AI Brain Activated!" : "এআই ব্রেইন সক্রিয় হয়েছে!",
-          description: result.message
-        });
+        toast({ title: "AI Brain Activated!" });
       } else {
         setVerifyError(result.message);
-        toast({
-          variant: "destructive",
-          title: language === 'en' ? "Activation Failed" : "অ্যাক্টিভেশন ব্যর্থ",
-        });
       }
-    } catch (e: any) {
-      setVerifyError("সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না। দয়া করে আবার চেষ্টা করুন।");
+    } catch (e) {
+      setVerifyError("Connection Error");
     } finally {
       setIsVerifying(false);
     }
@@ -123,208 +221,99 @@ export default function SettingsPage() {
       toast({ title: "System Reset" });
     } else {
       toast({ title: "Wrong Password", variant: "destructive" });
-      setPassword("");
     }
   };
 
-  const handleDownloadCSV = () => {
-    setIsExportOptionsOpen(false);
-    toast({ title: "Generating Document..." });
-    const csvContent = "SpecsBiz Data Report\nInventory: " + products.length + "\nSales: " + sales.length;
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "specsbiz_backup.csv";
-    link.click();
-  };
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
-      <div className="flex items-center gap-3 px-2">
-        <div className="p-2 bg-accent/10 rounded-xl">
-          <Settings className="w-6 h-6 text-accent" />
-        </div>
+    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20 px-2">
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 bg-accent/10 rounded-2xl shadow-sm"><Settings className="w-6 h-6 text-accent" /></div>
         <div>
-          <h2 className="text-2xl font-bold font-headline text-primary">{t.systemSettings}</h2>
-          <p className="text-sm text-muted-foreground">{t.configurePrefs}</p>
+          <h2 className="text-2xl font-black text-primary uppercase tracking-tighter">{t.systemSettings}</h2>
+          <p className="text-[10px] font-bold text-accent uppercase tracking-[0.3em]">{t.configurePrefs}</p>
         </div>
       </div>
 
-      <div className="grid gap-6 px-2">
-        {/* SpecsAI Universal Activation Card */}
-        <Card className="border-primary/30 shadow-2xl bg-white overflow-hidden ring-4 ring-primary/5 rounded-[2rem]">
+      <div className="grid gap-8">
+        {/* Developer Admin Section */}
+        <MasterDeveloperPanel />
+
+        {/* AI Activation */}
+        <Card className="border-primary/30 shadow-xl bg-white overflow-hidden rounded-[2.5rem]">
           <div className="bg-primary text-white p-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md border border-white/30">
-                <Cpu className="w-7 h-7 text-accent animate-pulse" />
-              </div>
-              <div>
-                <CardTitle className="text-xl font-black uppercase tracking-tighter">Universal AI Activation</CardTitle>
-                <CardDescription className="text-white/70 text-xs">Auto-detecting your AI Brain Model.</CardDescription>
-              </div>
+              <div className="bg-white/20 p-3 rounded-2xl border border-white/30"><Cpu className="w-7 h-7 text-accent animate-pulse" /></div>
+              <CardTitle className="text-lg font-black uppercase">Universal AI Brain</CardTitle>
             </div>
-            <Badge className={cn("border-none h-7 px-3 text-[10px] font-black uppercase tracking-widest", aiApiKey ? "bg-green-500" : "bg-amber-500")}>
-              {aiApiKey ? "SYSTEM ACTIVE" : "BRAIN OFFLINE"}
+            <Badge className={cn("border-none h-6 px-3 text-[9px] font-black", aiApiKey ? "bg-green-500" : "bg-amber-500")}>
+              {aiApiKey ? "ACTIVE" : "OFFLINE"}
             </Badge>
           </div>
           <CardContent className="p-6 space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-black flex items-center gap-2 text-primary uppercase">
-                  <Key className="w-4 h-4" /> Universal API Key
-                </Label>
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[10px] text-accent font-black uppercase hover:underline flex items-center gap-1">
-                  Get Gemini Key <RefreshCw className="w-2.5 h-2.5" />
-                </a>
+                <Label className="text-xs font-black uppercase text-primary">Master API Key</Label>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[10px] text-accent font-black uppercase hover:underline">Get Free Key</a>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <Input 
-                    type="password" 
-                    placeholder="Paste your API Key here (Gemini/OpenAI)..."
-                    value={newAiKey}
-                    onChange={(e) => {
-                      setNewAiKey(e.target.value);
-                      setVerifyError(null);
-                    }}
-                    className={cn(
-                      "h-14 bg-muted/30 focus:ring-primary font-mono text-xs border-primary/10 rounded-xl pr-10",
-                      verifyError && "border-destructive focus:ring-destructive"
-                    )}
-                  />
-                  {newAiKey && (
-                    <button 
-                      onClick={() => { setNewAiKey(""); setVerifyError(null); }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <Button 
-                  className="bg-primary hover:bg-primary/90 h-14 px-8 font-black uppercase shadow-xl transition-all active:scale-95 shrink-0"
-                  onClick={handleVerifyAndSaveKey}
-                  disabled={isVerifying}
-                >
-                  {isVerifying ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify & Activate"}
+                <Input type="password" placeholder="Paste Key..." value={newAiKey} onChange={e => setNewAiKey(e.target.value)} className="h-14 bg-muted/30 rounded-xl" />
+                <Button className="bg-primary h-14 px-8 font-black uppercase shadow-lg" onClick={handleVerifyAndSaveKey} disabled={isVerifying}>
+                  {isVerifying ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify"}
                 </Button>
               </div>
-
-              {verifyError && (
-                <div className="bg-red-50 p-4 rounded-xl border-2 border-destructive/20 flex items-start gap-3 animate-in slide-in-from-top-2">
-                  <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-destructive uppercase">Error Detected</p>
-                    <p className="text-sm font-bold text-destructive/80">{verifyError}</p>
-                  </div>
+              {detectedModel && <div className="bg-emerald-50 p-4 rounded-xl border-2 border-emerald-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Activity className="w-5 h-5 text-emerald-600" />
+                  <p className="text-xs font-black text-emerald-800">{detectedModel} Activated</p>
                 </div>
-              )}
-
-              {detectedModel && (
-                <div className="bg-emerald-50 p-4 rounded-xl border-2 border-emerald-100 flex items-center justify-between animate-in slide-in-from-top-2">
-                  <div className="flex items-center gap-3">
-                    <Activity className="w-5 h-5 text-emerald-600" />
-                    <div>
-                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Active Model Brain</p>
-                      <p className="text-base font-black text-emerald-800">{detectedModel}</p>
-                    </div>
-                  </div>
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                </div>
-              )}
-
-              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-4">
-                <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                  <Info className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[11px] text-blue-800 leading-relaxed font-medium">
-                    আপনি যে কী দেবেন, সিস্টেম অটোমেটিক সেটির মডেল নাম বের করে পুরো অ্যাপে সেট করে দিবে। এখন থেকে এআই আপনার দোকানের ডাটা সরাসরি ওই মডেল দিয়ে প্রসেস করবে।
-                  </p>
-                </div>
-              </div>
+                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              </div>}
             </div>
           </CardContent>
         </Card>
 
-        {/* Data Export Card */}
-        <Card className="border-accent/20 shadow-lg bg-white overflow-hidden rounded-[2rem]">
-          <div className="bg-accent/5 p-4 border-b border-accent/10 flex items-center justify-between px-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-accent text-white p-2 rounded-lg"><FileText className="w-5 h-5" /></div>
-              <CardTitle className="text-lg">Full Data Export</CardTitle>
-            </div>
-          </div>
-          <CardContent className="p-6">
-            <Button className="w-full bg-accent hover:bg-accent/90 h-14 text-lg font-bold gap-2 shadow-xl rounded-2xl" onClick={() => setIsExportOptionsOpen(true)}>
-              <Download className="w-5 h-5" /> Export Business Data
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Language & Data */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="rounded-[2rem]">
+            <CardHeader><CardTitle className="text-sm uppercase flex items-center gap-2"><Languages className="w-4 h-4" /> {t.language}</CardTitle></CardHeader>
+            <CardContent>
+              <Select value={language} onValueChange={handleLanguageChange}>
+                <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
 
-        {/* Language Settings */}
-        <Card className="rounded-[2rem]">
-          <CardHeader className="px-6">
-            <div className="flex items-center gap-2">
-              <Languages className="w-5 h-5 text-accent" />
-              <CardTitle>{t.language}</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="px-6 pb-6">
-            <Select value={language} onValueChange={handleLanguageChange}>
-              <SelectTrigger className="w-full h-12 rounded-xl border-accent/10"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+          <Card className="rounded-[2rem]">
+            <CardHeader><CardTitle className="text-sm uppercase flex items-center gap-2"><Download className="w-4 h-4" /> Backup</CardTitle></CardHeader>
+            <CardContent>
+              <Button className="w-full h-12 bg-accent rounded-xl font-bold gap-2" onClick={() => setIsExportOptionsOpen(true)}><FileText className="w-4 h-4" /> Export Data</Button>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Danger Zone */}
-        <Card className="border-red-500/50 bg-red-50/50 rounded-[2rem]">
-          <CardHeader className="px-6">
-            <div className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="w-5 h-5" />
-              <CardTitle>{t.dangerZone}</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="px-6 pb-6">
-            <div className="flex justify-between items-center p-4 border border-red-200 rounded-2xl bg-white/50">
-              <p className="text-sm font-bold text-red-700">{t.resetSystem}</p>
-              <Button variant="destructive" className="rounded-xl font-bold" onClick={() => setIsResetOpen(true)}>{t.resetSystem}</Button>
+        <Card className="border-red-500/50 bg-red-50/50 rounded-[2rem] overflow-hidden">
+          <CardHeader className="bg-red-500/10"><CardTitle className="text-sm font-black text-red-600 uppercase flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> {t.dangerZone}</CardTitle></CardHeader>
+          <CardContent className="p-6">
+            <div className="flex justify-between items-center">
+              <p className="text-xs font-bold text-red-700">Wipe all data from cloud and local.</p>
+              <Button variant="destructive" className="rounded-xl font-black text-[10px] uppercase" onClick={() => setIsResetOpen(true)}>{t.resetSystem}</Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Reset Dialog */}
       <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
-        <DialogContent className="sm:max-w-[400px] rounded-[2rem]">
-          <DialogHeader>
-            <DialogTitle className="text-destructive font-black uppercase">Confirm Full Wipe</DialogTitle>
-            <DialogDescription>This will delete ALL your products, sales, and customers forever.</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="rounded-[2rem]">
+          <DialogHeader><DialogTitle className="text-destructive font-black uppercase">Master Wipe</DialogTitle></DialogHeader>
           <div className="py-4 space-y-4">
-            <Label className="text-xs font-bold uppercase opacity-60">Master Password ('specsxr')</Label>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} className="h-12 rounded-xl" placeholder="••••••••" />
+            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} className="h-14 text-center text-2xl font-black rounded-2xl" placeholder="••••••••" />
           </div>
-          <DialogFooter>
-            <Button variant="destructive" className="w-full h-14 rounded-2xl font-black uppercase shadow-xl" onClick={handleReset} disabled={isDeleting || !password}>
-              {isDeleting ? "Wiping Data..." : "Confirm & Format System"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isExportOptionsOpen} onOpenChange={setIsExportOptionsOpen}>
-        <DialogContent className="sm:max-w-[400px] rounded-[2rem]">
-          <DialogHeader><DialogTitle className="font-black uppercase">Export Data</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-6">
-            <Button variant="outline" className="h-20 rounded-2xl border-accent/20 text-accent font-black uppercase shadow-sm" onClick={handleDownloadCSV}>
-              <Download className="mr-2 h-6 w-6" /> Download Excel/CSV Backup
-            </Button>
-          </div>
+          <DialogFooter><Button variant="destructive" className="w-full h-14 rounded-2xl font-black uppercase" onClick={handleReset} disabled={isDeleting}>Confirm Format</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

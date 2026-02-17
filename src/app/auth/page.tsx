@@ -15,10 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Store, LogIn, LogOut, ShieldCheck, Loader2, UserPlus, MailCheck, ChevronLeft } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { Store, LogIn, LogOut, ShieldCheck, Loader2, MailCheck, ChevronLeft, KeyRound, AlertCircle } from 'lucide-react';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { sendWelcomeEmail } from '@/actions/send-welcome-email';
 import { sendVerificationCode } from '@/actions/send-verification-code';
+import { cn } from '@/lib/utils';
 
 export default function AuthPage() {
   const { user, isUserLoading } = useUser();
@@ -29,13 +30,13 @@ export default function AuthPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [accessCode, setAccessCode] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Verification States
   const [step, setStep] = useState<'auth' | 'verify'>('auth');
-  const [generatedCode, setGeneratedCode] = useState('');
-  const [enteredCode, setEnteredCode] = useState('');
+  const [generatedOTP, setGeneratedOTP] = useState('');
+  const [enteredOTP, setEnteredOTP] = useState('');
 
   const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -48,39 +49,48 @@ export default function AuthPage() {
     setLoading(true);
     try {
       if (isRegistering) {
-        // Step 1: Send OTP instead of creating account
+        if (!accessCode) {
+          throw new Error("দয়া করে ডেভলপার থেকে পাওয়া এক্সেস কোডটি দিন।");
+        }
+
+        // 1. Verify Access Code
+        const codeRef = doc(db, 'registrationCodes', accessCode.trim().toUpperCase());
+        const codeSnap = await getDoc(codeRef);
+
+        if (!codeSnap.exists()) {
+          throw new Error("ভুল এক্সেস কোড! সঠিক কোডটি দিন।");
+        }
+
+        const codeData = codeSnap.data();
+        if (codeData.isUsed) {
+          throw new Error("এই কোডটি ইতিমধ্যে অন্য কেউ ব্যবহার করেছে।");
+        }
+
+        // 2. Send OTP
         const otp = generateOTP();
-        setGeneratedCode(otp);
+        setGeneratedOTP(otp);
         
         const res = await sendVerificationCode(email, otp);
         if (res.success) {
           setStep('verify');
           toast({ 
             title: "Verification Sent!", 
-            description: `We've sent a 6-digit code to ${email}` 
+            description: `A code has been sent to ${email}` 
           });
         } else {
-          throw new Error(res.error || "Failed to send code.");
+          throw new Error(res.error || "OTP পাঠাতে ব্যর্থ হয়েছে।");
         }
       } else {
         // Standard Login
         await signInWithEmailAndPassword(auth, email, password);
-        toast({ 
-          title: "Welcome back", 
-          description: "Successfully connected to your business cloud." 
-        });
+        toast({ title: "Welcome back", description: "Cloud sync active." });
         router.push('/');
       }
     } catch (error: any) {
-      console.error("Auth Error:", error.code);
-      let errorMsg = error.message || "Authentication failed. Please check your internet.";
-      if (error.code === 'auth/user-not-found') errorMsg = "Account not found. Please register first.";
-      else if (error.code === 'auth/wrong-password') errorMsg = "Incorrect password. Please try again.";
-      
       toast({ 
         variant: "destructive", 
         title: "Error", 
-        description: errorMsg 
+        description: error.message || "Authentication failed." 
       });
     } finally {
       setLoading(false);
@@ -89,32 +99,42 @@ export default function AuthPage() {
 
   const handleVerifyAndCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (enteredCode !== generatedCode) {
-      toast({ variant: "destructive", title: "Invalid Code", description: "The code you entered is incorrect." });
+    if (enteredOTP !== generatedOTP) {
+      toast({ variant: "destructive", title: "Invalid Code", description: "The OTP you entered is incorrect." });
       return;
     }
 
     setLoading(true);
     try {
-      // Step 2: Final Account Creation
+      // 1. Create Firebase Auth Account
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+      const cleanCode = accessCode.trim().toUpperCase();
       
-      if (db && userCredential.user) {
-        await setDoc(doc(db, 'users', userCredential.user.uid), {
-          id: userCredential.user.uid,
+      // 2. Setup User Profile
+      if (db) {
+        await setDoc(doc(db, 'users', uid), {
+          id: uid,
           email: email,
+          username: email.split('@')[0],
           role: 'owner',
+          usedCode: cleanCode,
           createdAt: new Date().toISOString()
+        });
+
+        // 3. Mark Code as Used & Active
+        await updateDoc(doc(db, 'registrationCodes', cleanCode), {
+          isUsed: true,
+          userId: uid,
+          userEmail: email,
+          status: 'active',
+          usedAt: serverTimestamp()
         });
       }
       
-      // Welcome Email in background
       sendWelcomeEmail(email).catch(err => console.error("Welcome email failed", err));
       
-      toast({ 
-        title: "Account Verified!", 
-        description: "Welcome to SpecsBiz! Your cloud space is now active." 
-      });
+      toast({ title: "Account Verified!", description: "Welcome to SpecsBiz Cloud." });
       router.push('/');
     } catch (error: any) {
       toast({ variant: "destructive", title: "Registration Failed", description: error.message });
@@ -123,36 +143,31 @@ export default function AuthPage() {
     }
   };
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    toast({ title: "Logged Out", description: "You are now in local-only mode." });
-  };
-
   if (isUserLoading) return (
-    <div className="flex h-screen items-center justify-center gap-2 text-primary font-medium bg-background">
-      <Loader2 className="w-8 h-8 animate-spin text-accent" />
-      <span className="text-sm font-black uppercase tracking-widest opacity-50">Syncing Brain...</span>
+    <div className="flex h-screen items-center justify-center bg-[#191970]">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="w-12 h-12 animate-spin text-accent" />
+        <span className="text-xs font-black text-white uppercase tracking-[0.3em] opacity-50">Syncing Master Brain...</span>
+      </div>
     </div>
   );
 
   if (user) {
     return (
-      <div className="flex h-[80vh] items-center justify-center p-6">
-        <Card className="w-full max-w-md text-center shadow-2xl border-accent/20 rounded-[2.5rem] overflow-hidden bg-white">
+      <div className="flex h-screen items-center justify-center p-6 bg-background">
+        <Card className="w-full max-w-md shadow-2xl border-accent/20 rounded-[2.5rem] overflow-hidden bg-white">
           <CardHeader className="bg-accent/5 pb-8">
-            <div className="mx-auto bg-green-100 p-5 rounded-full w-fit mb-4 shadow-inner">
-              <ShieldCheck className="w-12 h-12 text-green-600" />
-            </div>
-            <CardTitle className="text-3xl font-black text-primary uppercase tracking-tighter">Cloud Active</CardTitle>
-            <CardDescription className="font-bold text-accent text-xs mt-1">{user.email}</CardDescription>
+            <div className="mx-auto bg-green-100 p-5 rounded-full w-fit mb-4"><ShieldCheck className="w-12 h-12 text-green-600" /></div>
+            <CardTitle className="text-3xl font-black text-primary text-center">Cloud Active</CardTitle>
+            <CardDescription className="text-center font-bold text-accent text-xs">{user.email}</CardDescription>
           </CardHeader>
-          <CardContent className="p-8 space-y-4">
-            <p className="text-sm font-medium text-muted-foreground bg-muted/30 p-6 rounded-2xl leading-relaxed">
-              Your business data is safely synchronized. Any changes you make will be updated across all devices logged into this account.
+          <CardContent className="p-8">
+            <p className="text-sm font-medium text-muted-foreground bg-muted/30 p-6 rounded-2xl leading-relaxed text-center">
+              আপনার সব ডাটা এখন সুরক্ষিতভাবে ক্লাউড সার্ভারে সিঙ্ক হচ্ছে। আপনি যেকোনো ডিভাইস থেকে লগইন করে কাজ করতে পারবেন।
             </p>
           </CardContent>
           <CardFooter className="p-8 pt-0">
-            <Button variant="outline" className="w-full h-14 gap-2 border-destructive text-destructive hover:bg-destructive/5 rounded-2xl font-black uppercase" onClick={handleLogout}>
+            <Button variant="outline" className="w-full h-14 gap-2 border-destructive text-destructive hover:bg-destructive/5 rounded-2xl font-black uppercase" onClick={() => signOut(auth)}>
               <LogOut className="w-5 h-5" /> Disconnect Cloud
             </Button>
           </CardFooter>
@@ -161,43 +176,31 @@ export default function AuthPage() {
     );
   }
 
-  // --- Step 2: Verification UI ---
   if (step === 'verify') {
     return (
-      <div className="flex h-[90vh] items-center justify-center p-6 animate-in slide-in-from-right duration-500">
-        <Card className="w-full max-w-md shadow-2xl border-accent/10 rounded-[3rem] overflow-hidden bg-white">
+      <div className="flex h-screen items-center justify-center p-6 bg-[#191970] animate-in slide-in-from-right duration-500">
+        <Card className="w-full max-w-md shadow-2xl border-white/10 rounded-[3rem] overflow-hidden bg-white">
           <CardHeader className="text-center p-8 bg-accent/5">
-            <div className="mx-auto bg-primary p-5 rounded-[1.5rem] w-fit mb-2 shadow-xl">
-              <MailCheck className="w-10 h-10 text-white" />
-            </div>
-            <CardTitle className="text-3xl font-black text-primary uppercase tracking-tighter">Verify Email</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Enter the 6-digit code sent to your mail</CardDescription>
+            <div className="mx-auto bg-primary p-5 rounded-3xl w-fit mb-2"><MailCheck className="w-10 h-10 text-white" /></div>
+            <CardTitle className="text-3xl font-black text-primary uppercase">Verify Mail</CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase opacity-60">Enter the 6-digit code sent to your inbox</CardDescription>
           </CardHeader>
-          
           <CardContent className="p-8">
             <form onSubmit={handleVerifyAndCreate} className="space-y-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase ml-1 opacity-60">Verification Code</Label>
-                <Input 
-                  placeholder="000000"
-                  maxLength={6}
-                  value={enteredCode}
-                  onChange={e => setEnteredCode(e.target.value)}
-                  required
-                  className="h-16 rounded-2xl bg-muted/20 border-none text-4xl text-center font-black tracking-[10px] focus:ring-2 focus:ring-accent"
-                />
-              </div>
-              
-              <Button className="w-full bg-accent hover:bg-accent/90 h-16 text-lg font-black uppercase shadow-2xl transition-all active:scale-95 rounded-2xl" disabled={loading}>
-                {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Verify & Activate Account"}
+              <Input 
+                placeholder="000000"
+                maxLength={6}
+                value={enteredOTP}
+                onChange={e => setEnteredOTP(e.target.value)}
+                required
+                className="h-16 rounded-2xl bg-muted/20 border-none text-4xl text-center font-black tracking-[10px] focus:ring-2 focus:ring-accent"
+              />
+              <Button className="w-full bg-accent hover:bg-accent/90 h-16 text-lg font-black uppercase rounded-2xl shadow-xl" disabled={loading}>
+                {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Verify & Activate"}
               </Button>
             </form>
-
-            <button 
-              onClick={() => { setStep('auth'); setEnteredCode(''); }}
-              className="mt-6 flex items-center justify-center gap-2 w-full text-xs font-black text-muted-foreground uppercase tracking-widest hover:text-primary transition-all"
-            >
-              <ChevronLeft className="w-4 h-4" /> Change Email
+            <button onClick={() => setStep('auth')} className="mt-6 w-full text-xs font-black text-muted-foreground hover:text-primary transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
+              <ChevronLeft className="w-4 h-4" /> Go Back
             </button>
           </CardContent>
         </Card>
@@ -205,74 +208,59 @@ export default function AuthPage() {
     );
   }
 
-  // --- Step 1: Initial Auth UI ---
   return (
-    <div className="flex h-[90vh] items-center justify-center p-6 animate-in fade-in duration-700">
-      <Card className="w-full max-w-md shadow-[0_30px_80px_rgba(0,0,0,0.1)] border-accent/10 rounded-[3rem] overflow-hidden bg-white">
-        <CardHeader className="text-center space-y-2 p-8 bg-accent/5">
-          <div className="mx-auto bg-accent p-5 rounded-[1.5rem] w-fit mb-2 shadow-xl shadow-accent/20">
-            <Store className="w-10 h-10 text-white" />
-          </div>
+    <div className="flex h-screen items-center justify-center p-6 bg-[#191970] animate-in fade-in duration-700">
+      <Card className="w-full max-w-md shadow-[0_30px_80px_rgba(0,0,0,0.3)] border-white/10 rounded-[3rem] overflow-hidden bg-white">
+        <CardHeader className="text-center p-8 bg-accent/5">
+          <div className="mx-auto bg-accent p-5 rounded-[1.5rem] w-fit mb-2 shadow-xl shadow-accent/20"><Store className="w-10 h-10 text-white" /></div>
           <CardTitle className="text-4xl font-black text-primary uppercase tracking-tighter">SpecsBiz Cloud</CardTitle>
           <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">
-            {isRegistering ? 'Create your business account' : 'Access your business cloud'}
+            {isRegistering ? 'Master Access Required' : 'Access your business space'}
           </CardDescription>
         </CardHeader>
         
         <CardContent className="p-8">
-          <form onSubmit={handleInitialSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-[10px] font-black uppercase ml-1 opacity-60">Email Address</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="owner@yourshop.com" 
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="h-14 rounded-2xl bg-muted/20 border-none focus:ring-2 focus:ring-accent font-bold"
-              />
+          <form onSubmit={handleInitialSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase ml-1 opacity-60">Email Address</Label>
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-14 rounded-2xl bg-muted/20 border-none font-bold" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" title="At least 6 characters" className="text-[10px] font-black uppercase ml-1 opacity-60">Secure Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="h-14 rounded-2xl bg-muted/20 border-none focus:ring-2 focus:ring-accent font-bold"
-              />
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase ml-1 opacity-60">Password</Label>
+              <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="h-14 rounded-2xl bg-muted/20 border-none font-bold" />
             </div>
+
+            {isRegistering && (
+              <div className="space-y-1.5 animate-in slide-in-from-top-2">
+                <Label className="text-[10px] font-black uppercase ml-1 text-accent flex items-center gap-1.5">
+                  <KeyRound className="w-3 h-3" /> Secret Access Code
+                </Label>
+                <Input 
+                  placeholder="Enter Code from Developer" 
+                  value={accessCode} 
+                  onChange={e => setAccessCode(e.target.value)} 
+                  required 
+                  className="h-14 rounded-2xl bg-accent/5 border-2 border-accent/20 text-accent font-black uppercase tracking-widest focus:ring-accent"
+                />
+                <p className="text-[9px] font-bold text-muted-foreground italic px-1">রেজিস্ট্রেশন করতে ডেভলপার থেকে দেওয়া সিক্রেট কোডটি প্রয়োজন।</p>
+              </div>
+            )}
             
-            <Button className="w-full bg-accent hover:bg-accent/90 gap-2 h-16 text-lg font-black uppercase shadow-2xl transition-all active:scale-95 rounded-2xl" disabled={loading}>
-              {loading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                isRegistering ? <MailCheck className="w-6 h-6" /> : <LogIn className="w-6 h-6" />
-              )}
-              {loading ? "Processing..." : (isRegistering ? "Get Verification Code" : "Connect to Cloud")}
+            <Button className={cn("w-full h-16 text-lg font-black uppercase rounded-2xl shadow-xl transition-all active:scale-95", isRegistering ? "bg-primary" : "bg-accent hover:bg-accent/90")} disabled={loading}>
+              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (isRegistering ? "Verify Access" : "Connect to Cloud")}
             </Button>
           </form>
 
           <div className="mt-8 text-center">
-            <button 
-              type="button"
-              onClick={() => setIsRegistering(!isRegistering)}
-              className="text-xs font-black text-accent uppercase tracking-widest hover:underline transition-all"
-            >
-              {isRegistering ? "Already have an account? Login" : "Don't have an account? Register Now"}
+            <button onClick={() => setIsRegistering(!isRegistering)} className="text-xs font-black text-accent uppercase tracking-widest hover:underline">
+              {isRegistering ? "Already have an account? Login" : "New User? Register with Secret Code"}
             </button>
           </div>
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-4 border-t border-black/5 p-8 bg-muted/5">
-          <p className="text-[10px] text-center text-muted-foreground leading-relaxed font-bold uppercase opacity-40">
-            By connecting, your business data will be synced securely across all your devices.
-          </p>
-          <Button variant="ghost" className="w-full h-10 text-xs font-black uppercase tracking-widest text-muted-foreground hover:bg-black/5" onClick={() => router.push('/')}>
-            Use Offline Mode
+        <CardFooter className="p-8 border-t bg-muted/5">
+          <Button variant="ghost" className="w-full h-10 text-xs font-black uppercase text-muted-foreground" onClick={() => router.push('/')}>
+            Continue Offline
           </Button>
         </CardFooter>
       </Card>
