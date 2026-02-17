@@ -21,6 +21,7 @@ import {
 
 const LOCAL_KEYS = {
   PRODUCTS: 'specsbiz_local_products',
+  SHOP_PRODUCTS: 'specsbiz_local_shop_products',
   SALES: 'specsbiz_local_sales',
   CUSTOMERS: 'specsbiz_local_customers',
   PROCUREMENTS: 'specsbiz_local_procurements',
@@ -33,6 +34,7 @@ const LOCAL_KEYS = {
 
 interface BusinessContextType {
   products: any[];
+  shopProducts: any[];
   sales: any[];
   customers: any[];
   procurements: any[];
@@ -46,6 +48,9 @@ interface BusinessContextType {
     addProduct: (product: any) => void;
     updateProduct: (productId: string, data: any) => void;
     deleteProduct: (productId: string) => void;
+    addShopProduct: (product: any) => void;
+    updateShopProduct: (productId: string, data: any) => void;
+    deleteShopProduct: (productId: string) => void;
     addSale: (sale: any) => void;
     deleteSale: (saleId: string) => void;
     addCustomer: (customer: any) => void;
@@ -73,6 +78,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const db = useFirestore();
 
   const [localProducts, setLocalProducts] = useState<any[]>([]);
+  const [localShopProducts, setLocalShopProducts] = useState<any[]>([]);
   const [localSales, setLocalSales] = useState<any[]>([]);
   const [localCustomers, setLocalCustomers] = useState<any[]>([]);
   const [localProcurements, setLocalProcurements] = useState<any[]>([]);
@@ -86,6 +92,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined') {
       try {
         const p = localStorage.getItem(LOCAL_KEYS.PRODUCTS);
+        const sp = localStorage.getItem(LOCAL_KEYS.SHOP_PRODUCTS);
         const s = localStorage.getItem(LOCAL_KEYS.SALES);
         const c = localStorage.getItem(LOCAL_KEYS.CUSTOMERS);
         const pr = localStorage.getItem(LOCAL_KEYS.PROCUREMENTS);
@@ -96,6 +103,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         const amodel = localStorage.getItem(LOCAL_KEYS.AI_MODEL);
         
         if (p) setLocalProducts(JSON.parse(p));
+        if (sp) setLocalShopProducts(JSON.parse(sp));
         if (s) setLocalSales(JSON.parse(s));
         if (c) setLocalCustomers(JSON.parse(c));
         if (pr) setLocalProcurements(JSON.parse(pr));
@@ -113,6 +121,11 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const productsQuery = useMemoFirebase(() => {
     if (!user?.uid || !db) return null;
     return query(collection(db, 'users', user.uid, 'products'), orderBy('name'));
+  }, [user?.uid, db]);
+
+  const shopProductsQuery = useMemoFirebase(() => {
+    if (!user?.uid || !db) return null;
+    return query(collection(db, 'users', user.uid, 'shopProducts'), orderBy('name'));
   }, [user?.uid, db]);
 
   const salesQuery = useMemoFirebase(() => {
@@ -136,18 +149,21 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   }, [user?.uid, db]);
 
   const { data: fbProducts, isLoading: pLoading } = useCollection(productsQuery);
+  const { data: fbShopProducts, isLoading: spLoading } = useCollection(shopProductsQuery);
   const { data: fbSales, isLoading: sLoading } = useCollection(salesQuery);
   const { data: fbCustomers, isLoading: cLoading } = useCollection(customersQuery);
   const { data: fbProc, isLoading: prLoading } = useCollection(procQuery);
   const { data: fbShopConfig } = useDoc(shopConfigRef);
 
   const products = user ? (fbProducts || []) : localProducts;
+  const shopProducts = user ? (fbShopProducts || []) : localShopProducts;
   const sales = user ? (fbSales || []) : localSales;
   const customers = user ? (fbCustomers || []) : localCustomers;
   const procurements = user ? (fbProc || []) : localProcurements;
   const shopConfig = user ? fbShopConfig : localShopConfig;
-  const isLoading = isUserLoading || (user && (pLoading || sLoading || cLoading || prLoading));
+  const isLoading = isUserLoading || (user && (pLoading || spLoading || sLoading || cLoading || prLoading));
 
+  // Main Inventory Actions
   const addProduct = useCallback((product: any) => {
     const id = product.id || Date.now().toString();
     const data = { ...product, id };
@@ -181,6 +197,45 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       setLocalProducts(prev => {
         const updated = prev.filter(p => p.id !== productId);
         localStorage.setItem(LOCAL_KEYS.PRODUCTS, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [user?.uid, db]);
+
+  // Shop-Specific Catalog Actions
+  const addShopProduct = useCallback((product: any) => {
+    const id = product.id || Date.now().toString();
+    const data = { ...product, id };
+    if (user?.uid && db) {
+      setDocumentNonBlocking(doc(db, 'users', user.uid, 'shopProducts', id), data, { merge: true });
+    } else {
+      setLocalShopProducts(prev => {
+        const updated = [data, ...prev];
+        localStorage.setItem(LOCAL_KEYS.SHOP_PRODUCTS, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [user?.uid, db]);
+
+  const updateShopProduct = useCallback((productId: string, data: any) => {
+    if (user?.uid && db) {
+      updateDocumentNonBlocking(doc(db, 'users', user.uid, 'shopProducts', productId), data);
+    } else {
+      setLocalShopProducts(prev => {
+        const updated = prev.map(p => p.id === productId ? { ...p, ...data } : p);
+        localStorage.setItem(LOCAL_KEYS.SHOP_PRODUCTS, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [user?.uid, db]);
+
+  const deleteShopProduct = useCallback((productId: string) => {
+    if (user?.uid && db) {
+      deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'shopProducts', productId));
+    } else {
+      setLocalShopProducts(prev => {
+        const updated = prev.filter(p => p.id !== productId);
+        localStorage.setItem(LOCAL_KEYS.SHOP_PRODUCTS, JSON.stringify(updated));
         return updated;
       });
     }
@@ -503,7 +558,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const resetAllData = useCallback(async () => {
     localStorage.clear();
     if (user?.uid && db) {
-      const collections = ['products', 'sales', 'customers', 'procurements', 'shopConfig'];
+      const collections = ['products', 'shopProducts', 'sales', 'customers', 'procurements', 'shopConfig'];
       for (const collName of collections) {
         const collRef = collection(db, 'users', user.uid, collName);
         const snapshot = await getDocs(collRef);
@@ -517,6 +572,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
 
   const value = {
     products,
+    shopProducts,
     sales,
     customers,
     procurements,
@@ -530,6 +586,9 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       addProduct,
       updateProduct,
       deleteProduct,
+      addShopProduct,
+      updateShopProduct,
+      deleteShopProduct,
       addSale,
       deleteSale,
       addCustomer,

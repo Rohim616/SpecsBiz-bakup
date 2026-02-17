@@ -29,7 +29,8 @@ import {
   Search,
   Tag,
   DollarSign,
-  Package
+  Package,
+  Import
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -64,7 +65,7 @@ import {
 export default function ShopManagerPage() {
   const { user } = useUser()
   const { toast } = useToast()
-  const { shopConfig, products, actions, language, currency } = useBusinessData()
+  const { shopConfig, shopProducts, products: inventoryProducts, actions, language, currency } = useBusinessData()
   const t = translations[language]
 
   // Shop Config State
@@ -78,6 +79,7 @@ export default function ShopManagerPage() {
   // Product Management State
   const [search, setSearch] = useState("")
   const [isAddProductOpen, setIsAddProductOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deletePass, setDeletePass] = useState("")
@@ -85,13 +87,11 @@ export default function ShopManagerPage() {
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "",
-    purchasePrice: "",
     sellingPrice: "",
-    stock: "",
     unit: "pcs",
-    alertThreshold: "5",
     imageUrl: "",
-    showInShop: true
+    isVisible: true,
+    stockStatus: "in_stock"
   })
 
   useEffect(() => {
@@ -119,7 +119,7 @@ export default function ShopManagerPage() {
   }
 
   const toggleProductVisibility = (productId: string, currentStatus: boolean) => {
-    actions.updateProduct(productId, { showInShop: !currentStatus })
+    actions.updateShopProduct(productId, { isVisible: !currentStatus })
     toast({ title: currentStatus ? "Hidden from Shop" : "Visible in Shop" })
   }
 
@@ -137,46 +137,54 @@ export default function ShopManagerPage() {
 
   const handleAddProduct = () => {
     if (!newProduct.name.trim()) return
-    actions.addProduct({
+    actions.addShopProduct({
       ...newProduct,
-      stock: parseFloat(newProduct.stock) || 0,
-      purchasePrice: parseFloat(newProduct.purchasePrice) || 0,
-      sellingPrice: parseFloat(newProduct.sellingPrice) || 0,
-      alertThreshold: parseFloat(newProduct.alertThreshold) || 5
+      sellingPrice: parseFloat(newProduct.sellingPrice) || 0
     })
-    setNewProduct({ name: "", category: "", purchasePrice: "", sellingPrice: "", stock: "", unit: "pcs", alertThreshold: "5", imageUrl: "", showInShop: true })
+    setNewProduct({ name: "", category: "", sellingPrice: "", unit: "pcs", imageUrl: "", isVisible: true, stockStatus: "in_stock" })
     setIsAddProductOpen(false)
-    toast({ title: t.saveProduct })
+    toast({ title: "Product added to shop catalog" })
   }
 
   const handleUpdateProduct = () => {
     if (!editingProduct) return
-    actions.updateProduct(editingProduct.id, {
+    actions.updateShopProduct(editingProduct.id, {
       ...editingProduct,
-      stock: parseFloat(editingProduct.stock) || 0,
-      purchasePrice: parseFloat(editingProduct.purchasePrice) || 0,
       sellingPrice: parseFloat(editingProduct.sellingPrice) || 0
     })
     setEditingProduct(null)
-    toast({ title: t.updateChanges })
+    toast({ title: "Web catalog item updated" })
   }
 
   const handleDeleteConfirm = () => {
     if (deletePass === "specsxr") {
       if (deleteId) {
-        actions.deleteProduct(deleteId)
+        actions.deleteShopProduct(deleteId)
         setDeleteId(null)
         setDeletePass("")
-        toast({ title: "Product Removed" })
+        toast({ title: "Removed from shop catalog" })
       }
     } else {
       toast({ variant: "destructive", title: "Invalid Key" })
     }
   }
 
+  const handleImportFromInventory = (p: any) => {
+    actions.addShopProduct({
+      name: p.name,
+      category: p.category || "",
+      sellingPrice: p.sellingPrice || 0,
+      unit: p.unit || "pcs",
+      imageUrl: p.imageUrl || "",
+      isVisible: true,
+      stockStatus: (p.stock || 0) > 0 ? "in_stock" : "out_of_stock"
+    })
+    toast({ title: `${p.name} imported to web catalog` })
+  }
+
   const filteredProducts = useMemo(() => {
-    return products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
-  }, [products, search])
+    return shopProducts.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+  }, [shopProducts, search])
 
   const shopUrl = user ? `${window.location.origin}/shop/${user.uid}` : ""
 
@@ -295,22 +303,25 @@ export default function ShopManagerPage() {
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b pb-4">
                       <div>
                         <h4 className="text-xs font-black uppercase text-primary">Web Catalog Manager</h4>
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Add, Edit or Delete items live</p>
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Separate from main inventory</p>
                       </div>
                       <div className="flex gap-2 w-full md:w-auto">
                         <div className="relative flex-1 md:w-64">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                          <Input placeholder="Filter catalog..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10 rounded-xl text-xs bg-muted/20 border-none" />
+                          <Input placeholder="Filter web catalog..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10 rounded-xl text-xs bg-muted/20 border-none" />
                         </div>
+                        <Button onClick={() => setIsImportOpen(true)} variant="outline" className="h-10 px-4 rounded-xl font-black uppercase text-[10px] gap-2 shrink-0 border-accent text-accent">
+                          <Import className="w-4 h-4" /> Import
+                        </Button>
                         <Button onClick={() => setIsAddProductOpen(true)} className="bg-accent h-10 px-4 rounded-xl font-black uppercase text-[10px] gap-2 shrink-0 shadow-lg">
-                          <Plus className="w-4 h-4" /> New Item
+                          <Plus className="w-4 h-4" /> New Web Item
                         </Button>
                       </div>
                     </div>
 
                     <div className="grid gap-3">
                       {filteredProducts.length === 0 ? (
-                        <div className="py-12 text-center text-muted-foreground italic text-xs">No matching products found.</div>
+                        <div className="py-12 text-center text-muted-foreground italic text-xs">Web catalog is empty. Click New or Import.</div>
                       ) : (
                         filteredProducts.map((p) => (
                           <div key={p.id} className="flex items-center justify-between p-3 bg-muted/5 rounded-2xl border border-black/5 hover:bg-muted/10 transition-all group">
@@ -333,12 +344,12 @@ export default function ShopManagerPage() {
                                 size="sm" 
                                 className={cn(
                                   "h-9 rounded-xl font-black text-[9px] uppercase gap-2 transition-all",
-                                  p.showInShop !== false ? "text-green-600 bg-green-50" : "text-muted-foreground bg-muted/50"
+                                  p.isVisible !== false ? "text-green-600 bg-green-50" : "text-muted-foreground bg-muted/50"
                                 )}
-                                onClick={() => toggleProductVisibility(p.id, p.showInShop !== false)}
+                                onClick={() => toggleProductVisibility(p.id, p.isVisible !== false)}
                               >
-                                {p.showInShop !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                                <span className="hidden sm:inline">{p.showInShop !== false ? "Visible" : "Hidden"}</span>
+                                {p.isVisible !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                <span className="hidden sm:inline">{p.isVisible !== false ? "Visible" : "Hidden"}</span>
                               </Button>
                               <Button variant="ghost" size="icon" className="h-9 w-9 text-accent hover:bg-accent/10 rounded-xl" onClick={() => setEditingProduct(p)}>
                                 <Edit2 className="w-4 h-4" />
@@ -416,11 +427,40 @@ export default function ShopManagerPage() {
         </div>
       )}
 
+      {/* A to Z: Import from Inventory Dialog */}
+      <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-[2rem] p-0 overflow-hidden">
+          <DialogHeader className="p-6 bg-accent/5 border-b">
+            <DialogTitle className="text-primary font-black uppercase flex items-center gap-2">
+              <Import className="w-5 h-5" /> Import from Inventory
+            </DialogTitle>
+            <DialogDescription className="text-[10px] font-bold uppercase">Quickly add existing items to web catalog</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] p-4">
+            <div className="grid gap-2">
+              {inventoryProducts.map(p => (
+                <div key={p.id} className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/10 transition-all">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black truncate">{p.name}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{p.category || 'General'} | {currency}{p.sellingPrice}</p>
+                  </div>
+                  <Button size="sm" variant="ghost" className="h-8 text-accent font-bold" onClick={() => handleImportFromInventory(p)}>Import</Button>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <DialogFooter className="p-4 bg-muted/20 border-t">
+            <Button variant="ghost" onClick={() => setIsImportOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* A to Z: Add Product Dialog */}
       <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="text-primary font-black uppercase">Add Web Item</DialogTitle>
+            <DialogTitle className="text-primary font-black uppercase">Add Web Catalog Item</DialogTitle>
+            <DialogDescription className="text-[10px] font-bold">This will NOT affect your main inventory</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="flex flex-col items-center gap-2">
@@ -430,24 +470,32 @@ export default function ShopManagerPage() {
                 <input id="shop-new-image" type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'new')} />
               </div>
             </div>
-            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Name</Label><Input value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="h-11" /></div>
+            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Display Name</Label><Input value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="h-11" /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Buy Price</Label><Input type="number" value={newProduct.purchasePrice} onChange={e => setNewProduct({...newProduct, purchasePrice: e.target.value})} className="h-11" /></div>
-              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Sell Price</Label><Input type="number" value={newProduct.sellingPrice} onChange={e => setNewProduct({...newProduct, sellingPrice: e.target.value})} className="h-11" /></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Category</Label><Input value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="h-11" /></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Web Price</Label><Input type="number" value={newProduct.sellingPrice} onChange={e => setNewProduct({...newProduct, sellingPrice: e.target.value})} className="h-11" /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Initial Stock</Label><Input type="number" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: e.target.value})} className="h-11" /></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Stock Status</Label>
+                <Select value={newProduct.stockStatus} onValueChange={(val) => setNewProduct({...newProduct, stockStatus: val})}>
+                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in_stock">In Stock</SelectItem>
+                    <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Unit</Label><Input value={newProduct.unit} onChange={e => setNewProduct({...newProduct, unit: e.target.value})} className="h-11" /></div>
             </div>
           </div>
-          <DialogFooter><Button className="w-full h-14 bg-accent font-black uppercase" onClick={handleAddProduct}>Save & Add to Catalog</Button></DialogFooter>
+          <DialogFooter><Button className="w-full h-14 bg-accent font-black uppercase" onClick={handleAddProduct}>Save Web Item</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* A to Z: Edit Product Dialog */}
       <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[2rem]">
-          <DialogHeader><DialogTitle className="text-primary font-black uppercase">Edit Item Details</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-primary font-black uppercase">Edit Web Item Details</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="flex flex-col items-center gap-2">
               <div className="relative w-28 h-28 rounded-2xl bg-muted flex items-center justify-center border-2 border-dashed overflow-hidden">
@@ -456,18 +504,26 @@ export default function ShopManagerPage() {
                 <input id="shop-edit-image" type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'edit')} />
               </div>
             </div>
-            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Name</Label><Input value={editingProduct?.name || ""} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="h-11" /></div>
+            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Display Name</Label><Input value={editingProduct?.name || ""} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="h-11" /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Buy Price</Label><Input type="number" value={editingProduct?.purchasePrice || ""} onChange={e => setEditingProduct({...editingProduct, purchasePrice: e.target.value})} className="h-11" /></div>
-              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Sell Price</Label><Input type="number" value={editingProduct?.sellingPrice || ""} onChange={e => setEditingProduct({...editingProduct, sellingPrice: e.target.value})} className="h-11" /></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Category</Label><Input value={editingProduct?.category || ""} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} className="h-11" /></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Web Price</Label><Input type="number" value={editingProduct?.sellingPrice || ""} onChange={e => setEditingProduct({...editingProduct, sellingPrice: e.target.value})} className="h-11" /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Stock</Label><Input type="number" value={editingProduct?.stock || ""} onChange={e => setEditingProduct({...editingProduct, stock: e.target.value})} className="h-11" /></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase">Stock Status</Label>
+                <Select value={editingProduct?.stockStatus || "in_stock"} onValueChange={(val) => setEditingProduct({...editingProduct, stockStatus: val})}>
+                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in_stock">In Stock</SelectItem>
+                    <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase">Shop Visibility</Label>
                 <div className="flex items-center gap-2 h-11">
-                  <Switch checked={editingProduct?.showInShop !== false} onCheckedChange={(val) => setEditingProduct({...editingProduct, showInShop: val})} />
-                  <span className="text-[10px] font-bold">{editingProduct?.showInShop !== false ? 'Show' : 'Hide'}</span>
+                  <Switch checked={editingProduct?.isVisible !== false} onCheckedChange={(val) => setEditingProduct({...editingProduct, isVisible: val})} />
+                  <span className="text-[10px] font-bold">{editingProduct?.isVisible !== false ? 'Show' : 'Hide'}</span>
                 </div>
               </div>
             </div>
@@ -482,12 +538,12 @@ export default function ShopManagerPage() {
           <DialogHeader>
             <div className="flex items-center gap-3 text-destructive mb-2">
               <div className="p-2 bg-red-50 rounded-xl"><Lock className="w-6 h-6" /></div>
-              <DialogTitle className="font-black uppercase tracking-tighter">Master Wipe</DialogTitle>
+              <DialogTitle className="font-black uppercase tracking-tighter">Remove from Web</DialogTitle>
             </div>
-            <DialogDescription className="text-xs">Enter 'specsxr' to permanently remove this product.</DialogDescription>
+            <DialogDescription className="text-xs">Enter 'specsxr' to remove this item from your online shop catalog only.</DialogDescription>
           </DialogHeader>
           <div className="py-4"><Input type="password" placeholder="••••••••" className="h-14 text-center text-2xl font-black rounded-2xl" value={deletePass} onChange={e => setDeletePass(e.target.value)} /></div>
-          <DialogFooter><Button variant="destructive" className="w-full h-14 rounded-2xl font-black uppercase" onClick={handleDeleteConfirm}>Authorize & Wipe</Button></DialogFooter>
+          <DialogFooter><Button variant="destructive" className="w-full h-14 rounded-2xl font-black uppercase" onClick={handleDeleteConfirm}>Authorize & Remove</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

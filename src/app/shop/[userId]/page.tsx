@@ -38,19 +38,19 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
 
   const { data: config, isLoading: configLoading } = useDoc(shopConfigRef);
 
-  // Fetch Public Products
-  const productsQuery = useMemoFirebase(() => {
+  // Fetch Public Products specifically for the Shop
+  const shopProductsQuery = useMemoFirebase(() => {
     if (!db || !userId) return null;
-    return query(collection(db, 'users', userId, 'products'), orderBy('name'));
+    return query(collection(db, 'users', userId, 'shopProducts'), orderBy('name'));
   }, [db, userId]);
 
-  const { data: allProducts, isLoading: productsLoading } = useCollection(productsQuery);
+  const { data: allShopProducts, isLoading: productsLoading } = useCollection(shopProductsQuery);
 
-  // Filter products that are marked as visible for the shop
+  // Filter products that are marked as visible
   const visibleProducts = useMemo(() => {
-    if (!allProducts) return [];
-    return allProducts.filter(p => p.showInShop !== false);
-  }, [allProducts]);
+    if (!allShopProducts) return [];
+    return allShopProducts.filter(p => p.isVisible !== false);
+  }, [allShopProducts]);
 
   const handleUnlock = () => {
     if (config?.accessCode && code === config.accessCode) {
@@ -208,9 +208,9 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
                     </div>
                     <div className={cn(
                       "h-12 px-6 rounded-2xl flex items-center justify-center font-black text-[10px] uppercase tracking-widest shadow-lg",
-                      p.stock > 0 ? "bg-emerald-500 text-white shadow-emerald-100" : "bg-red-500 text-white shadow-red-100"
+                      p.stockStatus === 'in_stock' ? "bg-emerald-500 text-white shadow-emerald-100" : "bg-red-500 text-white shadow-red-100"
                     )}>
-                      {p.stock > 0 ? 'In Stock' : 'Sold Out'}
+                      {p.stockStatus === 'in_stock' ? 'In Stock' : 'Sold Out'}
                     </div>
                   </div>
                 </CardContent>

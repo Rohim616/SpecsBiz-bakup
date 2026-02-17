@@ -30,6 +30,23 @@
       },
       "required": ["id", "name"]
     },
+    "ShopProduct": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ShopProduct",
+      "type": "object",
+      "description": "Represents a product specifically for the public online shop catalog.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "sellingPrice": { "type": "number" },
+        "stockStatus": { "type": "string", "enum": ["in_stock", "out_of_stock"] },
+        "unit": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "isVisible": { "type": "boolean", "default": true }
+      },
+      "required": ["id", "name"]
+    },
     "Procurement": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Procurement",
@@ -126,6 +143,10 @@
       {
         "path": "/users/{userId}/products/{productId}",
         "definition": { "entityName": "Product", "schema": { "$ref": "#/backend/entities/Product" } }
+      },
+      {
+        "path": "/users/{userId}/shopProducts/{productId}",
+        "definition": { "entityName": "ShopProduct", "schema": { "$ref": "#/backend/entities/ShopProduct" } }
       },
       {
         "path": "/users/{userId}/shopConfig/default",
