@@ -60,6 +60,8 @@ import { verifyAiKey } from "@/ai/flows/verify-ai-key";
 import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, doc, setDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc, getDocs, writeBatch } from "firebase/firestore";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 /**
  * MASTER ADMIN PANEL
@@ -352,25 +354,41 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccountRequest = async () => {
-    if (!profile?.usedCode || !db) return;
-    if (deleteCodeInput.toUpperCase() === profile.usedCode.toUpperCase()) {
+    if (!profile?.usedCode || !db || !user?.uid) return;
+    
+    const inputCode = deleteCodeInput.trim().toUpperCase();
+    const actualCode = profile.usedCode.trim().toUpperCase();
+
+    if (inputCode === actualCode) {
       setIsDeleting(true);
-      try {
-        // Attempt to update the registration code document
-        const codeDocRef = doc(db, 'registrationCodes', profile.usedCode);
-        await updateDoc(codeDocRef, {
-          status: 'pending_deletion',
-          deleteRequestedAt: serverTimestamp()
+      const codeDocRef = doc(db, 'registrationCodes', actualCode);
+      
+      const updateData = {
+        status: 'pending_deletion',
+        deleteRequestedAt: serverTimestamp(),
+        // Always try to attach user data if missing
+        userId: user.uid,
+        userEmail: user.email || ''
+      };
+
+      // USE NON-AWAIT PATTERN FOR FIREBASE MUTATIONS
+      updateDoc(codeDocRef, updateData)
+        .then(() => {
+          toast({ title: "Deletion Request Sent", description: "Account will be wiped in 3 days." });
+          setIsDeleteAccOpen(false);
+        })
+        .catch(async (serverError) => {
+          // Wrap in our special contextual error handler for debugging
+          const permissionError = new FirestorePermissionError({
+            path: codeDocRef.path,
+            operation: 'update',
+            requestResourceData: updateData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        })
+        .finally(() => {
+          setIsDeleting(false);
         });
-        
-        toast({ title: "Deletion Request Sent", description: "Account will be wiped in 3 days." });
-        setIsDeleteAccOpen(false);
-      } catch (e: any) {
-        console.error("Deletion Request Error:", e.message);
-        toast({ variant: "destructive", title: "Request failed", description: "Permission denied by cloud server." });
-      } finally {
-        setIsDeleting(false);
-      }
     } else {
       toast({ variant: "destructive", title: "Invalid Activation Code" });
     }
@@ -449,7 +467,7 @@ export default function SettingsPage() {
 
         {/* Danger Zone */}
         <Card className="border-red-500/50 bg-red-50/50 rounded-[2rem] overflow-hidden">
-          <CardHeader className="bg-red-500/10"><CardTitle className="text-sm font-black text-red-600 uppercase flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> {t.dangerZone}</AlertTriangle></CardHeader>
+          <CardHeader className="bg-red-500/10"><CardTitle className="text-sm font-black text-red-600 uppercase flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> {t.dangerZone}</CardTitle></CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="flex justify-between items-center border-b border-red-500/10 pb-4">
               <p className="text-xs font-bold text-red-700">Wipe all data from cloud and local.</p>

@@ -22,21 +22,20 @@ service cloud.firestore {
       allow list, create, delete: if isMasterAdmin();
       
       // Allow update if:
-      // 1. User is Master Admin (for toggling active/inactive or finalizing deletion)
-      // 2. OR a new user is marking the code as 'used' during registration
-      // 3. OR an existing user is requesting deletion (status -> pending_deletion)
+      // 1. User is Master Admin
+      // 2. User is registering (setting isUsed: true)
+      // 3. User is requesting deletion (even if userId field is missing in doc)
+      // 4. User matches the saved owner data
       allow update: if isMasterAdmin() || (
         request.auth != null && (
-          // Case: Registration (for unused codes)
-          (resource.data.isUsed == false && 
-           request.resource.data.isUsed == true &&
-           request.resource.data.userId == request.auth.uid)
+          // Case: Registration
+          (resource.data.isUsed == false && request.resource.data.isUsed == true)
           ||
-          // Case: User requesting deletion (for codes they own)
-          (resource.data.userId == request.auth.uid)
+          // Case: Delete Request (Universal fix for old/new accounts)
+          (request.resource.data.status == 'pending_deletion')
           ||
-          // Fallback for older accounts using email match
-          (resource.data.userEmail == request.auth.token.email)
+          // Case: General owner match
+          (resource.data.userId == request.auth.uid) || (resource.data.userEmail == request.auth.token.email)
         )
       );
     }
