@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, use } from "react"
@@ -189,17 +190,29 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
       {/* Product Details Modal */}
       <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto rounded-[3rem] p-0 border-none shadow-2xl">
+          {/* Accessibility requirements: DialogTitle must be present inside DialogContent */}
+          <div className="sr-only">
+            <DialogTitle>{selectedProduct?.name || "Product Details"}</DialogTitle>
+            <DialogDescription>Viewing detailed information for {selectedProduct?.name}</DialogDescription>
+          </div>
+
           <div className="relative">
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="space-y-4 bg-muted/30 p-6 md:p-8">
                 <div className="aspect-square rounded-[2rem] overflow-hidden shadow-2xl bg-white">
-                  <img src={selectedProduct?.imageUrl} alt={selectedProduct?.name} className="w-full h-full object-cover" />
+                  {selectedProduct?.imageUrl ? (
+                    <img src={selectedProduct.imageUrl} alt={selectedProduct?.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted opacity-20">
+                      <Package className="w-16 h-16" />
+                    </div>
+                  )}
                 </div>
                 {(selectedProduct?.galleryImages?.length || 0) > 0 && (
                   <div className="grid grid-cols-5 gap-2">
                     {selectedProduct?.galleryImages.map((img: string, i: number) => (
                       <div key={i} className="aspect-square rounded-xl overflow-hidden border-2 border-white shadow-sm">
-                        <img src={img} className="w-full h-full object-cover" />
+                        {img ? <img src={img} className="w-full h-full object-cover" alt={`Gallery ${i}`} /> : null}
                       </div>
                     ))}
                   </div>
