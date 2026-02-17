@@ -11,27 +11,19 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
-
     match /users/{userId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      // Allow owner full access to their own profile and sub-collections
+      allow read, write: if isOwner(userId);
 
       // Public access for Shop feature
       match /products/{productId} {
         allow get, list: if true; 
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       match /shopProducts/{productId} {
         allow get, list: if true; 
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       match /shopConfig/{configId} {
@@ -41,50 +33,42 @@ service cloud.firestore {
 
       match /sales/{saleId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       match /procurements/{procurementId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       match /aiMessages/{messageId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       match /advisorMessages/{messageId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       match /customers/{customerId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow write: if isOwner(userId);
 
         match /bakiRecords/{recordId} {
           allow get, list: if isOwner(userId);
-          allow create: if isOwner(userId);
-          allow update, delete: if isExistingOwner(userId);
+          allow write: if isOwner(userId);
         }
       }
 
       match /notes/{noteId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       match /reports/{reportId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow write: if isOwner(userId);
       }
     }
 
