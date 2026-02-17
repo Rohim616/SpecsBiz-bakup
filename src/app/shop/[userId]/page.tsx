@@ -94,6 +94,16 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
+  // Load Popunder Ad
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const script = document.createElement('script');
+      script.src = "https://pl28730615.effectivegatecpm.com/52/c3/f7/52c3f78501c6a5e4f66885863b6715df.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
   // Fetch Public Shop Config
   const shopConfigRef = useMemoFirebase(() => {
     if (!db || !userId) return null;
