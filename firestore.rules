@@ -22,13 +22,20 @@ service cloud.firestore {
       allow list, create, delete: if isMasterAdmin();
       
       // Allow update if:
-      // 1. User is Master Admin (for toggling active/inactive)
+      // 1. User is Master Admin (for toggling active/inactive or finalizing deletion)
       // 2. OR a new user is marking the code as 'used' during registration
+      // 3. OR an existing user is requesting deletion (status -> pending_deletion)
       allow update: if isMasterAdmin() || (
-        request.auth != null && 
-        resource.data.isUsed == false && 
-        request.resource.data.isUsed == true &&
-        request.resource.data.userId == request.auth.uid
+        request.auth != null && (
+          // Case: Registration
+          (resource.data.isUsed == false && 
+           request.resource.data.isUsed == true &&
+           request.resource.data.userId == request.auth.uid)
+          ||
+          // Case: User requesting deletion
+          (resource.data.userId == request.auth.uid &&
+           request.resource.data.status == 'pending_deletion')
+        )
       );
     }
 
