@@ -218,8 +218,17 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
 
   return (
     <div className="min-h-screen bg-[#E0FFFF] pb-20 font-body">
-      <div className="bg-[#191970] text-white p-8 md:p-12 space-y-6 rounded-b-[3rem] shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12"><ShoppingBag className="w-40 h-40" /></div>
+      <div 
+        className="text-white p-8 md:p-12 space-y-6 rounded-b-[3rem] shadow-2xl relative overflow-hidden bg-cover bg-center transition-all duration-500"
+        style={{ 
+          backgroundColor: '#191970',
+          backgroundImage: config.coverImageUrl ? `url(${config.coverImageUrl})` : 'none'
+        }}
+      >
+        {/* Dark Overlay for readability when an image is set */}
+        {config.coverImageUrl && <div className="absolute inset-0 bg-black/40" />}
+        
+        <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12 z-0"><ShoppingBag className="w-40 h-40" /></div>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
@@ -242,7 +251,7 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
               </div>
             </div>
           </div>
-          <Badge className="bg-white/10 backdrop-blur-md border border-white/20 h-10 px-6 text-xs font-black uppercase tracking-widest rounded-full self-start md:self-center">{allShopProducts?.length || 0} Items Available</Badge>
+          <Badge className="bg-white/10 backdrop-blur-md border border-white/20 h-10 px-6 text-xs font-black uppercase tracking-widest rounded-full self-start md:self-center z-10">{allShopProducts?.length || 0} Items Available</Badge>
         </div>
       </div>
 

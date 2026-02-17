@@ -76,6 +76,7 @@ export default function ShopManagerPage() {
   const [accessCode, setAccessCode] = useState("")
   const [welcomeMsg, setWelcomeMsg] = useState("")
   const [whatsappNumber, setWhatsappNumber] = useState("")
+  const [coverImageUrl, setCoverImageUrl] = useState("")
   const [isActive, setIsActive] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -107,6 +108,7 @@ export default function ShopManagerPage() {
       setAccessCode(shopConfig.accessCode || "")
       setWelcomeMsg(shopConfig.welcomeMsg || "")
       setWhatsappNumber(shopConfig.whatsappNumber || "")
+      setCoverImageUrl(shopConfig.coverImageUrl || "")
       setIsActive(shopConfig.isActive || false)
     }
   }, [shopConfig])
@@ -121,6 +123,7 @@ export default function ShopManagerPage() {
       accessCode,
       welcomeMsg,
       whatsappNumber,
+      coverImageUrl,
       isActive
     })
     toast({ title: "Shop Configuration Updated" })
@@ -132,11 +135,10 @@ export default function ShopManagerPage() {
     toast({ title: currentStatus ? "Hidden from Shop" : "Visible in Shop" })
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'new' | 'edit' | 'gallery-new' | 'gallery-edit') => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'new' | 'edit' | 'gallery-new' | 'gallery-edit' | 'cover') => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Firestore Document Limit is 1MB. We should warn or handle large strings.
     if (file.size > 600 * 1024) {
       toast({ variant: "destructive", title: "Image too large", description: "Please use images under 600KB for cloud reliability." })
       return
@@ -147,6 +149,7 @@ export default function ShopManagerPage() {
       const base64 = reader.result as string
       if (type === 'new') setNewProduct(prev => ({ ...prev, imageUrl: base64 }))
       else if (type === 'edit') setEditingProduct((prev: any) => ({ ...prev, imageUrl: base64 }))
+      else if (type === 'cover') setCoverImageUrl(base64)
       else if (type === 'gallery-new') {
         setNewProduct(prev => ({ ...prev, galleryImages: [...prev.galleryImages, base64].slice(0, 5) }))
       }
@@ -185,7 +188,6 @@ export default function ShopManagerPage() {
 
   const handleUpdateProduct = () => {
     if (!editingProduct) return
-    // CRITICAL: Explicitly pass the ID to the action to ensure we target the right document
     actions.updateShopProduct(editingProduct.id, {
       ...editingProduct,
       originalPrice: parseFloat(editingProduct.originalPrice) || 0,
@@ -209,7 +211,6 @@ export default function ShopManagerPage() {
   }
 
   const handleImportFromInventory = (p: any) => {
-    // Generate a fresh ID for the web copy to ensure 100% independence
     const webId = `web-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     actions.addShopProduct({
       id: webId,
@@ -237,7 +238,6 @@ export default function ShopManagerPage() {
     )
   }, [inventoryProducts, shopProducts])
 
-  // Improved Link Copy logic
   const [shopUrl, setShopUrl] = useState("")
   useEffect(() => {
     if (user && typeof window !== 'undefined') {
@@ -375,16 +375,44 @@ export default function ShopManagerPage() {
                   </TabsContent>
 
                   <TabsContent value="content" className="space-y-6 mt-0">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
-                        <MessageSquareText className="w-3.5 h-3.5 text-accent" /> Custom Welcome Message
-                      </Label>
-                      <textarea 
-                        value={welcomeMsg} 
-                        onChange={e => setWelcomeMsg(e.target.value)}
-                        placeholder="Welcome to our shop! Feel free to explore our collection..."
-                        className="w-full min-h-[120px] p-4 rounded-2xl bg-muted/20 border-none font-medium text-sm text-primary focus:ring-2 focus:ring-accent outline-none"
-                      />
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
+                          <ImageIcon className="w-3.5 h-3.5 text-accent" /> Shop Cover Photo
+                        </Label>
+                        <div className="relative w-full h-32 rounded-2xl bg-muted flex items-center justify-center border-2 border-dashed overflow-hidden group">
+                          {coverImageUrl ? (
+                            <img src={coverImageUrl} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="text-center">
+                              <ImageIcon className="w-8 h-8 mx-auto opacity-20" />
+                              <p className="text-[8px] font-bold opacity-40 uppercase">No Cover Image</p>
+                            </div>
+                          )}
+                          <Label htmlFor="cover-upload" className="absolute inset-0 cursor-pointer bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white">
+                            <Upload className="w-6 h-6 mb-1" />
+                            <span className="text-[8px] font-black uppercase">Change Cover Image</span>
+                          </Label>
+                          <input id="cover-upload" type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'cover')} />
+                        </div>
+                        {coverImageUrl && (
+                          <Button variant="ghost" size="sm" className="h-6 text-[8px] font-black uppercase text-destructive" onClick={() => setCoverImageUrl("")}>
+                            <Trash2 className="w-3 h-3 mr-1" /> Remove Cover
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 flex items-center gap-2">
+                          <MessageSquareText className="w-3.5 h-3.5 text-accent" /> Custom Welcome Message
+                        </Label>
+                        <textarea 
+                          value={welcomeMsg} 
+                          onChange={e => setWelcomeMsg(e.target.value)}
+                          placeholder="Welcome to our shop! Feel free to explore our collection..."
+                          className="w-full min-h-[120px] p-4 rounded-2xl bg-muted/20 border-none font-medium text-sm text-primary focus:ring-2 focus:ring-accent outline-none"
+                        />
+                      </div>
                     </div>
                   </TabsContent>
 
