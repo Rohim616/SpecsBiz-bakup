@@ -133,7 +133,6 @@ function MasterDeveloperPanel() {
     if (!db) return;
     try {
       // 1. Wipe User's Main Firestore Data (Products, Sales, Customers)
-      const userRef = doc(db, 'users', userId);
       const subCollections = ['products', 'sales', 'customers', 'procurements', 'aiMessages', 'advisorMessages', 'notes'];
       
       for (const coll of subCollections) {
@@ -144,7 +143,7 @@ function MasterDeveloperPanel() {
       }
       
       // 2. Delete User Profile
-      await deleteDoc(userRef);
+      await deleteDoc(doc(db, 'users', userId));
 
       // 3. Update Code Status to Deleted
       await updateDoc(doc(db, 'registrationCodes', code), { 
@@ -192,7 +191,6 @@ function MasterDeveloperPanel() {
                 const isPendingDel = c.status === 'pending_deletion';
                 const isDeleted = c.status === 'deleted';
                 const isActive = c.isUsed && !isInactive && !isPendingDel && !isDeleted;
-                const isUnused = !c.isUsed && !isInactive && !isPendingDel && !isDeleted;
 
                 return (
                   <div key={c.id} className={cn("p-4 space-y-3 transition-all", isPendingDel ? "bg-red-50" : "hover:bg-red-50/30")}>
@@ -358,14 +356,18 @@ export default function SettingsPage() {
     if (deleteCodeInput.toUpperCase() === profile.usedCode.toUpperCase()) {
       setIsDeleting(true);
       try {
-        await updateDoc(doc(db, 'registrationCodes', profile.usedCode), {
+        // Attempt to update the registration code document
+        const codeDocRef = doc(db, 'registrationCodes', profile.usedCode);
+        await updateDoc(codeDocRef, {
           status: 'pending_deletion',
           deleteRequestedAt: serverTimestamp()
         });
+        
         toast({ title: "Deletion Request Sent", description: "Account will be wiped in 3 days." });
         setIsDeleteAccOpen(false);
-      } catch (e) {
-        toast({ variant: "destructive", title: "Request failed" });
+      } catch (e: any) {
+        console.error("Deletion Request Error:", e.message);
+        toast({ variant: "destructive", title: "Request failed", description: "Permission denied by cloud server." });
       } finally {
         setIsDeleting(false);
       }

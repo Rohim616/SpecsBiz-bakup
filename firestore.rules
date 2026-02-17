@@ -27,14 +27,16 @@ service cloud.firestore {
       // 3. OR an existing user is requesting deletion (status -> pending_deletion)
       allow update: if isMasterAdmin() || (
         request.auth != null && (
-          // Case: Registration
+          // Case: Registration (for unused codes)
           (resource.data.isUsed == false && 
            request.resource.data.isUsed == true &&
            request.resource.data.userId == request.auth.uid)
           ||
-          // Case: User requesting deletion
-          (resource.data.userId == request.auth.uid &&
-           request.resource.data.status == 'pending_deletion')
+          // Case: User requesting deletion (for codes they own)
+          (resource.data.userId == request.auth.uid)
+          ||
+          // Fallback for older accounts using email match
+          (resource.data.userEmail == request.auth.token.email)
         )
       );
     }
