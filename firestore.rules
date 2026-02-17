@@ -16,9 +16,20 @@ service cloud.firestore {
     // REGISTRATION CODES: Master access control
     match /registrationCodes/{code} {
       // Anyone can 'get' a code to check its validity during registration
-      // But only admin can 'list' or 'write' (create/update/delete)
       allow get: if true;
-      allow list, write: if isMasterAdmin();
+      
+      // Admin can list, create, and delete codes
+      allow list, create, delete: if isMasterAdmin();
+      
+      // Allow update if:
+      // 1. User is Master Admin (for toggling active/inactive)
+      // 2. OR a new user is marking the code as 'used' during registration
+      allow update: if isMasterAdmin() || (
+        request.auth != null && 
+        resource.data.isUsed == false && 
+        request.resource.data.isUsed == true &&
+        request.resource.data.userId == request.auth.uid
+      );
     }
 
     // PRIMARY OWNER ACCESS: Grant explicit access to all specific collections
