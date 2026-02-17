@@ -91,6 +91,20 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
 
   const defaultLogoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl
 
+  // POPUNDER ADS INTEGRATION
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const scriptId = 'popunder-ad-script';
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = 'https://pl28730615.effectivegatecpm.com/52/c3/f7/52c3f78501c6a5e4f66885863b6715df.js';
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    }
+  }, [])
+
   // Fetch Public Shop Config
   const shopConfigRef = useMemoFirebase(() => {
     if (!db || !userId) return null;
@@ -259,7 +273,6 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
           </Card>
         )}
 
-        {/* Top Banner Ad Placed Just Above Search Box */}
         <TopBannerAd />
 
         <div className="relative group/search max-w-2xl mx-auto">
