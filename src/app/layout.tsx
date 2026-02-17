@@ -11,11 +11,11 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { BusinessProvider, useBusinessData } from '@/hooks/use-business-data';
 import { NotificationBell } from '@/components/notification-bell';
 import { FloatingCalculator } from '@/components/floating-calculator';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
 import AuthPage from './auth/page';
 import Script from 'next/script';
-import { ShieldAlert, LogOut, Clock } from 'lucide-react';
+import { ShieldAlert, LogOut, Clock, Loader2 } from 'lucide-react';
 import { getAuth, signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 
@@ -24,22 +24,28 @@ function ShieldGuard({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const db = useFirestore();
   
-  // 1. Fetch User Profile to get their linked code
-  const userProfileRef = useMemoFirebase(() => {
+  // 1. Fetch Registration Code status directly using userId
+  // This works even if the user profile document is deleted
+  const codeQuery = useMemoFirebase(() => {
     if (!user?.uid || !db) return null;
-    return doc(db, 'users', user.uid);
+    return query(
+      collection(db, 'registrationCodes'), 
+      where('userId', '==', user.uid),
+      limit(1)
+    );
   }, [user?.uid, db]);
-  const { data: profile } = useDoc(userProfileRef);
 
-  // 2. Fetch Code Status
-  const codeRef = useMemoFirebase(() => {
-    if (!profile?.usedCode || !db) return null;
-    return doc(db, 'registrationCodes', profile.usedCode);
-  }, [profile?.usedCode, db]);
-  const { data: codeData } = useDoc(codeRef);
+  const { data: codes, isLoading } = useCollection(codeQuery);
+  const codeData = codes && codes.length > 0 ? codes[0] : null;
 
   // Allow developer account always
   if (user?.email === 'specsxr@gmail.com') return <>{children}</>;
+
+  if (isLoading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-[#191970]">
+      <Loader2 className="w-8 h-8 animate-spin text-accent" />
+    </div>
+  );
 
   // If account is marked inactive or deleted
   if (codeData && (codeData.status === 'inactive' || codeData.status === 'deleted')) {
@@ -53,9 +59,9 @@ function ShieldGuard({ children }: { children: React.ReactNode }) {
             <h1 className="text-3xl font-black uppercase tracking-tighter">
               {codeData.status === 'deleted' ? 'Account Wiped' : 'Access Denied'}
             </h1>
-            <p className="text-sm font-medium opacity-60">
+            <p className="text-sm font-medium opacity-60 leading-relaxed">
               {codeData.status === 'deleted' 
-                ? 'Sir, this account and its data have been permanently removed from our cloud.' 
+                ? 'Sir, this account and its data have been permanently removed from our cloud as per your request.' 
                 : 'Sir, your account has been suspended by the developer. Please contact specsxr@gmail.com to reactivate your cloud space.'}
             </p>
           </div>
@@ -78,7 +84,7 @@ function ShieldGuard({ children }: { children: React.ReactNode }) {
           <div className="space-y-2">
             <h1 className="text-3xl font-black uppercase tracking-tighter">Deletion Pending</h1>
             <p className="text-sm font-medium opacity-60">
-              Sir, you have requested to delete this account. It will be permanently wiped in 3 days. 
+              Sir, you have requested to delete this account. It is currently under review and will be permanently wiped soon. 
               Please contact the developer if you wish to cancel this request.
             </p>
           </div>

@@ -19,12 +19,19 @@ service cloud.firestore {
       allow get: if true;
       
       // Admin can list, create, and delete codes
-      allow list, create, delete: if isMasterAdmin();
+      // Users can 'list' (query) only their own registration code to check status
+      allow list: if isMasterAdmin() || (
+        request.auth != null && (
+          resource.data.userId == request.auth.uid || resource.data.userEmail == request.auth.token.email
+        )
+      );
+      
+      allow create, delete: if isMasterAdmin();
       
       // Allow update if:
       // 1. User is Master Admin
       // 2. User is registering (setting isUsed: true)
-      // 3. User is requesting deletion (even if userId field is missing in doc)
+      // 3. User is requesting deletion
       // 4. User matches the saved owner data
       allow update: if isMasterAdmin() || (
         request.auth != null && (
@@ -46,7 +53,6 @@ service cloud.firestore {
       allow read, write: if isOwner(userId) || isMasterAdmin();
       
       // Sub-collections management
-      // We must explicitly allow isMasterAdmin for every sub-path to enable the Wipe feature
       match /products/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
       match /shopProducts/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
       match /shopConfig/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
