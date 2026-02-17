@@ -5,6 +5,7 @@ import nodemailer from 'nodemailer';
 
 /**
  * @fileOverview Server Action to send a 6-digit verification code to users during registration.
+ * Addressing the user formally as 'Sir' in English.
  */
 
 export async function sendVerificationCode(toEmail: string, code: string) {
@@ -27,16 +28,16 @@ export async function sendVerificationCode(toEmail: string, code: string) {
         </div>
         
         <div style="padding: 40px 30px; color: #333333; line-height: 1.6; text-align: center;">
-          <h2 style="color: #191970; font-size: 20px; margin-bottom: 10px;">নমস্কার স্যার,</h2>
-          <p style="font-size: 15px;">আপনার SpecsBiz একাউন্টটি সুরক্ষিতভাবে তৈরি করার জন্য নিচের ভেরিফিকেশন কোডটি ব্যবহার করুন:</p>
+          <h2 style="color: #191970; font-size: 20px; margin-bottom: 10px;">Hello Sir,</h2>
+          <p style="font-size: 15px;">To securely create your SpecsBiz account, please use the following verification code:</p>
           
           <div style="background-color: #f0ffff; border: 2px dashed #008080; padding: 20px; margin: 30px 0; border-radius: 15px;">
             <h1 style="margin: 0; font-size: 42px; color: #008080; letter-spacing: 10px; font-family: monospace;">${code}</h1>
           </div>
           
-          <p style="font-size: 13px; color: #777;">এই কোডটি ১০ মিনিটের জন্য কার্যকর থাকবে। নিরাপত্তা রক্ষার্থে কোডটি কাউকে শেয়ার করবেন না।</p>
+          <p style="font-size: 13px; color: #777;">This code is valid for 10 minutes. For your security, please do not share this code with anyone.</p>
           
-          <p style="margin-top: 40px; font-size: 14px; color: #999;">ধন্যবাদ,<br><strong style="color: #191970;">SpecsXR Security Team</strong></p>
+          <p style="margin-top: 40px; font-size: 14px; color: #999;">Regards,<br><strong style="color: #191970;">SpecsXR Security Team</strong></p>
         </div>
       </div>
     `,

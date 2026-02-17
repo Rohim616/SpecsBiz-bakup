@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Store, LogIn, LogOut, ShieldCheck, Loader2, MailCheck, ChevronLeft, KeyRound, AlertCircle, HelpCircle } from 'lucide-react';
+import { Store, LogIn, LogOut, ShieldCheck, Loader2, MailCheck, ChevronLeft, KeyRound, AlertCircle, HelpCircle, Info } from 'lucide-react';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { sendWelcomeEmail } from '@/actions/send-welcome-email';
 import { sendVerificationCode } from '@/actions/send-verification-code';
@@ -74,7 +74,7 @@ export default function AuthPage() {
           setStep('verify');
           toast({ 
             title: "Verification Sent!", 
-            description: `A code has been sent to ${email}` 
+            description: `A code has been sent to ${email}. Please check your Inbox or Spam folder.` 
           });
         } else {
           throw new Error(res.error || "OTP পাঠাতে ব্যর্থ হয়েছে।");
@@ -112,7 +112,10 @@ export default function AuthPage() {
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, email);
-      toast({ title: "Reset Email Sent!", description: "আপনার ইমেইল চেক করুন, পাসওয়ার্ড রিসেট করার লিঙ্ক পাঠানো হয়েছে।" });
+      toast({ 
+        title: "Reset Email Sent!", 
+        description: "Please check your Inbox or Spam folder for the reset link." 
+      });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: "পাসওয়ার্ড রিসেট লিঙ্ক পাঠানো সম্ভব হয়নি।" });
     } finally {
@@ -205,7 +208,7 @@ export default function AuthPage() {
             <CardTitle className="text-3xl font-black text-primary uppercase">Verify Mail</CardTitle>
             <CardDescription className="text-[10px] font-bold uppercase opacity-60">Enter the 6-digit code sent to your inbox</CardDescription>
           </CardHeader>
-          <CardContent className="p-8">
+          <CardContent className="p-8 space-y-6">
             <form onSubmit={handleVerifyAndCreate} className="space-y-6">
               <Input 
                 placeholder="000000"
@@ -219,6 +222,14 @@ export default function AuthPage() {
                 {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Verify & Activate"}
               </Button>
             </form>
+
+            <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-3">
+              <Info className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-amber-800 leading-relaxed font-bold">
+                Sir, if you do not see the email in your Inbox, please check your <b>Spam folder</b>.
+              </p>
+            </div>
+
             <button onClick={() => setStep('auth')} className="mt-6 w-full text-xs font-black text-muted-foreground hover:text-primary transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
               <ChevronLeft className="w-4 h-4" /> Go Back
             </button>
