@@ -54,7 +54,7 @@ import { useToast } from "@/hooks/use-toast";
 import { translations } from "@/lib/translations";
 import { verifyAiKey } from "@/ai/flows/verify-ai-key";
 import { cn } from "@/lib/utils";
-import { useUser, useFirestore, useCollection } from "@/firebase";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, doc, setDoc, updateDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
 
 /**
@@ -66,7 +66,12 @@ function MasterDeveloperPanel() {
   const db = useFirestore();
   const { toast } = useToast();
   
-  const codesQuery = query(collection(db, 'registrationCodes'), orderBy('createdAt', 'desc'));
+  // Fix: Properly memoize the Firestore query using useMemoFirebase
+  const codesQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'registrationCodes'), orderBy('createdAt', 'desc'));
+  }, [db]);
+
   const { data: codes, isLoading } = useCollection(codesQuery);
 
   const generateNewCode = async () => {
