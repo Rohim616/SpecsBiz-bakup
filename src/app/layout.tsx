@@ -15,7 +15,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { collection, query, where, limit } from 'firebase/firestore';
 import AuthPage from './auth/page';
 import Script from 'next/script';
-import { ShieldAlert, LogOut, Clock, Loader2 } from 'lucide-react';
+import { ShieldAlert, LogOut, Clock, Loader2, Key } from 'lucide-react';
 import { getAuth, signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 
@@ -23,9 +23,11 @@ import { Button } from '@/components/ui/button';
 function ShieldGuard({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const db = useFirestore();
+  const pathname = usePathname();
   
+  const isAuthPage = pathname === '/auth';
+
   // 1. Fetch Registration Code status directly using userId
-  // This works even if the user profile document is deleted
   const codeQuery = useMemoFirebase(() => {
     if (!user?.uid || !db) return null;
     return query(
@@ -41,14 +43,40 @@ function ShieldGuard({ children }: { children: React.ReactNode }) {
   // Allow developer account always
   if (user?.email === 'specsxr@gmail.com') return <>{children}</>;
 
+  // Don't block the Auth page itself (required for registration flow)
+  if (isAuthPage) return <>{children}</>;
+
   if (isLoading) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#191970]">
       <Loader2 className="w-8 h-8 animate-spin text-accent" />
     </div>
   );
 
+  // CRITICAL FIX: If no code record found at all, it means license is revoked or deleted
+  if (!codeData) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#191970] p-6 text-white text-center">
+        <div className="max-w-md space-y-6 animate-in zoom-in-95 duration-500">
+          <div className="mx-auto w-24 h-24 bg-red-500/20 rounded-[2.5rem] border border-red-500/30 flex items-center justify-center">
+            <ShieldAlert className="w-12 h-12 text-red-500" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-black uppercase tracking-tighter">Access Denied</h1>
+            <p className="text-sm font-medium opacity-60 leading-relaxed">
+              Sir, your registration record has been removed from our cloud. Your account is no longer authorized to access SpecsBiz. 
+              Please contact specsxr@gmail.com for assistance.
+            </p>
+          </div>
+          <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 h-12 px-8 rounded-xl font-black uppercase" onClick={() => signOut(getAuth())}>
+            Logout Session
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // If account is marked inactive or deleted
-  if (codeData && (codeData.status === 'inactive' || codeData.status === 'deleted')) {
+  if (codeData.status === 'inactive' || codeData.status === 'deleted') {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#191970] p-6 text-white text-center">
         <div className="max-w-md space-y-6 animate-in zoom-in-95 duration-500">
@@ -57,7 +85,7 @@ function ShieldGuard({ children }: { children: React.ReactNode }) {
           </div>
           <div className="space-y-2">
             <h1 className="text-3xl font-black uppercase tracking-tighter">
-              {codeData.status === 'deleted' ? 'Account Wiped' : 'Access Denied'}
+              {codeData.status === 'deleted' ? 'Account Wiped' : 'Account Suspended'}
             </h1>
             <p className="text-sm font-medium opacity-60 leading-relaxed">
               {codeData.status === 'deleted' 
@@ -74,7 +102,7 @@ function ShieldGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Handle Pending Deletion Warning
-  if (codeData && codeData.status === 'pending_deletion') {
+  if (codeData.status === 'pending_deletion') {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#191970] p-6 text-white text-center">
         <div className="max-w-md space-y-6 animate-in zoom-in-95 duration-500">
