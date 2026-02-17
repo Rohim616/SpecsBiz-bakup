@@ -20,7 +20,9 @@ import {
   Percent,
   FileText,
   Maximize2,
-  MessageCircle
+  MessageCircle,
+  Search,
+  Inbox
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -48,6 +50,7 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
   const [error, setError] = useState("")
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Fetch Public Shop Config
   const shopConfigRef = useMemoFirebase(() => {
@@ -74,8 +77,19 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
 
   const visibleProducts = useMemo(() => {
     if (!allShopProducts) return [];
-    return allShopProducts.filter(p => p.isVisible !== false);
-  }, [allShopProducts]);
+    return allShopProducts.filter(p => {
+      const isVisible = p.isVisible !== false;
+      if (!searchQuery.trim()) return isVisible;
+
+      const lowerQuery = searchQuery.toLowerCase();
+      const matchesSearch = 
+        p.name.toLowerCase().includes(lowerQuery) ||
+        (p.category || "").toLowerCase().includes(lowerQuery) ||
+        (p.description || "").toLowerCase().includes(lowerQuery);
+      
+      return isVisible && matchesSearch;
+    });
+  }, [allShopProducts, searchQuery]);
 
   const handleUnlock = () => {
     if (config?.accessCode && code === config.accessCode) {
@@ -158,7 +172,7 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
             </div>
             <p className="text-sm font-bold text-accent uppercase tracking-[0.3em] opacity-80">Digital Shop Gallery</p>
           </div>
-          <Badge className="bg-white/10 backdrop-blur-md border border-white/20 h-10 px-6 text-xs font-black uppercase tracking-widest rounded-full">{visibleProducts.length} Items Available</Badge>
+          <Badge className="bg-white/10 backdrop-blur-md border border-white/20 h-10 px-6 text-xs font-black uppercase tracking-widest rounded-full">{allShopProducts?.length || 0} Items Available</Badge>
         </div>
       </div>
 
@@ -172,10 +186,50 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
           </Card>
         )}
 
+        {/* Intelligent Search Box */}
+        <div className="relative group/search max-w-2xl mx-auto">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <Search className="w-5 h-5 text-primary opacity-40 group-focus-within/search:opacity-100 group-focus-within/search:text-accent transition-all" />
+          </div>
+          <Input 
+            placeholder="Search products by name, category, or details..."
+            className="h-14 pl-12 pr-4 rounded-2xl border-none bg-white shadow-lg text-lg font-medium text-primary placeholder:text-primary/30 focus-visible:ring-2 focus-visible:ring-accent transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery("")}
+              className="absolute inset-y-0 right-4 flex items-center text-primary/40 hover:text-destructive transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
         {productsLoading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
             <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             <p className="text-[10px] font-black uppercase text-primary/40 tracking-widest">Updating Catalog...</p>
+          </div>
+        ) : visibleProducts.length === 0 ? (
+          <div className="py-24 text-center space-y-4 animate-in fade-in zoom-in-95 duration-500">
+            <div className="mx-auto w-24 h-24 rounded-full bg-white shadow-inner flex items-center justify-center text-primary/10">
+              <Inbox className="w-12 h-12" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-primary uppercase tracking-tighter">No Products Found</h3>
+              <p className="text-sm text-primary/40 font-medium">Try adjusting your search query or clear filters.</p>
+            </div>
+            {searchQuery && (
+              <Button 
+                variant="outline" 
+                onClick={() => setSearchQuery("")}
+                className="rounded-xl border-accent text-accent hover:bg-accent hover:text-white"
+              >
+                Clear Search
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -220,88 +274,92 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
       {/* Product Details Modal */}
       <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto rounded-[3rem] p-0 border-none shadow-2xl">
-          <div className="sr-only">
-            <DialogTitle>{selectedProduct?.name || "Product Details"}</DialogTitle>
-            <DialogDescription>Viewing detailed information for {selectedProduct?.name}</DialogDescription>
-          </div>
-
-          <div className="relative">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="space-y-4 bg-muted/30 p-6 md:p-8">
-                <div 
-                  className="aspect-square rounded-[2rem] overflow-hidden shadow-2xl bg-white cursor-zoom-in group/main relative"
-                  onClick={() => selectedProduct?.imageUrl && setZoomImage(selectedProduct.imageUrl)}
-                >
-                  {selectedProduct?.imageUrl ? (
-                    <>
-                      <img src={selectedProduct.imageUrl} alt={selectedProduct?.name} className="w-full h-full object-cover transition-transform group-hover/main:scale-105" />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/main:opacity-100 flex items-center justify-center transition-opacity">
-                        <Maximize2 className="w-8 h-8 text-white drop-shadow-lg" />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-muted opacity-20">
-                      <Package className="w-16 h-16" />
-                    </div>
-                  )}
-                </div>
-                {(selectedProduct?.galleryImages?.length || 0) > 0 && (
-                  <div className="grid grid-cols-5 gap-2">
-                    {selectedProduct?.galleryImages.map((img: string, i: number) => (
-                      <div 
-                        key={i} 
-                        className="aspect-square rounded-xl overflow-hidden border-2 border-white shadow-sm cursor-zoom-in hover:scale-105 active:scale-95 transition-all"
-                        onClick={() => img && setZoomImage(img)}
-                      >
-                        {img ? <img src={img} className="w-full h-full object-cover" alt={`Gallery ${i}`} /> : null}
-                      </div>
-                    ))}
-                  </div>
-                )}
+          {selectedProduct && (
+            <>
+              <div className="sr-only">
+                <DialogTitle>{selectedProduct.name}</DialogTitle>
+                <DialogDescription>Viewing detailed information for {selectedProduct.name}</DialogDescription>
               </div>
-              
-              <div className="p-8 md:p-10 space-y-8 flex flex-col justify-center">
-                <div className="space-y-2">
-                  <Badge className="bg-accent/10 text-accent border-none text-[9px] font-black uppercase h-6 px-3">{selectedProduct?.category || 'General'}</Badge>
-                  <h2 className="text-3xl font-black text-primary leading-tight">{selectedProduct?.name}</h2>
-                  <p className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2"><Package className="w-4 h-4 text-accent" /> Quantity: {selectedProduct?.unit || 'pcs'}</p>
-                </div>
 
-                <div className="bg-primary/5 p-6 rounded-[2rem] border border-primary/10">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Our Best Price</p>
-                  <div className="flex items-center gap-4">
-                    <span className="text-4xl font-black text-primary">৳{selectedProduct?.sellingPrice?.toLocaleString()}</span>
-                    {selectedProduct?.originalPrice > selectedProduct?.sellingPrice && (
-                      <span className="text-lg font-black text-red-500 line-through opacity-40">৳{selectedProduct?.originalPrice?.toLocaleString()}</span>
+              <div className="relative">
+                <div className="grid grid-cols-1 md:grid-cols-2">
+                  <div className="space-y-4 bg-muted/30 p-6 md:p-8">
+                    <div 
+                      className="aspect-square rounded-[2rem] overflow-hidden shadow-2xl bg-white cursor-zoom-in group/main relative"
+                      onClick={() => selectedProduct.imageUrl && setZoomImage(selectedProduct.imageUrl)}
+                    >
+                      {selectedProduct.imageUrl ? (
+                        <>
+                          <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover transition-transform group-hover/main:scale-105" />
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/main:opacity-100 flex items-center justify-center transition-opacity">
+                            <Maximize2 className="w-8 h-8 text-white drop-shadow-lg" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-muted opacity-20">
+                          <Package className="w-16 h-16" />
+                        </div>
+                      )}
+                    </div>
+                    {(selectedProduct.galleryImages?.length || 0) > 0 && (
+                      <div className="grid grid-cols-5 gap-2">
+                        {selectedProduct.galleryImages.map((img: string, i: number) => (
+                          <div 
+                            key={i} 
+                            className="aspect-square rounded-xl overflow-hidden border-2 border-white shadow-sm cursor-zoom-in hover:scale-105 active:scale-95 transition-all"
+                            onClick={() => img && setZoomImage(img)}
+                          >
+                            <img src={img} className="w-full h-full object-cover" alt={`Gallery ${i}`} />
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2"><FileText className="w-4 h-4 text-accent" /> Description</h4>
-                  <p className="text-sm font-medium text-primary/70 leading-relaxed">{selectedProduct?.description || "High-quality original product verified by SpecsBiz. Contact owner for more details."}</p>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <div className={cn(
-                    "w-full h-12 rounded-2xl flex items-center justify-center font-black uppercase text-[10px] tracking-[0.2em] shadow-sm border",
-                    selectedProduct?.stockStatus === 'in_stock' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"
-                  )}>
-                    {selectedProduct?.stockStatus === 'in_stock' ? 'In Stock Now' : 'Currently Unavailable'}
-                  </div>
                   
-                  <Button 
-                    onClick={() => handleWhatsAppOrder(selectedProduct)}
-                    className="w-full h-16 bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-3 font-black uppercase text-sm shadow-xl transition-all active:scale-95"
-                  >
-                    <MessageCircle className="w-6 h-6 fill-white text-green-600" />
-                    Order via WhatsApp
-                  </Button>
+                  <div className="p-8 md:p-10 space-y-8 flex flex-col justify-center">
+                    <div className="space-y-2">
+                      <Badge className="bg-accent/10 text-accent border-none text-[9px] font-black uppercase h-6 px-3">{selectedProduct.category || 'General'}</Badge>
+                      <h2 className="text-3xl font-black text-primary leading-tight">{selectedProduct.name}</h2>
+                      <p className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2"><Package className="w-4 h-4 text-accent" /> Quantity: {selectedProduct.unit || 'pcs'}</p>
+                    </div>
+
+                    <div className="bg-primary/5 p-6 rounded-[2rem] border border-primary/10">
+                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Our Best Price</p>
+                      <div className="flex items-center gap-4">
+                        <span className="text-4xl font-black text-primary">৳{selectedProduct.sellingPrice?.toLocaleString()}</span>
+                        {selectedProduct.originalPrice > selectedProduct.sellingPrice && (
+                          <span className="text-lg font-black text-red-500 line-through opacity-40">৳{selectedProduct.originalPrice?.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2"><FileText className="w-4 h-4 text-accent" /> Description</h4>
+                      <p className="text-sm font-medium text-primary/70 leading-relaxed">{selectedProduct.description || "High-quality original product verified by SpecsBiz. Contact owner for more details."}</p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      <div className={cn(
+                        "w-full h-12 rounded-2xl flex items-center justify-center font-black uppercase text-[10px] tracking-[0.2em] shadow-sm border",
+                        selectedProduct.stockStatus === 'in_stock' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"
+                      )}>
+                        {selectedProduct.stockStatus === 'in_stock' ? 'In Stock Now' : 'Currently Unavailable'}
+                      </div>
+                      
+                      <Button 
+                        onClick={() => handleWhatsAppOrder(selectedProduct)}
+                        className="w-full h-16 bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-3 font-black uppercase text-sm shadow-xl transition-all active:scale-95"
+                      >
+                        <MessageCircle className="w-6 h-6 fill-white text-green-600" />
+                        Order via WhatsApp
+                      </Button>
+                    </div>
+                  </div>
                 </div>
+                <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 h-10 w-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-xl hover:bg-red-500 hover:text-white transition-all"><X className="w-6 h-6" /></button>
               </div>
-            </div>
-            <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 h-10 w-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-xl hover:bg-red-500 hover:text-white transition-all"><X className="w-6 h-6" /></button>
-          </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
