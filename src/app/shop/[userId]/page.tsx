@@ -45,13 +45,13 @@ import { PlaceHolderImages } from "@/lib/placeholder-images"
 
 /**
  * @fileOverview Top banner ad component for Adsterra integration.
- * Placed above the search box. Uses unique ID to avoid conflicts.
+ * Placed above the search box.
  */
 function ShopTopBannerAd() {
   const adRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (adRef.current && adRef.current.childNodes.length === 0) {
+    if (typeof window !== 'undefined' && adRef.current && adRef.current.childNodes.length === 0) {
       const container = adRef.current;
       
       const scriptConf = document.createElement('script');
@@ -90,12 +90,10 @@ function ShopBottomBannerAd() {
   const adRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (adRef.current && adRef.current.childNodes.length === 0) {
+    if (typeof window !== 'undefined' && adRef.current && adRef.current.childNodes.length === 0) {
       const container = adRef.current;
       
       const scriptConf = document.createElement('script');
-      // Note: We redefine atOptions here. In standard JS this overwrites the global, 
-      // but inside the iframe loading mechanism of Adsterra, it usually grabs the nearest one.
       scriptConf.innerHTML = `
         atOptions = {
           'key' : 'ae5282f07f3dd22b306e23b3fb3f1ba4',
@@ -127,19 +125,12 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
   const { userId } = use(params)
   const db = useFirestore()
   
-  const [code, setCode] = useState("")
-  const [isUnlocked, setIsUnlocked] = useState(false)
-  const [error, setError] = useState("")
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
-  const [zoomImage, setZoomImage] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState("")
-
-  const defaultLogoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl
-
-  // Load Popunder Ad with duplicate check
+  // POPUNDER AD - HIGHEST PRIORITY
+  // Set immediately on component mount to ensure it's active everywhere
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const scriptId = 'adsterra-popunder-script';
+      // Safety check: ensure it's not double-loaded
       if (!document.getElementById(scriptId)) {
         const script = document.createElement('script');
         script.id = scriptId;
@@ -149,6 +140,15 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
       }
     }
   }, []);
+
+  const [code, setCode] = useState("")
+  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [error, setError] = useState("")
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
+  const [zoomImage, setZoomImage] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const defaultLogoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl
 
   // Fetch Public Shop Config
   const shopConfigRef = useMemoFirebase(() => {
