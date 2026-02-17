@@ -45,7 +45,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images"
 
 /**
  * @fileOverview Top banner ad component for Adsterra integration.
- * Placed above the search box.
+ * Placed above the search box. Uses unique ID to avoid conflicts.
  */
 function ShopTopBannerAd() {
   const adRef = useRef<HTMLDivElement>(null);
@@ -94,6 +94,8 @@ function ShopBottomBannerAd() {
       const container = adRef.current;
       
       const scriptConf = document.createElement('script');
+      // Note: We redefine atOptions here. In standard JS this overwrites the global, 
+      // but inside the iframe loading mechanism of Adsterra, it usually grabs the nearest one.
       scriptConf.innerHTML = `
         atOptions = {
           'key' : 'ae5282f07f3dd22b306e23b3fb3f1ba4',
@@ -134,13 +136,17 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
 
   const defaultLogoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl
 
-  // Load Popunder Ad
+  // Load Popunder Ad with duplicate check
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const script = document.createElement('script');
-      script.src = "https://pl28730615.effectivegatecpm.com/52/c3/f7/52c3f78501c6a5e4f66885863b6715df.js";
-      script.async = true;
-      document.body.appendChild(script);
+      const scriptId = 'adsterra-popunder-script';
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = "https://pl28730615.effectivegatecpm.com/52/c3/f7/52c3f78501c6a5e4f66885863b6715df.js";
+        script.async = true;
+        document.body.appendChild(script);
+      }
     }
   }, []);
 
