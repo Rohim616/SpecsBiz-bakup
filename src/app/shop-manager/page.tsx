@@ -302,7 +302,7 @@ export default function ShopManagerPage() {
             </DialogTrigger>
             <DialogContent className="w-[95vw] sm:max-w-[850px] rounded-[2.5rem] p-0 overflow-hidden border-accent/20 shadow-2xl">
               <DialogHeader className="p-6 bg-accent/5 border-b shrink-0">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-white rounded-xl border border-accent/10 shadow-sm"><Settings2 className="w-6 h-6 text-accent" /></div>
                     <div>
@@ -310,8 +310,8 @@ export default function ShopManagerPage() {
                       <DialogDescription className="text-[10px] font-bold uppercase opacity-60">Full Control Panel (Independent Web Store)</DialogDescription>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mr-8">
-                    <span className={cn("text-[9px] font-black uppercase", isActive ? "text-green-600" : "text-muted-foreground")}>
+                  <div className="flex items-center gap-3 bg-white/50 w-fit px-4 py-2 rounded-xl border border-accent/10 shadow-sm">
+                    <span className={cn("text-[10px] font-black uppercase tracking-widest", isActive ? "text-green-600" : "text-muted-foreground")}>
                       {isActive ? t.active : t.inactive}
                     </span>
                     <Switch checked={isActive} onCheckedChange={setIsActive} disabled={!user} />
@@ -344,7 +344,7 @@ export default function ShopManagerPage() {
                         <Phone className="w-3.5 h-3.5 text-green-600" /> WhatsApp Number (Contact)
                       </Label>
                       <Input 
-                        placeholder="e.g. 88017xxxxxxxx" 
+                        placeholder="88017xxxxxxxx" 
                         value={whatsappNumber} 
                         onChange={e => setWhatsappNumber(e.target.value)} 
                         className="h-14 rounded-2xl bg-muted/20 border-none font-bold text-primary" 
