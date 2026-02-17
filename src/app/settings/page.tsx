@@ -74,6 +74,7 @@ function MasterDeveloperPanel() {
   
   const [editingCodeId, setEditingCodeId] = useState<string | null>(null);
   const [assignName, setAssignName] = useState("");
+  const [isWiping, setIsWiping] = useState(false);
 
   const codesQuery = useMemoFirebase(() => {
     if (!db || user?.email !== 'specsxr@gmail.com') return null;
@@ -133,26 +134,47 @@ function MasterDeveloperPanel() {
 
   const handleFinalConfirmDelete = async (code: string, userId: string) => {
     if (!db) return;
+    if (!userId) {
+      toast({ variant: "destructive", title: "Error", description: "User ID not found for this code." });
+      return;
+    }
+
+    setIsWiping(true);
     try {
-      const subCollections = ['products', 'sales', 'customers', 'procurements', 'aiMessages', 'advisorMessages', 'notes'];
+      // Sub-collections to wipe
+      const subCollections = ['products', 'sales', 'customers', 'procurements', 'aiMessages', 'advisorMessages', 'notes', 'shopProducts'];
       
       for (const coll of subCollections) {
-        const snap = await getDocs(collection(db, 'users', userId, coll));
-        const batch = writeBatch(db);
-        snap.docs.forEach(d => batch.delete(d.ref));
-        await batch.commit();
+        const collRef = collection(db, 'users', userId, coll);
+        const snap = await getDocs(collRef);
+        if (!snap.empty) {
+          const batch = writeBatch(db);
+          snap.docs.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
       }
       
+      // Delete the main user document
       await deleteDoc(doc(db, 'users', userId));
 
+      // Mark the registration code as permanently deleted
       await updateDoc(doc(db, 'registrationCodes', code), { 
         status: 'deleted',
         isUsed: true
       });
 
       toast({ title: "Account & Data Permanently Wiped" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Wipe failed", description: "Internal storage error." });
+    } catch (e: any) {
+      console.error("Wipe Error:", e);
+      toast({ 
+        variant: "destructive", 
+        title: "Wipe failed", 
+        description: e.message?.includes("permissions") 
+          ? "Permission denied. Rules update required." 
+          : "Internal storage error." 
+      });
+    } finally {
+      setIsWiping(false);
     }
   };
 
@@ -254,10 +276,20 @@ function MasterDeveloperPanel() {
                             <AlertTriangle className="w-4 h-4" /> User requested permanent deletion
                           </p>
                           <div className="flex flex-col sm:flex-row gap-3">
-                            <Button className="flex-1 bg-red-600 hover:bg-red-700 text-[10px] h-11 font-black uppercase rounded-xl shadow-lg" onClick={() => handleFinalConfirmDelete(c.code, c.userId)}>
-                              <Trash2 className="w-4 h-4 mr-2" /> Confirm & Wipe All Data
+                            <Button 
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-[10px] h-11 font-black uppercase rounded-xl shadow-lg" 
+                              onClick={() => handleFinalConfirmDelete(c.code, c.userId)}
+                              disabled={isWiping}
+                            >
+                              {isWiping ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                              Confirm & Wipe All Data
                             </Button>
-                            <Button variant="outline" className="flex-1 border-primary text-primary hover:bg-primary/5 text-[10px] h-11 font-black uppercase rounded-xl" onClick={() => handleCancelDelete(c.code)}>
+                            <Button 
+                              variant="outline" 
+                              className="flex-1 border-primary text-primary hover:bg-primary/5 text-[10px] h-11 font-black uppercase rounded-xl" 
+                              onClick={() => handleCancelDelete(c.code)}
+                              disabled={isWiping}
+                            >
                               <RotateCcw className="w-4 h-4 mr-2" /> Cancel Request
                             </Button>
                           </div>

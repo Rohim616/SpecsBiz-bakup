@@ -31,7 +31,7 @@ service cloud.firestore {
           // Case: Registration
           (resource.data.isUsed == false && request.resource.data.isUsed == true)
           ||
-          // Case: Delete Request (Universal fix for old/new accounts)
+          // Case: Delete Request
           (request.resource.data.status == 'pending_deletion')
           ||
           // Case: General owner match
@@ -42,20 +42,23 @@ service cloud.firestore {
 
     // PRIMARY OWNER ACCESS: Grant explicit access to all specific collections
     match /users/{userId} {
+      // Admin and Owner both can manage the main user profile
       allow read, write: if isOwner(userId) || isMasterAdmin();
       
-      match /products/{id} { allow read, write: if isOwner(userId); }
-      match /shopProducts/{id} { allow read, write: if isOwner(userId); }
-      match /shopConfig/{id} { allow read, write: if isOwner(userId); }
-      match /procurements/{id} { allow read, write: if isOwner(userId); }
-      match /customers/{id} { allow read, write: if isOwner(userId); }
-      match /sales/{id} { allow read, write: if isOwner(userId); }
-      match /aiMessages/{id} { allow read, write: if isOwner(userId); }
-      match /advisorMessages/{id} { allow read, write: if isOwner(userId); }
-      match /notes/{id} { allow read, write: if isOwner(userId); }
+      // Sub-collections management
+      // We must explicitly allow isMasterAdmin for every sub-path to enable the Wipe feature
+      match /products/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
+      match /shopProducts/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
+      match /shopConfig/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
+      match /procurements/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
+      match /customers/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
+      match /sales/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
+      match /aiMessages/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
+      match /advisorMessages/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
+      match /notes/{id} { allow read, write: if isOwner(userId) || isMasterAdmin(); }
       
       match /customers/{customerId}/bakiRecords/{recordId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isMasterAdmin();
       }
     }
 
