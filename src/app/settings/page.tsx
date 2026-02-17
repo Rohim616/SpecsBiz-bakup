@@ -99,6 +99,16 @@ function MasterDeveloperPanel() {
     }
   };
 
+  const deleteCodePermanently = async (code: string) => {
+    if (!db) return;
+    try {
+      await deleteDoc(doc(db, 'registrationCodes', code));
+      toast({ title: "Code Record Removed" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Failed to remove" });
+    }
+  };
+
   const toggleUserStatus = async (code: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     try {
@@ -202,6 +212,12 @@ function MasterDeveloperPanel() {
         </Button>
       </div>
       <CardContent className="p-0">
+        <div className="bg-amber-50 p-3 border-b border-amber-100 flex items-start gap-3">
+          <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+          <p className="text-[10px] text-amber-800 leading-relaxed font-bold">
+            <b>PRO TIP:</b> To allow same email re-registration after WIPE, manually delete the user from Firebase Auth Console.
+          </p>
+        </div>
         <ScrollArea className="h-[450px]">
           {isLoading ? (
             <div className="p-10 text-center animate-pulse text-red-600 font-bold">Fetching codes...</div>
@@ -261,11 +277,22 @@ function MasterDeveloperPanel() {
                             {c.status === 'active' && c.isUsed ? 'ACTIVE' : c.status.replace('_', ' ')}
                           </Badge>
                         </div>
-                        <Switch 
-                          checked={!isInactive && !isDeleted} 
-                          onCheckedChange={() => toggleUserStatus(c.code, c.status)} 
-                          disabled={isDeleted || isPendingDel}
-                        />
+                        {isDeleted ? (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-xl border border-destructive/20"
+                            onClick={() => deleteCodePermanently(c.code)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        ) : (
+                          <Switch 
+                            checked={!isInactive && !isDeleted} 
+                            onCheckedChange={() => toggleUserStatus(c.code, c.status)} 
+                            disabled={isDeleted || isPendingDel}
+                          />
+                        )}
                       </div>
                     </div>
 
