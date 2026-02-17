@@ -223,7 +223,7 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
                       <div 
                         key={i} 
                         className="aspect-square rounded-xl overflow-hidden border-2 border-white shadow-sm cursor-zoom-in hover:scale-105 active:scale-95 transition-all"
-                        onClick={() => setZoomImage(img)}
+                        onClick={() => img && setZoomImage(img)}
                       >
                         {img ? <img src={img} className="w-full h-full object-cover" alt={`Gallery ${i}`} /> : null}
                       </div>
@@ -277,11 +277,13 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
             <DialogDescription>Full screen view of product photo</DialogDescription>
           </div>
           <div className="relative w-full h-full flex items-center justify-center p-4">
-            <img 
-              src={zoomImage || ""} 
-              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-300" 
-              alt="Zoomed preview" 
-            />
+            {zoomImage && (
+              <img 
+                src={zoomImage} 
+                className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-300" 
+                alt="Zoomed preview" 
+              />
+            )}
             <button 
               onClick={() => setZoomImage(null)}
               className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all shadow-xl"
