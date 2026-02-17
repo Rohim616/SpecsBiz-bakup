@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, use, useEffect } from "react"
+import { useState, useMemo, use, useEffect, useRef } from "react"
 import { 
   Lock, 
   Store, 
@@ -37,9 +37,46 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogDescription,
+  DialogDescription, 
   DialogFooter
 } from "@/components/ui/dialog"
+
+/**
+ * @fileOverview Ad component for Adsterra integration.
+ * Injects the provided script into each product card.
+ */
+function ShopProductAd() {
+  const adRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (adRef.current && adRef.current.childNodes.length === 0) {
+      const container = adRef.current;
+      const scriptConf = document.createElement('script');
+      scriptConf.innerHTML = `
+        atOptions = {
+          'key' : '9c3305cef38420408885e0c5935d7716',
+          'format' : 'iframe',
+          'height' : 50,
+          'width' : 320,
+          'params' : {}
+        };
+      `;
+      const scriptInvoke = document.createElement('script');
+      scriptInvoke.type = 'text/javascript';
+      scriptInvoke.src = 'https://www.highperformanceformat.com/9c3305cef38420408885e0c5935d7716/invoke.js';
+      
+      container.appendChild(scriptConf);
+      container.appendChild(scriptInvoke);
+    }
+  }, []);
+
+  return (
+    <div className="mt-4 pt-4 border-t border-black/5 flex flex-col items-center gap-1 overflow-hidden">
+      <p className="text-[7px] font-black uppercase text-primary/20 tracking-widest">Sponsored</p>
+      <div ref={adRef} className="w-full flex justify-center min-h-[50px]" />
+    </div>
+  );
+}
 
 export default function PublicShopPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params)
@@ -186,7 +223,6 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
           </Card>
         )}
 
-        {/* Intelligent Search Box */}
         <div className="relative group/search max-w-2xl mx-auto">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
             <Search className="w-5 h-5 text-primary opacity-40 group-focus-within/search:opacity-100 group-focus-within/search:text-accent transition-all" />
@@ -263,6 +299,9 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
                       </div>
                       <Button onClick={() => setSelectedProduct(p)} variant="outline" className="h-12 px-6 rounded-2xl border-accent text-accent font-black uppercase text-[10px] tracking-widest hover:bg-accent hover:text-white transition-all gap-2">View Details <ChevronRight className="w-4 h-4" /></Button>
                     </div>
+
+                    {/* Integrated Adsterra Ad under every product */}
+                    <ShopProductAd />
                   </CardContent>
                 </Card>
               );
@@ -271,7 +310,6 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
         )}
       </div>
 
-      {/* Product Details Modal */}
       <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
         <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto rounded-[3rem] p-0 border-none shadow-2xl">
           {selectedProduct && (
@@ -363,7 +401,6 @@ export default function PublicShopPage({ params }: { params: Promise<{ userId: s
         </DialogContent>
       </Dialog>
 
-      {/* Image Zoom Popup */}
       <Dialog open={!!zoomImage} onOpenChange={(open) => !open && setZoomImage(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-black/90 backdrop-blur-xl shadow-none flex items-center justify-center overflow-hidden rounded-3xl">
           <div className="sr-only">
