@@ -23,7 +23,8 @@ import {
   Lock,
   Clock,
   Tag,
-  ChevronRight
+  ChevronRight,
+  X
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -71,6 +72,8 @@ export default function MasterLedgerPage() {
   
   const [search, setSearch] = useState("")
   const [filterType, setFilterType] = useState("all")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
   const [allBakiRecords, setAllBakiRecords] = useState<any[]>([])
   const [isBakiLoading, setIsBakiLoading] = useState(false)
   const [generatedDate, setGeneratedDate] = useState("")
@@ -210,7 +213,21 @@ export default function MasterLedgerPage() {
   const filteredLedger = ledgerEntries.filter(e => {
     const matchesSearch = `${e.item} ${e.customer}`.toLowerCase().includes(search.toLowerCase())
     const matchesType = filterType === 'all' || e.type.toLowerCase().includes(filterType.toLowerCase())
-    return matchesSearch && matchesType
+    
+    // Date Filtering Logic
+    let matchesDate = true;
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      matchesDate = matchesDate && e.date >= start;
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      matchesDate = matchesDate && e.date <= end;
+    }
+
+    return matchesSearch && matchesType && matchesDate;
   })
 
   const summary = useMemo(() => {
@@ -342,29 +359,65 @@ export default function MasterLedgerPage() {
       </div>
 
       <Card className="border-accent/10 shadow-lg overflow-hidden print:border-none print:shadow-none bg-white/50 backdrop-blur-sm">
-        <CardHeader className="p-4 border-b bg-muted/20 flex flex-col md:flex-row gap-4 items-center justify-between print:hidden">
-          <div className="relative w-full md:max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder={t.filterType} 
-              className="pl-9 h-10 bg-white" 
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+        <CardHeader className="p-4 border-b bg-muted/20 flex flex-col space-y-4 print:hidden">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between w-full">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder={t.filterType} 
+                className="pl-9 h-10 bg-white" 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full md:w-[150px] bg-white h-10">
+                  <SelectValue placeholder={t.type} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Entries</SelectItem>
+                  <SelectItem value="sale">Sales</SelectItem>
+                  <SelectItem value="baki">Baki Records</SelectItem>
+                  <SelectItem value="inventory">Stock/Buy</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full md:w-[150px] bg-white h-10">
-                <SelectValue placeholder={t.type} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Entries</SelectItem>
-                <SelectItem value="sale">Sales</SelectItem>
-                <SelectItem value="baki">Baki Records</SelectItem>
-                <SelectItem value="inventory">Stock/Buy</SelectItem>
-              </SelectContent>
-            </Select>
+
+          <div className="flex flex-wrap items-center gap-3 bg-white/50 p-3 rounded-xl border border-accent/10 shadow-inner">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-accent" />
+              <span className="text-[10px] font-black uppercase text-primary/60 tracking-wider">
+                {language === 'bn' ? 'তারিখ সিলেক্ট করুন:' : 'Filter by Date:'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+              <Input 
+                type="date" 
+                className="h-9 text-xs w-full sm:w-36 bg-white border-accent/10" 
+                value={startDate} 
+                onChange={e => setStartDate(e.target.value)} 
+              />
+              <span className="text-[10px] font-bold text-muted-foreground">to</span>
+              <Input 
+                type="date" 
+                className="h-9 text-xs w-full sm:w-36 bg-white border-accent/10" 
+                value={endDate} 
+                onChange={e => setEndDate(e.target.value)} 
+              />
+            </div>
+            {(startDate || endDate) && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-9 px-3 text-[10px] font-black uppercase text-destructive hover:bg-red-50 rounded-lg"
+                onClick={() => { setStartDate(""); setEndDate(""); }}
+              >
+                <X className="w-3 h-3 mr-1" /> {language === 'bn' ? 'মুছুন' : 'Clear'}
+              </Button>
+            )}
           </div>
         </CardHeader>
         
